@@ -44,3 +44,22 @@ let names = ["Jackal", "World", "Developer"];
 for (let i = 0; i < 3; i++) {
     myGreeter.greet(names[i]);
 }
+
+Getting Started
+This section covers how to build and run the interpreter.
+
+Prerequisites
+A C compiler (e.g., gcc or clang)
+
+make
+
+Build
+The project is compiled using the provided Makefile.
+
+Bash
+
+# 1. Clean previous builds (optional)
+make clean
+
+# 2. Compile the 'jackal' executable
+make jackal
