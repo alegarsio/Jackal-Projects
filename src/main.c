@@ -1,4 +1,3 @@
-// src/main.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,24 +41,25 @@ int main(int argc, char **argv) {
 
     Lexer L;
     Parser P;
-    Env env = { NULL };
+    Env* env = env_new(NULL);
 
     lexer_init(&L, source);
     parser_init(&P, &L);
 
     while (P.current.kind != TOKEN_END) {
-
         Node* stmt = parse_stmt(&P);
 
         if (stmt) {
-            eval_node(&env, stmt);
-            
+            Value result = eval_node(env, stmt);
+            free_value(result); 
             free_node(stmt);
+        } else {
+            break;
         }
     }
 
     free(source);
-    env_free(&env);
+    env_free(env);
 
     return 0;
 }

@@ -1,10 +1,6 @@
 #pragma once
-#include "parser.h"
+#include "parser.h" 
 
-
-typedef struct Env {
-    Var* vars;
-} Env;
-
-double eval_node(Env* env, struct Node* n);
+Value eval_node(Env* env, struct Node* n);
 void env_free(Env* env);
+Env* env_new(Env* outer);
