@@ -1,3 +1,10 @@
-print "Hello ";
-let name = read();
-print "Hello, " + nama + "!";
+
+import "math.jackal";
+
+print "4 kuadrat adalah:";
+print kuadrat(4);
+
+let calc = Calculator(10);
+calc.add(5);
+print "Hasil kalkulator:";
+print calc.result();

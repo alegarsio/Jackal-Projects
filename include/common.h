@@ -41,6 +41,7 @@ typedef enum {
     TOKEN_CLASS,
     TOKEN_THIS,
     TOKEN_DOT,
+    TOKEN_IMPORT,
     TOKEN_INVALID
 } TokenKind;
 

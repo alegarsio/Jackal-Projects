@@ -3,6 +3,7 @@
 #include "env.h"
 #include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 /**
  * @brief Checks if two values are both numbers.
@@ -15,6 +16,25 @@ static bool is_number(Value a, Value b) { return a.type == VAL_NUMBER && b.type 
 
 static bool is_string(Value a, Value b) { return a.type == VAL_STRING && b.type == VAL_STRING; }
 
+/**
+ * @brief Reads the content of a file into a string.
+ * @param filename The name of the file to read.
+ * @return A pointer to the file content string, or NULL on failure.
+ */
+static char* read_file(const char* filename) {
+    FILE *f = fopen(filename, "r");
+    if (!f) return NULL;
+    fseek(f, 0, SEEK_END);
+    long len = ftell(f);
+    rewind(f);
+    char *source = malloc(len + 1);
+    if (source) {
+        fread(source, 1, len, f);
+        source[len] = '\0';
+    }
+    fclose(f);
+    return source;
+}
 
 /**
  * @brief Main evaluation function.
@@ -30,9 +50,31 @@ Value eval_node(Env* env, Node* n) {
 
     switch (n->kind) {
 
-        /**
-         * literal Values
-         */
+        case NODE_IMPORT: {
+            char* source = read_file(n->name);
+            if (!source) {
+                printf("Runtime Error: Cannot open import file '%s'\n", n->name);
+                return (Value){VAL_NIL, {0}};
+            }
+
+            Lexer imp_lex;
+            Parser imp_parser;
+            lexer_init(&imp_lex, source);
+            parser_init(&imp_parser, &imp_lex);
+
+            while (imp_parser.current.kind != TOKEN_END) {
+                Node* stmt = parse_stmt(&imp_parser);
+                if (stmt) {
+                    Value res = eval_node(env, stmt);
+                    free_value(res);
+                    free_node(stmt);
+                }
+            }
+
+            free(source);
+            return (Value){VAL_NIL, {0}};
+        }
+
         case NODE_NUMBER:
             return (Value){VAL_NUMBER, {.number = n->value}};
         
@@ -47,7 +89,6 @@ Value eval_node(Env* env, Node* n) {
             return (Value){VAL_STRING, {.string = str_copy}};
         }
 
-        // Create a new dynamic array and populate it by evaluating each item.
         case NODE_ARRAY_LITERAL: {
             ValueArray* arr = array_new();
             Node* item = n->left;

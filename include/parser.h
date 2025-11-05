@@ -40,6 +40,7 @@ typedef enum {
     NODE_CLASS_DEF,
     NODE_THIS,
     NODE_GET,
+    NODE_IMPORT,
     NODE_SET
 } NodeKind;
 

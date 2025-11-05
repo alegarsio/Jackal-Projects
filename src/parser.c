@@ -2,6 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+/**
+ * @brief Parses an import statement.
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_import_stmt(Parser* P);
+
+
 /**
  * @brief Advances to the next token in the parser.
  * @param P Pointer to the Parser.
@@ -676,8 +684,13 @@ static Node* parse_for_stmt(Parser* P) {
  * @return Pointer to the parsed Node.
  */
 Node* parse_stmt(Parser* P) {
+
     if (P->current.kind == TOKEN_IF) {
         return parse_if_stmt(P);
+    }
+
+    if (P->current.kind == TOKEN_IMPORT) { 
+        return parse_import_stmt(P);
     }
     
     if (P->current.kind == TOKEN_CLASS) {
@@ -736,6 +749,28 @@ Node* parse_stmt(Parser* P) {
     if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after statement.");
     if (P->current.kind == TOKEN_SEMI) next(P);
     return expr;
+}
+
+/**
+ * @brief Parses an import statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_import_stmt(Parser* P) {
+    Node* n = new_node(NODE_IMPORT);
+    next(P); 
+
+    if (P->current.kind != TOKEN_STRING) {
+        print_error("Expected string filename after 'import'.");
+        return NULL;
+    }
+    strcpy(n->name, P->current.text);
+    next(P); 
+
+    if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after import.");
+    if (P->current.kind == TOKEN_SEMI) next(P);
+    
+    return n;
 }
 
 /**
