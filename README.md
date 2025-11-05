@@ -1,4 +1,5 @@
-# Jackal
+# Jackal Intrepeter
+The open source programming language for all open source scientists
 
 Jackal is a dynamic, object-oriented interpreted programming language built from scratch in C. This project is designed as an in-depth exploration of language implementation, covering a lexer, a recursive descent parser, and a tree-walking evaluator.
 
