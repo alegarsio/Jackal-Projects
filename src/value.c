@@ -78,9 +78,7 @@ void free_value(Value value) {
     }
     if (value.type == VAL_FUNCTION) {
         Func* func = value.as.function;
-        // Jangan free node AST di sini, karena mereka milik parser
-        // free_node(func->params_head); 
-        // free_node(func->body_head);
+        
         free(func);
     }
     if (value.type == VAL_RETURN) {
@@ -90,15 +88,13 @@ void free_value(Value value) {
     if (value.type == VAL_ARRAY) {
         array_free(value.as.array);
     }
-    // --- PERUBAHAN PENTING: JANGAN FREE CLASS/INSTANCE ---
-    // Biarkan mereka "bocor" agar aman dari double-free
+    
     if (value.type == VAL_CLASS) {
-        // no-op
+
     }
     if (value.type == VAL_INSTANCE) {
-        // no-op
+        
     }
-    // ----------------------------------------------------
 }
 
 Value copy_value(Value value) {
@@ -123,11 +119,9 @@ Value copy_value(Value value) {
         }
         return (Value){VAL_ARRAY, {.array = new_arr}};
     }
-    // --- PERUBAHAN PENTING: SHALLOW COPY UNTUK OBJEK ---
     if (value.type == VAL_CLASS || value.type == VAL_INSTANCE) {
         return value; // Kembalikan pointer yang sama (referensi)
     }
-    // ---------------------------------------------------
     return value; 
 }
 

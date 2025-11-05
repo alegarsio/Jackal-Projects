@@ -7,6 +7,10 @@
 #include <ctype.h>
 #include <math.h>
 
+/**
+ * @typedef @enum TOKENKIND
+ * Represents the kinds of tokens in the Jackal programming language.
+ */
 typedef enum {
     TOKEN_END, TOKEN_NUMBER, TOKEN_IDENT,
     TOKEN_LET, TOKEN_PRINT,
@@ -43,6 +47,10 @@ typedef enum {
 struct Node;
 struct Env;
 
+/**
+ * @struct FUNC
+ * Represents a function in the Jackal programming language.
+ */
 typedef struct Func {
     struct Node* params_head;
     struct Node* body_head;
@@ -68,7 +76,10 @@ typedef struct {
     struct Env* fields;
 } Instance;
 
-
+/**
+ * @typedef @enum VALUETYPE
+ * Represents the type of a value in the Jackal programming language.
+ */
 typedef enum {
     VAL_NIL,
     VAL_NUMBER,
@@ -80,6 +91,10 @@ typedef enum {
     VAL_INSTANCE
 } ValueType;
 
+/**
+ * @typedef @struct VALUE
+ * Represents a value in the Jackal programming language.
+ */
 typedef struct Value {
     ValueType type;
     union {
@@ -94,21 +109,58 @@ typedef struct Value {
 } Value;
 
 
+/**
+ * @typedef @struct VAR
+ * Represents a variable in the Jackal programming language.
+ */
 typedef struct Var {
     char name[64];
     Value value;
     struct Var* next;
 } Var;
 
+/**
+ * Prints an error message to stderr.
+ * @param message Error message to be printed.
+ */
 void print_value(Value value);
+
+/**
+ * Frees the memory associated with a Value.
+ * @param value The Value to be freed.
+ */
 void free_value(Value value);
 
+/**
+ * Creates a copy of a Value.
+ * @param value The Value to be copied.
+ * @return A new Value that is a copy of the input.
+ */
 ValueArray* array_new(void);
+
+/**
+ * Appends a Value to a ValueArray.
+ * @param arr The ValueArray to append to.
+ * @param val The Value to append.
+ */
 void array_append(ValueArray* arr, Value val);
+
+/**
+ * Frees the memory associated with a ValueArray.
+ * @param arr The ValueArray to be freed.
+ */
 void array_free(ValueArray* arr);
 
+/**
+ * Prints an error message to stderr.
+ * @param message Error message to be printed.
+ */
 void print_error(const char *message);
 
+/**
+ * @struct TOKEN
+ * Represents a token in the Jackal programming language.
+ */
 typedef struct {
     TokenKind kind;
     char text[64];

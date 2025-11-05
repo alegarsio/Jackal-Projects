@@ -1,3 +1,13 @@
+class Jack{
+    
+    function init(name){
+        this.name = name;
+    }
 
+    function greet(){
+        print "Hello " + this.name;
+    }
+}
 
-print "hello world";
+let jack = Jack("Jack");
+jack.greet();

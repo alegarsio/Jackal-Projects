@@ -4,11 +4,19 @@
 
 typedef struct Env Env;
 
+/**
+ * @typedef @struct ENV
+ * Represents an environment (scope) in the Jackal programming language.
+ */
 struct Env {
     Var* vars;
     struct Env* outer;
 };
 
+/**
+ * @typedef @enum NODEKIND
+ * Represents the kinds of AST nodes in the Jackal programming language.
+ */
 typedef enum {
     NODE_NUMBER,
     NODE_IDENT,
@@ -35,6 +43,10 @@ typedef enum {
     NODE_SET
 } NodeKind;
 
+/**
+ * @typedef @struct NODE
+ * Represents a node in the Abstract Syntax Tree (AST) of the Jackal programming language.
+ */
 typedef struct Node {
     NodeKind kind;
     TokenKind op;
@@ -44,19 +56,44 @@ typedef struct Node {
     struct Node* left;
     struct Node* right;
     
-    // --- TAMBAHAN BARU ---
-    struct Node* next; // Pointer khusus untuk linked list
-    // --------------------
+    struct Node* next; 
     
     int arity;
 } Node;
 
+
+/**
+ * @typedef @struct PARSER
+ * Represents a parser for the Jackal programming language.
+ */
 typedef struct {
     Lexer* lexer;
     Token current;
 } Parser;
 
+/**
+ * Initializes the parser with the given lexer.
+ * @param P Pointer to the Parser to be initialized.
+ * @param L Pointer to the Lexer to be used by the parser.
+ */
 void parser_init(Parser* P, Lexer* L);
+
+/**
+ * Frees the memory associated with an AST node and its children.
+ * @param n Pointer to the Node to be freed.
+ */
 Node* parse_stmt(Parser* P);
+
+/**
+ * Parses the given source code and returns the root of the AST.
+ * @param source The source code to be parsed.
+ * @return Pointer to the root Node of the AST.
+ */
 void free_node(Node* n);
+
+/**
+ * Parses the given source code and returns the root of the AST.
+ * @param source The source code to be parsed.
+ * @return Pointer to the root Node of the AST.
+ */
 Node *parse(const char *source);
