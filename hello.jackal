@@ -1,0 +1,8 @@
+class Jackal{
+    function hello(){
+        print "hello world";
+    }
+}
+
+let jack = Jackal();
+jack.hello();

@@ -1,114 +1,11 @@
 #include "eval.h"
+#include "value.h"
+#include "env.h"
 #include <string.h>
 #include <stdbool.h>
 
-Env* env_new(Env* outer) {
-    Env* env = calloc(1, sizeof(Env));
-    env->outer = outer;
-    return env;
-}
-
-static Var* find_var(Env* env, const char* name) {
-    for (Var* v = env->vars; v; v = v->next) {
-        if (strcmp(v->name, name) == 0) return v;
-    }
-    if (env->outer) {
-        return find_var(env->outer, name);
-    }
-    return NULL;
-}
-static void set_var(Env* env, const char* name, Value value);
-Value copy_value(Value value) {
-    if (value.type == VAL_STRING) {
-        char* new_string = malloc(strlen(value.as.string) + 1);
-        if (new_string) { 
-            strcpy(new_string, value.as.string);
-        }
-        return (Value){VAL_STRING, {.string = new_string}};
-    }
-    if (value.type == VAL_FUNCTION) {
-        Func* old_func = value.as.function;
-        Func* new_func = malloc(sizeof(Func));
-        memcpy(new_func, old_func, sizeof(Func));
-        return (Value){VAL_FUNCTION, {.function = new_func}};
-    }
-    if (value.type == VAL_ARRAY) {
-        ValueArray* old_arr = value.as.array;
-        ValueArray* new_arr = array_new();
-        
-        for (int i = 0; i < old_arr->count; i++) {
-            array_append(new_arr, copy_value(old_arr->values[i]));
-        }
-        return (Value){VAL_ARRAY, {.array = new_arr}};
-    }
-    if (value.type == VAL_CLASS) {
-        return value;
-    }
-    
-    if (value.type == VAL_INSTANCE) {
-        Instance* old_inst = value.as.instance;
-        Instance* new_inst = malloc(sizeof(Instance));
-        
-        new_inst->class_val = malloc(sizeof(Value));
-        *new_inst->class_val = *old_inst->class_val;
-        
-        new_inst->fields = env_new(NULL);
-        if (old_inst->fields) {
-            for (Var* v = old_inst->fields->vars; v; v = v->next) {
-                set_var(new_inst->fields, v->name, v->value);
-            }
-        }
-        return (Value){VAL_INSTANCE, {.instance = new_inst}};
-    }
-    
-    return value; 
-}
-static void set_var(Env* env, const char* name, Value value) {
-    Var* n = malloc(sizeof(Var));
-    if (!n) return; 
-    strcpy(n->name, name);
-    n->value = copy_value(value); 
-    n->next = env->vars;
-    env->vars = n;
-}
-
-static bool is_value_truthy(Value value) {
-    switch (value.type) {
-        case VAL_NIL:    return false;
-        case VAL_NUMBER: return value.as.number != 0;
-        case VAL_STRING: return strlen(value.as.string) > 0;
-        case VAL_FUNCTION: return true;
-        case VAL_ARRAY: return value.as.array->count > 0;
-        case VAL_CLASS:    return true;
-        case VAL_INSTANCE: return true;
-        case VAL_RETURN: return is_value_truthy(*value.as.return_val);
-    }
-    return false;
-}
-
-bool is_number(Value a, Value b) { return a.type == VAL_NUMBER && b.type == VAL_NUMBER; }
-bool is_string(Value a, Value b) { return a.type == VAL_STRING && b.type == VAL_STRING; }
-
-Value eval_equals(Value a, Value b) {
-    double result = 0.0;
-    if (a.type != b.type) {
-        result = 0.0;
-    } else {
-        switch(a.type) {
-            case VAL_NIL: result = 1.0; break;
-            case VAL_NUMBER: result = (a.as.number == b.as.number); break;
-            case VAL_STRING: result = (strcmp(a.as.string, b.as.string) == 0); break;
-            case VAL_FUNCTION: result = (a.as.function == b.as.function); break;
-            case VAL_ARRAY: result = (a.as.array == b.as.array); break;
-            case VAL_CLASS: result = (a.as.class_obj == b.as.class_obj); break;
-            case VAL_INSTANCE: result = (a.as.instance == b.as.instance); break;
-            default: result = 0.0; break;
-        }
-    }
-    return (Value){VAL_NUMBER, {.number = result}};
-}
-
-Value eval_node(Env* env, Node* n);
+static bool is_number(Value a, Value b) { return a.type == VAL_NUMBER && b.type == VAL_NUMBER; }
+static bool is_string(Value a, Value b) { return a.type == VAL_STRING && b.type == VAL_STRING; }
 
 Value eval_node(Env* env, Node* n) {
     if (!n) return (Value){.type = VAL_NIL, .as = {0}};
@@ -483,8 +380,6 @@ Value eval_node(Env* env, Node* n) {
                 Value result = eval_node(call_env, func->body_head);
                 env_free(call_env);
                 
-                // free_value(instance_val); // <-- BARIS INI DIHAPUS
-                
                 if (result.type == VAL_RETURN) {
                     Value actual_return = *result.as.return_val;
                     free(result.as.return_val);
@@ -500,7 +395,37 @@ Value eval_node(Env* env, Node* n) {
                 inst->class_val = malloc(sizeof(Value));
                 *inst->class_val = callee;
                 inst->fields = env_new(NULL);
-                return (Value){VAL_INSTANCE, {.instance = inst}};
+                
+                Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
+                
+                Var* init_method = find_var(callee.as.class_obj->methods, "init");
+                if (init_method) {
+                    Func* func = init_method->value.as.function;
+                    
+                    if (n->arity != func->arity) {
+                        print_error("Incorrect number of arguments for init().");
+                        return (Value){.type = VAL_NIL, .as = {0}};
+                    }
+
+                    Env* call_env = env_new(func->env);
+                    set_var(call_env, "this", instance_val);
+                    
+                    Node* arg_node = n->right;
+                    Node* param_node = func->params_head;
+                    for (int i = 0; i < n->arity; i++) {
+                        Value arg_val = eval_node(env, arg_node);
+                        set_var(call_env, param_node->name, arg_val);
+                        free_value(arg_val);
+                        arg_node = arg_node->right;
+                        param_node = param_node->right;
+                    }
+                    
+                    Value init_result = eval_node(call_env, func->body_head);
+                    free_value(init_result);
+                    env_free(call_env);
+                }
+
+                return instance_val;
             }
             
             if (callee.type != VAL_FUNCTION) {
@@ -626,16 +551,4 @@ Value eval_node(Env* env, Node* n) {
         default: 
             return (Value){.type = VAL_NIL, .as = {0}};
     }
-}
-
-void env_free(Env* env) {
-    if (env == NULL) return;
-    Var* v = env->vars;
-    while (v) {
-        Var* next = v->next;
-        free_value(v->value); 
-        free(v);
-        v = next;
-    }
-    free(env);
 }

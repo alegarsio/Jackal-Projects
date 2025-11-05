@@ -3,6 +3,8 @@
 #include <string.h>
 #include "common.h"
 #include "lexer.h"
+#include "env.h"
+#include "value.h"
 #include "parser.h"
 #include "eval.h"
 
