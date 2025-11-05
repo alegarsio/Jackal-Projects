@@ -1,6 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/**
+ * Main entry point for the Jackal interpreter.
+ * @include necessary headers
+ * Initialize lexer, parser, and environment.
+ * Read source file and execute statements.
+ */
 #include "common.h"
 #include "lexer.h"
 #include "env.h"

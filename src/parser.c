@@ -51,7 +51,8 @@ static Node* parse_func_call(Parser* P, Node* callee) {
                 args_head = arg_expr;
                 args_current = arg_expr;
             } else {
-                args_current->right = arg_expr;
+                // GUNAKAN 'next'
+                args_current->next = arg_expr;
                 args_current = arg_expr;
             }
         } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
@@ -80,7 +81,8 @@ static Node* parse_array_literal(Parser* P) {
                 items_head = item_expr;
                 items_current = item_expr;
             } else {
-                items_current->right = item_expr;
+                // GUNAKAN 'next'
+                items_current->next = item_expr;
                 items_current = item_expr;
             }
         } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
@@ -304,7 +306,8 @@ static Node* parse_block(Parser* P) {
             head = stmt;
             current = stmt;
         } else {
-            current->right = stmt; 
+            // GUNAKAN 'next'
+            current->next = stmt; 
             current = stmt;
         }
     }
@@ -375,7 +378,8 @@ static Node* parse_func_def(Parser* P) {
                 params_head = param_node;
                 params_current = param_node;
             } else {
-                params_current->right = param_node;
+                // GUNAKAN 'next'
+                params_current->next = param_node;
                 params_current = param_node;
             }
         } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
@@ -390,7 +394,6 @@ static Node* parse_func_def(Parser* P) {
     return n;
 }
 
-// --- FUNGSI parse_class_def (DIPERBAIKI) ---
 static Node* parse_class_def(Parser* P) {
     Node* n = new_node(NODE_CLASS_DEF);
     next(P);
@@ -406,21 +409,19 @@ static Node* parse_class_def(Parser* P) {
     Node* methods_current = NULL;
 
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
-        
-        // --- INI PERBAIKANNYA ---
         if (P->current.kind != TOKEN_FUNCTION) {
             print_error("Expected 'function' keyword for method.");
             break;
         }
-        next(P); // Lewati 'function'
-        // --- BATAS PERBAIKAN ---
+        next(P); 
 
         Node* method = parse_func_def(P);
         if (methods_head == NULL) {
             methods_head = method;
             methods_current = method;
         } else {
-            methods_current->right = method;
+            // GUNAKAN 'next'
+            methods_current->next = method;
             methods_current = method;
         }
     }
@@ -431,7 +432,6 @@ static Node* parse_class_def(Parser* P) {
     n->left = methods_head;
     return n;
 }
-// --- BATAS PERBAIKAN ---
 
 
 static Node* parse_return_stmt(Parser* P) {
@@ -561,9 +561,11 @@ Node* parse_stmt(Parser* P) {
     return expr;
 }
 
+// UPDATE free_node untuk membersihkan 'next'
 void free_node(Node* n) {
     if (!n) return;
     free_node(n->left);
     free_node(n->right);
+    free_node(n->next); // <-- TAMBAHAN PENTING
     free(n);
 }

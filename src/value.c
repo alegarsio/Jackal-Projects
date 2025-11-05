@@ -31,6 +31,7 @@ void array_free(ValueArray* arr) {
 void print_value(Value value) {
     switch (value.type) {
         case VAL_NIL:
+            printf("nil");
             break;
         case VAL_NUMBER:
             printf("%g", value.as.number);
@@ -77,8 +78,9 @@ void free_value(Value value) {
     }
     if (value.type == VAL_FUNCTION) {
         Func* func = value.as.function;
-        free_node(func->params_head);
-        free_node(func->body_head);
+        // Jangan free node AST di sini, karena mereka milik parser
+        // free_node(func->params_head); 
+        // free_node(func->body_head);
         free(func);
     }
     if (value.type == VAL_RETURN) {
@@ -88,15 +90,15 @@ void free_value(Value value) {
     if (value.type == VAL_ARRAY) {
         array_free(value.as.array);
     }
+    // --- PERUBAHAN PENTING: JANGAN FREE CLASS/INSTANCE ---
+    // Biarkan mereka "bocor" agar aman dari double-free
     if (value.type == VAL_CLASS) {
-        env_free(value.as.class_obj->methods);
-        free(value.as.class_obj);
+        // no-op
     }
     if (value.type == VAL_INSTANCE) {
-        free(value.as.instance->class_val);
-        env_free(value.as.instance->fields);
-        free(value.as.instance);
+        // no-op
     }
+    // ----------------------------------------------------
 }
 
 Value copy_value(Value value) {
@@ -116,30 +118,16 @@ Value copy_value(Value value) {
     if (value.type == VAL_ARRAY) {
         ValueArray* old_arr = value.as.array;
         ValueArray* new_arr = array_new();
-        
         for (int i = 0; i < old_arr->count; i++) {
             array_append(new_arr, copy_value(old_arr->values[i]));
         }
         return (Value){VAL_ARRAY, {.array = new_arr}};
     }
-    if (value.type == VAL_CLASS) {
-        return value;
+    // --- PERUBAHAN PENTING: SHALLOW COPY UNTUK OBJEK ---
+    if (value.type == VAL_CLASS || value.type == VAL_INSTANCE) {
+        return value; // Kembalikan pointer yang sama (referensi)
     }
-    if (value.type == VAL_INSTANCE) {
-        Instance* old_inst = value.as.instance;
-        Instance* new_inst = malloc(sizeof(Instance));
-        
-        new_inst->class_val = malloc(sizeof(Value));
-        *new_inst->class_val = *old_inst->class_val;
-        
-        new_inst->fields = env_new(NULL);
-        if (old_inst->fields) {
-            for (Var* v = old_inst->fields->vars; v; v = v->next) {
-                set_var(new_inst->fields, v->name, v->value);
-            }
-        }
-        return (Value){VAL_INSTANCE, {.instance = new_inst}};
-    }
+    // ---------------------------------------------------
     return value; 
 }
 

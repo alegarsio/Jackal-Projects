@@ -44,6 +44,10 @@ typedef struct Node {
     struct Node* left;
     struct Node* right;
     
+    // --- TAMBAHAN BARU ---
+    struct Node* next; // Pointer khusus untuk linked list
+    // --------------------
+    
     int arity;
 } Node;
 

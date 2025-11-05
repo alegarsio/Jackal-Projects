@@ -1,26 +1,40 @@
-# Jackal 
+# Jackal
 
-Jackal is a simple, interpreted programming language built in C. This project was created as a way to learn how a *lexer*, *parser*, and *evaluator* work together.
+Jackal is a dynamic, object-oriented interpreted programming language built from scratch in C. This project is designed as an in-depth exploration of language implementation, covering a lexer, a recursive descent parser, and a tree-walking evaluator.
 
-## Current Features
-* `let` variable declaration
-* Number and String data types
-* Arithmetic operators (`+`, `-`, `*`, `/`)
-* Comparison operators (`==`, `!=`, `>`, `<`, `>=`, `<=`)
-* Logical operators (`&&`)
-* `if`, `else if`, and `else` statements
-* `print` statements to output to the console
-* Line comments (`//`)
+The language is named for its agility and cleverness, represented by our mascot, **Jack** the Fox!
 
-## How to Run
+## Key Features
 
-This project uses `make` to compile.
+* **Dynamic Typing:** No complex type declarations required.
+* **Fully Object-Oriented:** Support for `class`, `this`, methods, constructors (`init`), and object properties.
+* **Modern Data Structures:** Array literals (`[1, 2, 3]`) with easy index access and manipulation.
+* **First-Class Functions:** Functions can be stored in variables, passed as arguments, and support closures.
+* **Complete Control Flow:** `if`/`else if`/`else`, `while` loops, and C-style `for` loops.
+* **Comprehensive Operators:** Arithmetic, comparison, logical (`&&` with short-circuit), and postfix (`i++`, `i--`).
 
-**1. Build the Project**
-(Make sure you have `gcc` and `make` installed)
+## Quick Start
+
+### Prerequisites
+
+* Standard C compiler (like `gcc` or `clang`)
+* `make`
+
+### Installation & Build
+
+1.  **Clone this repository:**
+    ```bash
+    git clone [https://github.com/alegarsio/Jackal-Projects](https://github.com/alegarsio/Jackal-Projects)
+    cd jackal
+    ```
+2.  **Compile the interpreter:**
+    ```bash
+    make jackal
+    ```
+
+### Running a Program
+
+Create a file with a `.jackal` extension and run it using the newly built interpreter:
+
 ```bash
-# Clean old build files (optional)
-make clean
-
-# Compile the 'jackal' executable
-make jackal
+./jackal your_script.jackal

@@ -1,8 +1,22 @@
-class Jackal{
-    function hello(){
+
+class Greeter {
+
+    function init(name){
+        this.name = name;
+    }
+
+    function getName(){
+        print this.name;
+    }
+
+    function greet(){
         print "hello world";
+    }
+    function sayHello() {
+        print "hello ";
     }
 }
 
-let jack = Jackal();
-jack.hello();
+let g = Greeter("ale");
+g.getName();
+

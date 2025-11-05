@@ -28,7 +28,7 @@ Value eval_node(Env* env, Node* n) {
             for (int i = 0; i < n->arity; i++) {
                 Value val = eval_node(env, item);
                 array_append(arr, val);
-                item = item->right;
+                item = item->next;
             }
             return (Value){VAL_ARRAY, {.array = arr}};
         }
@@ -103,7 +103,7 @@ Value eval_node(Env* env, Node* n) {
                 print_error("'this' is not defined."); 
                 return (Value){.type = VAL_NIL, .as = {0}}; 
             }
-            return copy_value(v->value);
+            return copy_value(v->value); 
         }
         
         case NODE_ASSIGN: {
@@ -153,6 +153,7 @@ Value eval_node(Env* env, Node* n) {
             }
             
             Value val = eval_node(env, n->right);
+            // Karena obj sekarang adalah referensi, set_var akan mengubah objek asli
             set_var(obj.as.instance->fields, n->left->name, val);
             free_value(obj);
             return val;
@@ -322,9 +323,10 @@ Value eval_node(Env* env, Node* n) {
             
             Node* method = n->left;
             while(method) {
+                Node* next_method = method->next;
                 Value method_val = eval_node(class_obj->methods, method);
                 free_value(method_val);
-                method = method->right;
+                method = next_method;
             }
 
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
@@ -373,12 +375,13 @@ Value eval_node(Env* env, Node* n) {
                     Value arg_val = eval_node(env, arg_node);
                     set_var(call_env, param_node->name, arg_val);
                     free_value(arg_val);
-                    arg_node = arg_node->right;
-                    param_node = param_node->right;
+                    arg_node = arg_node->next;
+                    param_node = param_node->next;
                 }
                 
                 Value result = eval_node(call_env, func->body_head);
                 env_free(call_env);
+                free_value(instance_val);
                 
                 if (result.type == VAL_RETURN) {
                     Value actual_return = *result.as.return_val;
@@ -416,8 +419,8 @@ Value eval_node(Env* env, Node* n) {
                         Value arg_val = eval_node(env, arg_node);
                         set_var(call_env, param_node->name, arg_val);
                         free_value(arg_val);
-                        arg_node = arg_node->right;
-                        param_node = param_node->right;
+                        arg_node = arg_node->next;
+                        param_node = param_node->next;
                     }
                     
                     Value init_result = eval_node(call_env, func->body_head);
@@ -449,9 +452,8 @@ Value eval_node(Env* env, Node* n) {
                 Value arg_val = eval_node(env, arg_node);
                 set_var(call_env, param_node->name, arg_val);
                 free_value(arg_val);
-                
-                param_node = param_node->right;
-                arg_node = arg_node->right;
+                arg_node = arg_node->next;
+                param_node = param_node->next;
             }
             
             Value result = eval_node(call_env, func->body_head);
@@ -489,7 +491,7 @@ Value eval_node(Env* env, Node* n) {
                 if (result.type == VAL_RETURN) {
                     break;
                 }
-                current = current->right;
+                current = current->next;
             }
             
             env_free(block_env);
