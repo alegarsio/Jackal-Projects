@@ -1,22 +1,6 @@
 
-class Greeter {
+let data = ["jack","john","davin","ale"];
 
-    function init(name){
-        this.name = name;
-    }
-
-    function getName(){
-        print this.name;
-    }
-
-    function greet(){
-        print "hello world";
-    }
-    function sayHello() {
-        print "hello ";
-    }
+for (let i = 0 ; i < 4 ; i ++ ){
+    print data[i];
 }
-
-let g = Greeter("ale");
-g.getName();
-

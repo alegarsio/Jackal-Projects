@@ -24,7 +24,7 @@ The language is named for its agility and cleverness, represented by our mascot,
 
 1.  **Clone this repository:**
     ```bash
-    git clone [https://github.com/alegarsio/Jackal-Projects](https://github.com/alegarsio/Jackal-Projects)
+    git clone https://github.com/alegarsio/Jackal-Projects
     cd jackal
     ```
 2.  **Compile the interpreter:**
@@ -38,3 +38,40 @@ Create a file with a `.jackal` extension and run it using the newly built interp
 
 ```bash
 ./jackal your_script.jackal
+```
+
+## Example Code
+
+Here's a simple example demonstrating object-oriented programming in Jackal:
+
+```jackal
+class Jack{
+    
+    function init(name){
+        this.name = name;
+    }
+
+    function greet(){
+        print "Hello " + this.name;
+    }
+}
+
+let jack = Jack("Jack");
+jack.greet();
+```
+
+This code creates a `Jack` class with a constructor and a method, then instantiates an object and calls its method.
+
+### Array Example
+
+Working with arrays and loops:
+
+```jackal
+let data = ["jack","john","davin","ale"];
+
+for (let i = 0 ; i < 4 ; i ++ ){
+    print data[i];
+}
+```
+
+This demonstrates array literals, C-style for loops, and array index access.
