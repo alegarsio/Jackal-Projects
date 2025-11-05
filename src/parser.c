@@ -2,13 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Parses an match statement
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_match_stmt(Parser* P);
 
 /**
  * @brief Parses an import statement.
  * @param P Pointer to the Parser.
  */
 static Node* parse_import_stmt(Parser* P);
-
 
 /**
  * @brief Advances to the next token in the parser.
@@ -689,6 +693,10 @@ Node* parse_stmt(Parser* P) {
         return parse_if_stmt(P);
     }
 
+    if (P->current.kind == TOKEN_MATCH) { 
+        return parse_match_stmt(P);
+    }
+
     if (P->current.kind == TOKEN_IMPORT) { 
         return parse_import_stmt(P);
     }
@@ -770,6 +778,62 @@ static Node* parse_import_stmt(Parser* P) {
     if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after import.");
     if (P->current.kind == TOKEN_SEMI) next(P);
     
+    return n;
+}
+
+/**
+ * @brief Parses an match statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_match_stmt(Parser* P) {
+    Node* n = new_node(NODE_MATCH_STMT);
+    next(P);
+
+    if (P->current.kind != TOKEN_LPAREN) print_error("Expected '(' after 'match'.");
+    next(P);
+    n->left = parse_expr(P); 
+    if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after match expression.");
+    next(P);
+
+    if (P->current.kind != TOKEN_LBRACE) print_error("Expected '{' before match cases.");
+    next(P);
+
+    Node* cases_head = NULL;
+    Node* cases_current = NULL;
+
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+        Node* case_node = new_node(NODE_MATCH_CASE);
+
+        if (P->current.kind == TOKEN_DEFAULT) {
+            next(P);
+            case_node->left = NULL; 
+        } else {
+            case_node->left = parse_expr(P); 
+        }
+
+        if (P->current.kind != TOKEN_ARROW) print_error("Expected '=>' after match case.");
+        next(P);
+
+        if (P->current.kind == TOKEN_LBRACE) {
+            case_node->right = parse_block(P);
+        } else {
+            case_node->right = parse_stmt(P);
+        }
+
+        if (cases_head == NULL) {
+            cases_head = case_node;
+            cases_current = case_node;
+        } else {
+            cases_current->next = case_node;
+            cases_current = case_node;
+        }
+    }
+
+    if (P->current.kind != TOKEN_RBRACE) print_error("Expected '}' after match cases.");
+    next(P);
+
+    n->right = cases_head;
     return n;
 }
 

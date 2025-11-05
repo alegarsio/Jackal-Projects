@@ -41,6 +41,8 @@ typedef enum {
     NODE_THIS,
     NODE_GET,
     NODE_IMPORT,
+    NODE_MATCH_STMT, 
+    NODE_MATCH_CASE,
     NODE_SET
 } NodeKind;
 

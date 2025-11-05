@@ -93,3 +93,18 @@ print "Hello, " + name + "!";
 ```
 
 This shows how to use the `read()` function to get user input and interact with your programs.
+
+### Pattern Matching Example
+
+Using match expressions for conditional logic:
+
+```jackal
+let score = 90;
+match (score) {
+    90 => print "Passed";
+    75 => print "Ok";
+    default => print "Not in the list";
+}
+```
+
+This demonstrates pattern matching syntax for elegant conditional branching.

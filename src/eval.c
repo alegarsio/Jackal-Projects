@@ -89,6 +89,38 @@ Value eval_node(Env* env, Node* n) {
             return (Value){VAL_STRING, {.string = str_copy}};
         }
 
+        case NODE_MATCH_STMT: {
+            Value match_val = eval_node(env, n->left);
+            bool matched = false;
+
+            Node* case_node = n->right;
+            while (case_node) {
+                if (case_node->left != NULL) {
+                    Value case_val = eval_node(env, case_node->left);
+                    
+                    Value is_eq = eval_equals(match_val, case_val);
+                    
+                    if (is_eq.as.number == 1.0) { 
+                        matched = true;
+                        free_value(case_val);
+                        Value result = eval_node(env, case_node->right);
+                        free_value(match_val);
+                        return result; 
+                    }
+                    free_value(case_val);
+                } else {
+                     if (!matched) {
+                        free_value(match_val);
+                        return eval_node(env, case_node->right);
+                    }
+                }
+                case_node = case_node->next;
+            }
+
+            free_value(match_val);
+            return (Value){.type = VAL_NIL, .as = {0}};
+        }
+
         case NODE_ARRAY_LITERAL: {
             ValueArray* arr = array_new();
             Node* item = n->left;

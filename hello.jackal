@@ -1,3 +1,22 @@
-print "Siapa namamu?";
-let nama = read();
-print "Halo, " + nama + "!";
+class Score{
+
+    function init(score){
+        this.score = score;
+    }
+
+    function getScore(){
+        return this.score;
+    }
+
+}
+
+let score = 90;
+
+match (score) {
+
+    90 => print "Passed";
+
+    75 => print "Ok";
+
+    default => print "bukan pilihan";
+}

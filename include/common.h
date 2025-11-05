@@ -42,6 +42,9 @@ typedef enum {
     TOKEN_THIS,
     TOKEN_DOT,
     TOKEN_IMPORT,
+    TOKEN_MATCH,
+    TOKEN_DEFAULT,
+    TOKEN_ARROW, 
     TOKEN_INVALID
 } TokenKind;
 

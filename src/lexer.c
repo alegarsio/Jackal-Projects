@@ -94,6 +94,8 @@ Token lexer_next(Lexer* L) {
         else if (strcmp(tk.text, "class") == 0) tk.kind = TOKEN_CLASS;
         else if (strcmp(tk.text, "this") == 0) tk.kind = TOKEN_THIS;
         else if (strcmp(tk.text, "import") == 0) tk.kind = TOKEN_IMPORT;
+        else if (strcmp(tk.text, "match") == 0) tk.kind = TOKEN_MATCH;
+        else if (strcmp(tk.text, "default") == 0) tk.kind = TOKEN_DEFAULT;
         else tk.kind = TOKEN_IDENT;
 
         return tk;
@@ -154,7 +156,9 @@ Token lexer_next(Lexer* L) {
             tk.kind = match(L, '=') ? TOKEN_BANG_EQUAL : TOKEN_BANG; 
             break;
         case '=': 
-            tk.kind = match(L, '=') ? TOKEN_EQUAL_EQUAL : TOKEN_ASSIGN; 
+            if (match(L, '=')) tk.kind = TOKEN_EQUAL_EQUAL;
+            else if (match(L, '>')) tk.kind = TOKEN_ARROW; 
+            else tk.kind = TOKEN_ASSIGN;
             break;
         case '<': 
             tk.kind = match(L, '=') ? TOKEN_LESS_EQUAL : TOKEN_LESS; 
