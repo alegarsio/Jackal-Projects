@@ -45,16 +45,13 @@ Value copy_value(Value value) {
         return value;
     }
     
-    // --- TAMBAHAN BARU ---
     if (value.type == VAL_INSTANCE) {
         Instance* old_inst = value.as.instance;
         Instance* new_inst = malloc(sizeof(Instance));
         
-        // Salin pointer ke class (class di-share, jangan di-deep copy)
         new_inst->class_val = malloc(sizeof(Value));
         *new_inst->class_val = *old_inst->class_val;
         
-        // Buat environment field baru dan copy semua field lama
         new_inst->fields = env_new(NULL);
         if (old_inst->fields) {
             for (Var* v = old_inst->fields->vars; v; v = v->next) {
@@ -63,7 +60,6 @@ Value copy_value(Value value) {
         }
         return (Value){VAL_INSTANCE, {.instance = new_inst}};
     }
-    // --- BATAS TAMBAHAN ---
     
     return value; 
 }
