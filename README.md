@@ -1,4 +1,4 @@
-# Jackal Interpreter
+# Jackal
 
 **The open source programming language for all open source scientists**
 
@@ -81,3 +81,15 @@ for (let i = 0 ; i < 4 ; i ++ ){
 ```
 
 This demonstrates array literals, C-style for loops, and array index access.
+
+### User Input Example
+
+Reading input from the user:
+
+```jackal
+print "Hello ";
+let name = read();
+print "Hello, " + name + "!";
+```
+
+This shows how to use the `read()` function to get user input and interact with your programs.

@@ -4,16 +4,41 @@
 #include <string.h>
 #include <stdbool.h>
 
+/**
+ * @brief Checks if two values are both numbers.
+ */
 static bool is_number(Value a, Value b) { return a.type == VAL_NUMBER && b.type == VAL_NUMBER; }
+
+/**
+ * @brief Checks if two values are both strings.
+ */
+
 static bool is_string(Value a, Value b) { return a.type == VAL_STRING && b.type == VAL_STRING; }
+
+
+/**
+ * @brief Main evaluation function.
+ * Recursively evaluates an AST node in a given environment.
+ * @param env The current variable environment.
+ * @param n The AST node to evaluate.
+ * @return The result of the evaluation as a Value.
+ */
+
 
 Value eval_node(Env* env, Node* n) {
     if (!n) return (Value){.type = VAL_NIL, .as = {0}};
 
     switch (n->kind) {
+
+        /**
+         * literal Values
+         */
         case NODE_NUMBER:
             return (Value){VAL_NUMBER, {.number = n->value}};
         
+        /**
+         * Strings must be heap-allocated because they are passed around by pointer.
+         */
         case NODE_STRING: {
             char* str_copy = malloc(strlen(n->name) + 1);
             if (str_copy) { 
@@ -22,6 +47,7 @@ Value eval_node(Env* env, Node* n) {
             return (Value){VAL_STRING, {.string = str_copy}};
         }
 
+        // Create a new dynamic array and populate it by evaluating each item.
         case NODE_ARRAY_LITERAL: {
             ValueArray* arr = array_new();
             Node* item = n->left;
@@ -391,6 +417,18 @@ Value eval_node(Env* env, Node* n) {
                 return (Value){.type = VAL_NIL, .as = {0}};
             }
 
+            if (n->left->kind == NODE_IDENT && strcmp(n->left->name, "read") == 0) {
+                 char buffer[1024];
+                 if (fgets(buffer, sizeof(buffer), stdin)) {
+                     size_t len = strlen(buffer);
+                     if (len > 0 && buffer[len - 1] == '\n') buffer[len - 1] = '\0';
+                     char* str = malloc(len + 1);
+                     strcpy(str, buffer);
+                     return (Value){VAL_STRING, {.string = str}};
+                 }
+                 return (Value){VAL_NIL, .as = {0}};
+            }
+
             Value callee = eval_node(env, n->left);
             
             if (callee.type == VAL_CLASS) {
@@ -465,6 +503,8 @@ Value eval_node(Env* env, Node* n) {
                 free(result.as.return_val);
                 return actual_return;
             }
+
+            
             
             return (Value){.type = VAL_NIL, .as = {0}};
         }

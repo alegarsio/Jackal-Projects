@@ -2,38 +2,133 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Advances to the next token in the parser.
+ * @param P Pointer to the Parser.
+ */
 static void next(Parser* P) { P->current = lexer_next(P->lexer); }
 
+/**
+ * @brief Initializes the parser with the given lexer.
+ * @param P Pointer to the Parser to be initialized.
+ * @param L Pointer to the Lexer to be used by the parser.
+ */
 void parser_init(Parser* P, Lexer* L) {
     P->lexer = L;
     next(P);
 }
 
+/**
+ * @brief Creates a new AST node of the given kind.
+ * @param kind The kind of the node to be created.
+ * @return Pointer to the newly created Node.
+ */
 static Node* new_node(NodeKind kind) {
     Node* n = calloc(1, sizeof(Node));
     n->kind = kind;
     return n;
 }
 
+/**
+ * @brief Parses the given source code and returns the root of the AST.
+ * @param source The source code to be parsed.
+ * @return Pointer to the root Node of the AST.
+ */
 Node *parse(const char *source) {
     (void)source;
     return NULL;
 }
 
+/**
+ * @brief Parses a statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_expr(Parser* P);
+
+/**
+ * @brief Parses a statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 Node* parse_stmt(Parser* P);
+
+/**
+ * @brief Parses an expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_primary(Parser* P);
+
+/**
+ * @brief Parses a postfix expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_multiplication(Parser* P);
+
+/**
+ * @brief Parses an addition expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_addition(Parser* P);
+
+/**
+ * @brief Parses a comparison expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_comparison(Parser* P);
+
+/**
+ * @brief Parses an equality expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_equality(Parser* P);
+
+/**
+ * @brief Parses a logical AND expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_logical_and(Parser* P);
-static Node* parse_assignment(Parser* P); 
+
+/**
+ * @brief Parses an assignment expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_assignment(Parser* P);
+
+/**
+ * @brief Parses a block of statements.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_block(Parser* P);
+
+/**
+ * @brief Parses an if statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_postfix(Parser* P);
+
+/**
+ * @brief Parses a function definition.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_func_def(Parser* P);
 
-
+/**
+ * @brief Parses a function call.
+ * @param P Pointer to the Parser.
+ * @param callee The callee node.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_func_call(Parser* P, Node* callee) {
     Node* n = new_node(NODE_FUNC_CALL);
     n->left = callee;
@@ -51,7 +146,7 @@ static Node* parse_func_call(Parser* P, Node* callee) {
                 args_head = arg_expr;
                 args_current = arg_expr;
             } else {
-                // GUNAKAN 'next'
+                // -> next
                 args_current->next = arg_expr;
                 args_current = arg_expr;
             }
@@ -65,6 +160,11 @@ static Node* parse_func_call(Parser* P, Node* callee) {
     return n;
 }
 
+/**
+ * @brief Parses an array literal.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_array_literal(Parser* P) {
     Node* n = new_node(NODE_ARRAY_LITERAL);
     
@@ -95,7 +195,11 @@ static Node* parse_array_literal(Parser* P) {
     return n;
 }
 
-
+/**
+ * @brief Parses a primary expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_primary(Parser* P) {
     if (P->current.kind == TOKEN_NUMBER) {
         Node* n = new_node(NODE_NUMBER);
@@ -138,6 +242,12 @@ static Node* parse_primary(Parser* P) {
     return NULL;
 }
 
+
+/**
+ * @brief Parses a postfix expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_postfix(Parser* P) {
     Node* node = parse_primary(P);
 
@@ -178,6 +288,11 @@ static Node* parse_postfix(Parser* P) {
     return node;
 }
 
+/**
+ * @brief Parses a multiplication expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_multiplication(Parser* P) {
     Node* left = parse_postfix(P);
     while (P->current.kind == TOKEN_STAR || P->current.kind == TOKEN_SLASH) {
@@ -191,6 +306,11 @@ static Node* parse_multiplication(Parser* P) {
     return left;
 }
 
+/**
+ * @brief Parses an addition expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_addition(Parser* P) {
     Node* left = parse_multiplication(P);
     while (P->current.kind == TOKEN_PLUS || P->current.kind == TOKEN_MINUS) {
@@ -204,6 +324,11 @@ static Node* parse_addition(Parser* P) {
     return left;
 }
 
+/**
+ * @brief Parses a comparison expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_comparison(Parser* P) {
     Node* left = parse_addition(P);
     while (P->current.kind == TOKEN_GREATER || P->current.kind == TOKEN_GREATER_EQUAL ||
@@ -218,6 +343,11 @@ static Node* parse_comparison(Parser* P) {
     return left;
 }
 
+/**
+ * @brief Parses an equality expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_equality(Parser* P) {
     Node* left = parse_comparison(P);
     while (P->current.kind == TOKEN_EQUAL_EQUAL || P->current.kind == TOKEN_BANG_EQUAL) {
@@ -231,6 +361,11 @@ static Node* parse_equality(Parser* P) {
     return left;
 }
 
+/**
+ * @brief Parses a logical AND expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_logical_and(Parser* P) {
     Node* left = parse_equality(P);
     while (P->current.kind == TOKEN_AND_AND) {
@@ -244,7 +379,11 @@ static Node* parse_logical_and(Parser* P) {
     return left;
 }
 
-
+/**
+ * @brief Parses an assignment expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_assignment(Parser* P) {
     Node* node = parse_logical_and(P);
 
@@ -280,11 +419,21 @@ static Node* parse_assignment(Parser* P) {
     return node;
 }
 
+/**
+ * @brief Parses an expression.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 
 static Node* parse_expr(Parser* P) {
     return parse_assignment(P);
 }
 
+/**
+ * @brief Parses a block of statements.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 
 static Node* parse_block(Parser* P) {
     Node* n = new_node(NODE_BLOCK);
@@ -322,6 +471,11 @@ static Node* parse_block(Parser* P) {
     return n;
 }
 
+/**
+ * @brief Parses an if statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_if_stmt(Parser *P) {
     Node* n = new_node(NODE_IF_STMT);
     next(P);
@@ -394,6 +548,11 @@ static Node* parse_func_def(Parser* P) {
     return n;
 }
 
+/**
+ * @brief Parses a class definition.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_class_def(Parser* P) {
     Node* n = new_node(NODE_CLASS_DEF);
     next(P);
@@ -433,7 +592,11 @@ static Node* parse_class_def(Parser* P) {
     return n;
 }
 
-
+/**
+ * @brief Parses a return statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_return_stmt(Parser* P) {
     Node* n = new_node(NODE_RETURN_STMT);
     next(P);
@@ -449,6 +612,11 @@ static Node* parse_return_stmt(Parser* P) {
     return n;
 }
 
+/**
+ * @brief Parses a while statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_while_stmt(Parser* P) {
     Node* n = new_node(NODE_WHILE_STMT);
     next(P);
@@ -465,7 +633,11 @@ static Node* parse_while_stmt(Parser* P) {
 
     return n;
 }
-
+/**
+ * @brief Parses a for statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 static Node* parse_for_stmt(Parser* P) {
     Node* n = new_node(NODE_FOR_STMT);
     
@@ -498,6 +670,11 @@ static Node* parse_for_stmt(Parser* P) {
     return n;
 }
 
+/**
+ * @brief Parses a statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
 Node* parse_stmt(Parser* P) {
     if (P->current.kind == TOKEN_IF) {
         return parse_if_stmt(P);
@@ -561,11 +738,14 @@ Node* parse_stmt(Parser* P) {
     return expr;
 }
 
-// UPDATE free_node untuk membersihkan 'next'
+/**
+ * @brief Frees the memory allocated for the given AST node and its children.
+ * @param n Pointer to the Node to be freed.
+ */
 void free_node(Node* n) {
     if (!n) return;
     free_node(n->left);
     free_node(n->right);
-    free_node(n->next); // <-- TAMBAHAN PENTING
+    free_node(n->next); 
     free(n);
 }

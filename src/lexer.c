@@ -2,14 +2,25 @@
 #include <string.h>
 #include <ctype.h>
 
+/**
+ * @brief Peeks at the current character without consuming it.
+ * @param L Pointer to the Lexer.
+ */
 static char peek(Lexer* L) {
     return L->src[L->pos];
 }
-
+/**
+ * @brief Gets the current character and advances the position.
+ * @param L Pointer to the Lexer.
+ */
 static char get(Lexer* L) {
     return L->src[L->pos++];
 }
 
+/**
+ * @brief Skips whitespace and comments in the source code.
+ * @param L Pointer to the Lexer.
+ */
 static void skip_ws(Lexer* L) {
     while (1) {
         char c = peek(L);
@@ -25,11 +36,23 @@ static void skip_ws(Lexer* L) {
     }
 }
 
+/**
+ * @brief Initializes the lexer with the given source code.
+ * @param L Pointer to the Lexer to be initialized.
+ * @param src The source code to be lexed.
+ */
 void lexer_init(Lexer* L, const char* src) {
     L->src = src;
     L->pos = 0;
 }
 
+/**
+ * @brief Matches the current character with the expected character.
+ * If they match, advances the position.
+ * @param L Pointer to the Lexer.
+ * @param c The character to match.
+ * @return 1 if matched, 0 otherwise.
+ */
 static int match(Lexer* L, char c) {
     if (peek(L) == c) {
         get(L);
@@ -37,8 +60,11 @@ static int match(Lexer* L, char c) {
     }
     return 0;
 }
-
-
+/**
+ * @brief Retrieves the next token from the source code.
+ * @param L Pointer to the Lexer.
+ * @return The next Token.
+ */
 Token lexer_next(Lexer* L) {
     skip_ws(L);
     char c = peek(L);

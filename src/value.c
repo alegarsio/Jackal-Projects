@@ -1,9 +1,22 @@
+/**
+ * @file value.c
+ * @brief Implements the Value structure and related functions for the Jackal programming language.
+ */
+
 #include "value.h"
 #include "parser.h"
 #include "eval.h"
 #include "env.h"
-#include <string.h>
 
+
+#include <string.h>
+#include <stdio.h>
+
+
+/**
+ * @typedef @struct VALUEARRAY
+ * Represents a dynamic array of Values in the Jackal programming language.
+ */
 ValueArray* array_new(void) {
     ValueArray* arr = malloc(sizeof(ValueArray));
     arr->capacity = 8;
@@ -11,7 +24,11 @@ ValueArray* array_new(void) {
     arr->values = malloc(sizeof(Value) * arr->capacity);
     return arr;
 }
-
+/**
+ * Appends a Value to a ValueArray.
+ * @param arr The ValueArray to append to.
+ * @param val The Value to append.
+ */
 void array_append(ValueArray* arr, Value val) {
     if (arr->count >= arr->capacity) {
         arr->capacity *= 2;
@@ -19,7 +36,10 @@ void array_append(ValueArray* arr, Value val) {
     }
     arr->values[arr->count++] = val;
 }
-
+/**
+ * Frees the memory associated with a ValueArray.
+ * @param arr The ValueArray to be freed.
+ */
 void array_free(ValueArray* arr) {
     for (int i = 0; i < arr->count; i++) {
         free_value(arr->values[i]);
@@ -27,7 +47,10 @@ void array_free(ValueArray* arr) {
     free(arr->values);
     free(arr);
 }
-
+/**
+ * Prints a Value to stdout.
+ * @param value The Value to be printed.
+ */
 void print_value(Value value) {
     switch (value.type) {
         case VAL_NIL:
@@ -72,6 +95,10 @@ void print_value(Value value) {
     }
 }
 
+/**
+ * Frees the memory associated with a Value.
+ * @param value The Value to be freed.
+ */
 void free_value(Value value) {
     if (value.type == VAL_STRING) {
         free(value.as.string);
@@ -96,6 +123,12 @@ void free_value(Value value) {
         
     }
 }
+
+/**
+ * Creates a copy of a Value.
+ * @param value The Value to be copied.
+ * @return A new Value that is a copy of the input.
+ */
 
 Value copy_value(Value value) {
     if (value.type == VAL_STRING) {
@@ -125,6 +158,11 @@ Value copy_value(Value value) {
     return value; 
 }
 
+/**
+ * Determines if a Value is truthy.
+ * @param value The Value to be evaluated.
+ * @return true if the Value is truthy, false otherwise.
+ */
 bool is_value_truthy(Value value) {
     switch (value.type) {
         case VAL_NIL:    return false;
@@ -139,6 +177,12 @@ bool is_value_truthy(Value value) {
     return false;
 }
 
+/**
+ * Evaluates equality between two Values.
+ * @param a The first Value.
+ * @param b The second Value.
+ * @return A Value of type VAL_NUMBER with 1.0 if equal, 0.0 otherwise.
+ */
 Value eval_equals(Value a, Value b) {
     double result = 0.0;
     if (a.type != b.type) {
@@ -156,4 +200,28 @@ Value eval_equals(Value a, Value b) {
         }
     }
     return (Value){VAL_NUMBER, {.number = result}};
+}
+/**
+ * Reads a line from standard input and returns it as a Value of type VAL_STRING.
+ * @param arity The number of arguments (should be 0).
+ * @param args The array of argument Values (not used).
+ * @return A Value containing the input string, or VAL_NIL on failure/EOF.
+ */
+Value builtin_read(int arity, Value* args) {
+    (void)arity; 
+    (void)args;  
+
+    char buffer[1024];
+    if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
+        
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n') {
+            buffer[len - 1] = '\0';
+        }
+        
+        char* str_copy = malloc(strlen(buffer) + 1);
+        strcpy(str_copy, buffer);
+        return (Value){VAL_STRING, {.string = str_copy}};
+    }
+    return (Value){VAL_NIL, .as = {0}}; // Kembalikan nil jika gagal/EOF
 }

@@ -48,7 +48,7 @@ struct Node;
 struct Env;
 
 /**
- * @struct FUNC
+ * @typedef @struct FUNC
  * Represents a function in the Jackal programming language.
  */
 typedef struct Func {
@@ -60,17 +60,29 @@ typedef struct Func {
 
 struct Value;
 
+/**
+ * @typedef @struct VALUEARRAY
+ * Represents an array of values in the Jackal programming language.
+ */
 typedef struct {
     int capacity;
     int count;
     struct Value* values;
 } ValueArray;
 
+/**
+ * @typedef @struct CLASS
+ * Represents a class in the Jack
+ */
 typedef struct {
     char name[64];
     struct Env* methods;
 } Class;
 
+/**
+ * @typedef @struct INSTANCE
+ * Represents an instance of a class in the Jack
+ */
 typedef struct {
     struct Value* class_val;
     struct Env* fields;
