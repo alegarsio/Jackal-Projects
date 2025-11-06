@@ -2,6 +2,8 @@
 
 **The open source programming language for all open source scientists**
 
+🌐 **Official Website:** [jackal-intro-page-qhqv.vercel.app](https://jackal-intro-page-qhqv.vercel.app)
+
 Jackal is a dynamic, object-oriented interpreted programming language built from scratch in C. This project is designed as an in-depth exploration of language implementation, covering a lexer, a recursive descent parser, and a tree-walking evaluator.
 
 The language is named for its agility and cleverness, represented by our mascot, **Jack** the Fox!
