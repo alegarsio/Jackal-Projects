@@ -75,6 +75,8 @@ Value eval_node(Env* env, Node* n) {
             return (Value){VAL_NIL, {0}};
         }
 
+        
+
         case NODE_NUMBER:
             return (Value){VAL_NUMBER, {.number = n->value}};
         
@@ -540,6 +542,25 @@ Value eval_node(Env* env, Node* n) {
                 }
 
                 return instance_val;
+            }
+
+            if (callee.type == VAL_NATIVE) {
+                NativeFn native = callee.as.native;
+                Value args[255]; 
+                int arg_count = 0;
+                
+                Node* arg_node = n->right;
+                while (arg_node) {
+                    args[arg_count++] = eval_node(env, arg_node);
+                    arg_node = arg_node->next; 
+                }
+                
+                Value result = native(arg_count, args);
+                
+                for (int i = 0; i < arg_count; i++) {
+                    free_value(args[i]);
+                }
+                return result;
             }
             
             if (callee.type != VAL_FUNCTION) {

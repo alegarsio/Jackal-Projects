@@ -55,3 +55,17 @@ bool is_value_truthy(Value value);
  * @return A Value of type VAL_NUMBER with 1.0 if equal, 0.0 otherwise.
  */
 Value eval_equals(Value a, Value b);
+
+/**
+ * Deletes a Value at a specific index from a ValueArray.
+ * @param arr The ValueArray to delete from.
+ * @param index The index of the Value to delete.
+ */
+void array_delete(ValueArray* arr, int index);
+
+/**
+ * Pops the last Value from a ValueArray.
+ * @param arr The ValueArray to pop from.
+ * @return The popped Value.
+ */
+Value array_pop(ValueArray* arr);

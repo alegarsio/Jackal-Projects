@@ -50,6 +50,14 @@ typedef enum {
 
 struct Node;
 struct Env;
+struct Value;
+
+/**
+ *  @typedef @struct NATIVEFN
+ *  Represents a native function in the Jackal programming language.
+ */
+typedef struct Value (*NativeFn)(int argCount, struct Value* args);
+
 
 /**
  * @typedef @struct FUNC
@@ -104,6 +112,7 @@ typedef enum {
     VAL_RETURN,
     VAL_ARRAY,
     VAL_CLASS,
+    VAL_NATIVE,
     VAL_INSTANCE
 } ValueType;
 
@@ -121,6 +130,7 @@ typedef struct Value {
         ValueArray* array;
         Class* class_obj;
         Instance* instance;
+        NativeFn native;
     } as;
 } Value;
 

@@ -53,6 +53,10 @@ void array_free(ValueArray* arr) {
  */
 void print_value(Value value) {
     switch (value.type) {
+
+        case VAL_NATIVE:
+            printf("<native fn>");
+            break;
         case VAL_NIL:
             printf("nil");
             break;
@@ -92,6 +96,8 @@ void print_value(Value value) {
                 printf("<instance nil>");
             }
             break;
+
+        
     }
 }
 
@@ -113,7 +119,7 @@ void free_value(Value value) {
         free(value.as.return_val);
     }
     if (value.type == VAL_ARRAY) {
-        array_free(value.as.array);
+        
     }
     
     if (value.type == VAL_CLASS) {
@@ -145,15 +151,14 @@ Value copy_value(Value value) {
         return (Value){VAL_FUNCTION, {.function = new_func}};
     }
     if (value.type == VAL_ARRAY) {
-        ValueArray* old_arr = value.as.array;
-        ValueArray* new_arr = array_new();
-        for (int i = 0; i < old_arr->count; i++) {
-            array_append(new_arr, copy_value(old_arr->values[i]));
-        }
-        return (Value){VAL_ARRAY, {.array = new_arr}};
+       return value;
     }
     if (value.type == VAL_CLASS || value.type == VAL_INSTANCE) {
-        return value; // Kembalikan pointer yang sama (referensi)
+        return value; 
+    }
+
+    if (value.type == VAL_NATIVE) {
+        return value;
     }
     return value; 
 }
@@ -171,6 +176,7 @@ bool is_value_truthy(Value value) {
         case VAL_FUNCTION: return true;
         case VAL_ARRAY: return value.as.array->count > 0;
         case VAL_CLASS:    return true;
+        case VAL_NATIVE:   return true;
         case VAL_INSTANCE: return true;
         case VAL_RETURN: return is_value_truthy(*value.as.return_val);
     }
@@ -224,4 +230,35 @@ Value builtin_read(int arity, Value* args) {
         return (Value){VAL_STRING, {.string = str_copy}};
     }
     return (Value){VAL_NIL, .as = {0}}; // Kembalikan nil jika gagal/EOF
+}
+
+/**
+ * Deletes a Value at a specific index from a ValueArray.
+ * @param arr The ValueArray to delete from.
+ * @param index The index of the Value to delete.
+ */
+
+void array_delete(ValueArray* arr, int index) {
+    if (index < 0 || index >= arr->count) return;
+
+    free_value(arr->values[index]);
+
+    for (int i = index; i < arr->count - 1; i++) {
+        arr->values[i] = arr->values[i + 1];
+    }
+
+    arr->count--;
+}
+
+
+/**
+ * Pops the last Value from a ValueArray.
+ * @param arr The ValueArray to pop from.
+ * @return The popped Value, or VAL_NIL if the array is empty.
+ */
+Value array_pop(ValueArray* arr) {
+    if (arr->count == 0) {
+        return (Value){VAL_NIL, {0}};
+    }
+    return arr->values[--arr->count];
 }
