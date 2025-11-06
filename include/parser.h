@@ -55,6 +55,7 @@ typedef struct Node {
     TokenKind op;
     
     char name[64];
+    char super_name[64];
     double value;
     struct Node* left;
     struct Node* right;

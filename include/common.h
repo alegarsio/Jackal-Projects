@@ -45,12 +45,26 @@ typedef enum {
     TOKEN_MATCH,
     TOKEN_DEFAULT,
     TOKEN_ARROW, 
+    TOKEN_EXTENDS,
     TOKEN_INVALID
 } TokenKind;
 
 struct Node;
 struct Env;
 struct Value;
+
+/**
+ * @typedef @struct CLASS
+ * Forwared declaration of Class struct
+ */
+typedef struct Class Class;
+
+
+/**
+ * @typedef @struct INSTANCE
+ * Represents an instance of a class in the Jackal programming language.
+ */
+
 
 /**
  *  @typedef @struct NATIVEFN
@@ -86,10 +100,11 @@ typedef struct {
  * @typedef @struct CLASS
  * Represents a class in the Jack
  */
-typedef struct {
+struct Class {               
     char name[64];
     struct Env* methods;
-} Class;
+    Class* superclass;       
+};
 
 /**
  * @typedef @struct INSTANCE

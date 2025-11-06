@@ -5,6 +5,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+
+/**
+ * 
+ */
+static Var* find_method(Class* klass, const char* name);
+
 /**
  * @brief Checks if two values are both numbers.
  */
@@ -34,6 +40,24 @@ static char* read_file(const char* filename) {
     }
     fclose(f);
     return source;
+}
+
+/**
+ * @brief Recursively searches for a method in a class and its superclasses.
+ * @param klass The class to search in.
+ * @param name The name of the method to find.
+ * @return Pointer to the Var representing the method, or NULL if not found.
+ */
+static Var* find_method(Class* klass, const char* name) {
+  
+    Var* method = find_var(klass->methods, name);
+    if (method) return method;
+    
+    if (klass->superclass) {
+        return find_method(klass->superclass, name);
+    }
+    
+    return NULL;
 }
 
 /**
@@ -234,7 +258,7 @@ Value eval_node(Env* env, Node* n) {
                 return result;
             }
             
-            Var* method = find_var(obj.as.instance->class_val->as.class_obj->methods, n->name);
+            Var* method = find_method(obj.as.instance->class_val->as.class_obj, n->name);
             if (method) {
                 Value result = copy_value(method->value);
                 free_value(obj);
@@ -254,7 +278,6 @@ Value eval_node(Env* env, Node* n) {
             }
             
             Value val = eval_node(env, n->right);
-            // Karena obj sekarang adalah referensi, set_var akan mengubah objek asli
             set_var(obj.as.instance->fields, n->left->name, val);
             free_value(obj);
             return val;
@@ -418,9 +441,11 @@ Value eval_node(Env* env, Node* n) {
         }
         
         case NODE_CLASS_DEF: {
+
             Class* class_obj = malloc(sizeof(Class));
             strcpy(class_obj->name, n->name);
             class_obj->methods = env_new(env);
+            class_obj->superclass = NULL;
             
             Node* method = n->left;
             while(method) {
@@ -430,9 +455,19 @@ Value eval_node(Env* env, Node* n) {
                 method = next_method;
             }
 
+            if (strlen(n->super_name) > 0) {
+                Var* super_var = find_var(env, n->super_name);
+                if (!super_var || super_var->value.type != VAL_CLASS) {
+                    print_error("Superclass must be a valid class.");
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                class_obj->superclass = super_var->value.as.class_obj;
+            }
+
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
             set_var(env, n->name, class_val);
             return (Value){.type = VAL_NIL, .as = {0}};
+
         }
         
         case NODE_FUNC_DEF: {
@@ -455,53 +490,43 @@ Value eval_node(Env* env, Node* n) {
             if (n->left->kind == NODE_GET) {
                 Node* get_node = n->left;
                 Value instance_val = eval_node(env, get_node->left);
-                if (instance_val.type != VAL_INSTANCE) {
-                    print_error("Can only call methods on instances.");
-                    return (Value){.type = VAL_NIL, .as = {0}};
-                }
+                if (instance_val.type != VAL_INSTANCE) return (Value){VAL_NIL, {0}};
                 
-                Var* method_var = find_var(instance_val.as.instance->class_val->as.class_obj->methods, get_node->name);
+                Var* method_var = find_method(instance_val.as.instance->class_val->as.class_obj, get_node->name);
                 if (!method_var) {
                     print_error("Undefined method.");
-                    return (Value){.type = VAL_NIL, .as = {0}};
+                    return (Value){VAL_NIL, {0}};
                 }
                 
                 Func* func = method_var->value.as.function;
                 Env* call_env = env_new(func->env);
-                set_var(call_env, "this", instance_val);
                 
-                Node* arg_node = n->right;
-                Node* param_node = func->params_head;
-                for (int i = 0; i < n->arity; i++) {
-                    Value arg_val = eval_node(env, arg_node);
-                    set_var(call_env, param_node->name, arg_val);
-                    free_value(arg_val);
-                    arg_node = arg_node->next;
-                    param_node = param_node->next;
+                Var* this_var = malloc(sizeof(Var));
+                strcpy(this_var->name, "this");
+                this_var->value = instance_val; 
+                this_var->next = call_env->vars;
+                call_env->vars = this_var;
+                
+                Node* arg = n->right; Node* param = func->params_head;
+                for (int i=0; i<n->arity; i++) {
+                    Value v = eval_node(env, arg);
+                    set_var(call_env, param->name, v);
+                    free_value(v);
+                    arg = arg->next; param = param->next;
                 }
                 
-                Value result = eval_node(call_env, func->body_head);
+                Value res = eval_node(call_env, func->body_head);
+                
+                call_env->vars = this_var->next;
+                free(this_var);
                 env_free(call_env);
-                free_value(instance_val);
                 
-                if (result.type == VAL_RETURN) {
-                    Value actual_return = *result.as.return_val;
-                    free(result.as.return_val);
-                    return actual_return;
+                if (res.type == VAL_RETURN) {
+                    Value ret = *res.as.return_val;
+                    free(res.as.return_val);
+                    return ret;
                 }
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
-
-            if (n->left->kind == NODE_IDENT && strcmp(n->left->name, "read") == 0) {
-                 char buffer[1024];
-                 if (fgets(buffer, sizeof(buffer), stdin)) {
-                     size_t len = strlen(buffer);
-                     if (len > 0 && buffer[len - 1] == '\n') buffer[len - 1] = '\0';
-                     char* str = malloc(len + 1);
-                     strcpy(str, buffer);
-                     return (Value){VAL_STRING, {.string = str}};
-                 }
-                 return (Value){VAL_NIL, .as = {0}};
+                return (Value){VAL_NIL, {0}};
             }
 
             Value callee = eval_node(env, n->left);
@@ -511,96 +536,67 @@ Value eval_node(Env* env, Node* n) {
                 inst->class_val = malloc(sizeof(Value));
                 *inst->class_val = callee;
                 inst->fields = env_new(NULL);
-                
                 Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
                 
-                Var* init_method = find_var(callee.as.class_obj->methods, "init");
+                Var* init_method = find_method(callee.as.class_obj, "init");
                 if (init_method) {
                     Func* func = init_method->value.as.function;
-                    
-                    if (n->arity != func->arity) {
-                        print_error("Incorrect number of arguments for init().");
-                        return (Value){.type = VAL_NIL, .as = {0}};
-                    }
-
                     Env* call_env = env_new(func->env);
-                    set_var(call_env, "this", instance_val);
                     
-                    Node* arg_node = n->right;
-                    Node* param_node = func->params_head;
-                    for (int i = 0; i < n->arity; i++) {
-                        Value arg_val = eval_node(env, arg_node);
-                        set_var(call_env, param_node->name, arg_val);
-                        free_value(arg_val);
-                        arg_node = arg_node->next;
-                        param_node = param_node->next;
+                    Var* this_var = malloc(sizeof(Var));
+                    strcpy(this_var->name, "this");
+                    this_var->value = instance_val;
+                    this_var->next = call_env->vars;
+                    call_env->vars = this_var;
+
+                    Node* arg = n->right; Node* param = func->params_head;
+                    for(int i=0; i<n->arity; i++) {
+                        Value v = eval_node(env, arg);
+                        set_var(call_env, param->name, v);
+                        free_value(v);
+                        arg = arg->next; param = param->next;
                     }
                     
-                    Value init_result = eval_node(call_env, func->body_head);
-                    free_value(init_result);
+                    Value res = eval_node(call_env, func->body_head);
+                    free_value(res);
+                    
+                    call_env->vars = this_var->next;
+                    free(this_var);
                     env_free(call_env);
+                    
+                    
+                    return instance_val;
                 }
-
                 return instance_val;
             }
-
-            if (callee.type == VAL_NATIVE) {
-                NativeFn native = callee.as.native;
-                Value args[255]; 
-                int arg_count = 0;
-                
-                Node* arg_node = n->right;
-                while (arg_node) {
-                    args[arg_count++] = eval_node(env, arg_node);
-                    arg_node = arg_node->next; 
-                }
-                
-                Value result = native(arg_count, args);
-                
-                for (int i = 0; i < arg_count; i++) {
-                    free_value(args[i]);
-                }
-                return result;
-            }
             
-            if (callee.type != VAL_FUNCTION) {
-                print_error("Can only call functions and classes.");
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
-            
-            Func* func = callee.as.function;
-            
-            if (n->arity != func->arity) {
-                print_error("Incorrect number of arguments.");
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
-            
-            Env* call_env = env_new(func->env);
-            
-            Node* param_node = func->params_head;
-            Node* arg_node = n->right;
-            
-            for(int i = 0; i < func->arity; i++) {
-                Value arg_val = eval_node(env, arg_node);
-                set_var(call_env, param_node->name, arg_val);
-                free_value(arg_val);
-                arg_node = arg_node->next;
-                param_node = param_node->next;
-            }
-            
-            Value result = eval_node(call_env, func->body_head);
-            
-            env_free(call_env);
-            
-            if (result.type == VAL_RETURN) {
-                Value actual_return = *result.as.return_val;
-                free(result.as.return_val);
-                return actual_return;
+            // (Bagian fungsi biasa...)
+            if (callee.type == VAL_FUNCTION) {
+                 Func* func = callee.as.function;
+                 Env* call_env = env_new(func->env);
+                 Node* arg = n->right; Node* param = func->params_head;
+                 for(int i=0; i<n->arity; i++) {
+                     Value v = eval_node(env, arg);
+                     set_var(call_env, param->name, v);
+                     free_value(v);
+                     arg = arg->next; param = param->next;
+                 }
+                 Value res = eval_node(call_env, func->body_head);
+                 env_free(call_env);
+                 if (res.type == VAL_RETURN) {
+                     Value ret = *res.as.return_val;
+                     free(res.as.return_val);
+                     return ret;
+                 }
+                 return (Value){VAL_NIL, {0}};
             }
 
-            
-            
-            return (Value){.type = VAL_NIL, .as = {0}};
+             if (callee.type == VAL_NATIVE) {
+               
+                 return (Value){VAL_NIL, {0}}; 
+            }
+
+            return (Value){VAL_NIL, {0}};
         }
         
         case NODE_RETURN_STMT: {

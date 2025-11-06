@@ -92,6 +92,7 @@ Token lexer_next(Lexer* L) {
         else if (strcmp(tk.text, "while") == 0) tk.kind = TOKEN_WHILE;
         else if (strcmp(tk.text, "for") == 0) tk.kind = TOKEN_FOR;
         else if (strcmp(tk.text, "class") == 0) tk.kind = TOKEN_CLASS;
+        else if (strcmp(tk.text, "extends") == 0) tk.kind = TOKEN_EXTENDS;
         else if (strcmp(tk.text, "this") == 0) tk.kind = TOKEN_THIS;
         else if (strcmp(tk.text, "import") == 0) tk.kind = TOKEN_IMPORT;
         else if (strcmp(tk.text, "match") == 0) tk.kind = TOKEN_MATCH;

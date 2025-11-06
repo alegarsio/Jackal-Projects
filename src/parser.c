@@ -573,6 +573,17 @@ static Node* parse_class_def(Parser* P) {
     strcpy(n->name, P->current.text);
     next(P);
 
+    if (P->current.kind == TOKEN_EXTENDS) {
+        next(P); 
+        if (P->current.kind != TOKEN_IDENT) {
+            print_error("Expected superclass name after 'extends'.");
+        }
+        strcpy(n->super_name, P->current.text); 
+        next(P); 
+    } else {
+        n->super_name[0] = '\0'; 
+    }
+
     if (P->current.kind != TOKEN_LBRACE) print_error("Expected '{' before class body.");
     next(P);
 
