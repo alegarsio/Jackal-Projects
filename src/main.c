@@ -29,14 +29,27 @@ Value builtin_len(int argCount, Value* args) {
     }
 
     Value arg = args[0];
+    
     if (arg.type == VAL_STRING) {
         return (Value){VAL_NUMBER, {.number = (double)strlen(arg.as.string)}};
     }
+    
     if (arg.type == VAL_ARRAY) {
+        // Debug print untuk memastikan array valid
+        // printf("[DEBUG] len() called on ARRAY, count: %d\n", arg.as.array->count);
         return (Value){VAL_NUMBER, {.number = (double)arg.as.array->count}};
     }
 
-    fprintf(stderr, "Runtime Error: 'len' argument must be a string or array.\n");
+    // --- DEBUGGING ---
+    // Jika sampai sini, berarti tipe datanya salah. Kita cetak tipenya.
+    // 0=NIL, 1=NUMBER, 2=STRING, 3=FUNC, 4=RETURN, 5=ARRAY, 6=CLASS, 7=INSTANCE, ...
+    fprintf(stderr, "[DEBUG] len() called on invalid type: %d\n", arg.type);
+    
+    if (arg.type == VAL_NIL) {
+         fprintf(stderr, "Runtime Error: Argument to 'len' is NIL (variable might be empty).\n");
+    }
+    // -----------------
+
     return (Value){VAL_NIL, {0}};
 }
 
@@ -108,6 +121,9 @@ Value builtin_remove(int argCount, Value* args) {
 }
 
 
+
+
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <file.jackal>\n", argv[0]);
@@ -151,10 +167,6 @@ int main(int argc, char **argv) {
             set_var(env, name_str, val); \
         } while(0)
 
-    Value len_val;
-    len_val.type = VAL_NATIVE;
-    len_val.as.native = builtin_len;
-    set_var(env, "len", len_val);
 
     DEFINE_NATIVE("len", builtin_len);
     DEFINE_NATIVE("push", builtin_push);

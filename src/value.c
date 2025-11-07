@@ -108,26 +108,26 @@ void print_value(Value value) {
  */
 void free_value(Value value) {
     switch (value.type) {
-        case VAL_STRING: free(value.as.string); 
-            break;
-        case VAL_FUNCTION: free(value.as.function); 
-            break;
+        case VAL_STRING: free(value.as.string); break;
+        case VAL_FUNCTION: free(value.as.function); break;
         case VAL_RETURN:
             free_value(*value.as.return_val);
             free(value.as.return_val);
             break;
+            
         case VAL_ARRAY: 
-            break; 
+            break;
         case VAL_CLASS: 
+         
             break;
-        case VAL_INSTANCE: 
+        case VAL_INSTANCE:
+           
             break;
-        case VAL_INTERFACE: 
+        case VAL_INTERFACE:
             break;
-        default: 
-            break;
+        
+        default: break;
     }
-    
 }
 
 /**
@@ -138,7 +138,6 @@ void free_value(Value value) {
 
 Value copy_value(Value value) {
     switch (value.type) {
-        // Tipe Primitif (Deep Copy)
         case VAL_STRING:
             return (Value){VAL_STRING, {.string = strdup(value.as.string)}};
         case VAL_FUNCTION: {
@@ -146,16 +145,16 @@ Value copy_value(Value value) {
             memcpy(new_func, value.as.function, sizeof(Func));
             return (Value){VAL_FUNCTION, {.function = new_func}};
         }
-        
         case VAL_ARRAY:
+            return value;
         case VAL_CLASS:
         case VAL_INSTANCE:
         case VAL_INTERFACE:
         case VAL_NATIVE:
-             return value; // KEMBALIKAN ASLINYA
+             return value; 
              
-        default: return value; // Number, Nil, Bool
-    } 
+        default: return value; 
+    }
 }
 
 /**
@@ -226,7 +225,7 @@ Value builtin_read(int arity, Value* args) {
         strcpy(str_copy, buffer);
         return (Value){VAL_STRING, {.string = str_copy}};
     }
-    return (Value){VAL_NIL, .as = {0}}; // Kembalikan nil jika gagal/EOF
+    return (Value){VAL_NIL, .as = {0}};
 }
 
 /**
@@ -257,5 +256,5 @@ Value array_pop(ValueArray* arr) {
     if (arr->count == 0) {
         return (Value){VAL_NIL, {0}};
     }
-    return arr->values[--arr->count];
+   return arr->values[--arr->count];
 }

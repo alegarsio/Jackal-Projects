@@ -533,46 +533,105 @@ Value eval_node(Env* env, Node* n) {
         }
         
         case NODE_FUNC_CALL: {
+
+            if (n->left->kind == NODE_IDENT && strcmp(n->left->name, "read") == 0) {
+                 char buffer[1024];
+                 if (fgets(buffer, sizeof(buffer), stdin)) {
+                     size_t len = strlen(buffer);
+                     if (len > 0 && buffer[len - 1] == '\n') buffer[len - 1] = '\0';
+                     char* str = malloc(len + 1);
+                     strcpy(str, buffer);
+                     return (Value){VAL_STRING, {.string = str}};
+                 }
+                 return (Value){VAL_NIL, .as = {0}};
+            }
+            
             if (n->left->kind == NODE_GET) {
                 Node* get_node = n->left;
-                Value instance_val = eval_node(env, get_node->left);
-                if (instance_val.type != VAL_INSTANCE) return (Value){VAL_NIL, {0}};
+                Value obj = eval_node(env, get_node->left);
                 
-                Var* method_var = find_method(instance_val.as.instance->class_val->as.class_obj, get_node->name);
-                if (!method_var) {
-                    print_error("Undefined method.");
+                if (obj.type == VAL_ARRAY) {
+                    
+                    if (strcmp(get_node->name, "length") == 0) {
+                        return (Value){VAL_NUMBER, {.number = (double)obj.as.array->count}};
+                    }
+
+                    if (strcmp(get_node->name, "push") == 0) {
+                        Node* arg = n->right;
+                        while (arg) {
+                            Value val = eval_node(env, arg);
+                            array_append(obj.as.array, copy_value(val));
+                            free_value(val); 
+                            arg = arg->next;
+                        }
+                        return (Value){VAL_NIL, {0}};
+                    }
+                    
+                    if (strcmp(get_node->name, "pop") == 0) {
+                        return array_pop(obj.as.array);
+                    }
+                    
+                    
+                    print_error("Undefined method for Array.");
                     return (Value){VAL_NIL, {0}};
                 }
-                
-                Func* func = method_var->value.as.function;
-                Env* call_env = env_new(func->env);
-                
-                Var* this_var = malloc(sizeof(Var));
-                strcpy(this_var->name, "this");
-                this_var->value = instance_val; 
-                this_var->next = call_env->vars;
-                call_env->vars = this_var;
-                
-                Node* arg = n->right; Node* param = func->params_head;
-                for (int i=0; i<n->arity; i++) {
-                    Value v = eval_node(env, arg);
-                    set_var(call_env, param->name, v);
-                    free_value(v);
-                    arg = arg->next; param = param->next;
+
+                if (obj.type == VAL_STRING) {
+                    // Method: .length()
+                    if (strcmp(get_node->name, "length") == 0) {
+                        return (Value){VAL_NUMBER, {.number = (double)strlen(obj.as.string)}};
+                    }
+                    
+                    print_error("Undefined method for String.");
+                    return (Value){VAL_NIL, {0}};
                 }
-                
-                Value res = eval_node(call_env, func->body_head);
-                
-                call_env->vars = this_var->next;
-                free(this_var);
-                env_free(call_env);
-                
-                if (res.type == VAL_RETURN) {
-                    Value ret = *res.as.return_val;
-                    free(res.as.return_val);
-                    return ret;
+
+                // --- CLASS INSTANCE METHODS (Logika Lama) ---
+                if (obj.type == VAL_INSTANCE) {
+                    // Cari method di class
+                    Var* method_var = find_method(obj.as.instance->class_val->as.class_obj, get_node->name);
+                    if (!method_var) {
+                        print_error("Undefined method.");
+                        return (Value){VAL_NIL, .as = {0}};
+                    }
+                    
+                    Func* func = method_var->value.as.function;
+                    Env* call_env = env_new(func->env);
+                    
+                    // Set 'this' (Manual reference, no copy)
+                    Var* this_var = malloc(sizeof(Var));
+                    strcpy(this_var->name, "this");
+                    this_var->value = obj; 
+                    this_var->next = call_env->vars;
+                    call_env->vars = this_var;
+                    
+                    // Bind arguments
+                    Node* arg = n->right; Node* param = func->params_head;
+                    for (int i=0; i<n->arity; i++) {
+                        Value v = eval_node(env, arg);
+                        set_var(call_env, param->name, v);
+                        free_value(v);
+                        arg = arg->next; param = param->next;
+                    }
+                    
+                    // Execute
+                    Value res = eval_node(call_env, func->body_head);
+                    
+                    // Cleanup 'this' manual
+                    call_env->vars = this_var->next;
+                    free(this_var);
+                    env_free(call_env);
+
+                    if (res.type == VAL_RETURN) {
+                        Value ret = *res.as.return_val;
+                        free(res.as.return_val);
+                        return ret;
+                    }
+                    return (Value){VAL_NIL, .as = {0}};
                 }
-                return (Value){VAL_NIL, {0}};
+
+                print_error("Only instances, arrays, and strings have methods.");
+                return (Value){.type = VAL_NIL, .as = {0}};
             }
 
             Value callee = eval_node(env, n->left);

@@ -1,0 +1,42 @@
+class Stack {
+    // Konstruktor: inisialisasi array internal
+    function init() {
+        this.items = [];
+    }
+
+    // Menambahkan item ke atas stack
+    function push(item) {
+        // Menggunakan fungsi native 'push' yang sudah kita buat
+        push(this.items, item);
+    }
+
+    // Mengambil dan menghapus item teratas
+    function pop() {
+        if (len(this.items) == 0) {
+            // Stack kosong, kembalikan nil
+            return nil;
+        }
+        // Menggunakan fungsi native 'pop' yang sudah kita buat
+        return pop(this.items);
+    }
+
+    // Melihat item teratas tanpa menghapusnya
+    function peek() {
+        let lastIdx = len(this.items) - 1;
+        if (lastIdx < 0) {
+             return nil;
+        }
+        // Mengakses array menggunakan indeks
+        return this.items[lastIdx];
+    }
+    
+    // Mendapatkan jumlah item di stack
+    function size() {
+        return len(this.items);
+    }
+
+    // Mengecek apakah stack kosong
+    function isEmpty() {
+        return len(this.items) == 0;
+    }
+}
