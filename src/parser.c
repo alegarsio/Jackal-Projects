@@ -577,6 +577,11 @@ static Node* parse_class_def(Parser* P) {
     strcpy(n->name, P->current.text);
     next(P);
 
+    /**
+     * @if condition for inheritance
+     * keyword extends -> TOKEN_EXTENDS
+     * expect IDENT as superclass nameß
+     */
     if (P->current.kind == TOKEN_EXTENDS) {
         next(P); 
         if (P->current.kind != TOKEN_IDENT) {
@@ -586,6 +591,17 @@ static Node* parse_class_def(Parser* P) {
         next(P); 
     } else {
         n->super_name[0] = '\0'; 
+    }
+
+    if (P->current.kind == TOKEN_IMPLEMENTS) {
+        next(P);
+        if (P->current.kind != TOKEN_IDENT) {
+            print_error("Expected interface name after 'implements'.");
+        }
+        strcpy(n->interface_name, P->current.text); // Simpan nama interface
+        next(P);
+    } else {
+        n->interface_name[0] = '\0';
     }
 
     if (P->current.kind != TOKEN_LBRACE) print_error("Expected '{' before class body.");
@@ -710,6 +726,10 @@ Node* parse_stmt(Parser* P) {
 
     if (P->current.kind == TOKEN_MATCH) { 
         return parse_match_stmt(P);
+    }
+
+    if (P->current.kind == TOKEN_INTERFACE) {
+        return parse_interface_def(P);
     }
 
     if (P->current.kind == TOKEN_IMPORT) { 
@@ -849,6 +869,68 @@ static Node* parse_match_stmt(Parser* P) {
     next(P);
 
     n->right = cases_head;
+    return n;
+}
+
+static Node* parse_interface_def(Parser* P) {
+    Node* n = new_node(NODE_INTERFACE_DEF);
+    next(P); 
+
+    if (P->current.kind != TOKEN_IDENT) print_error("Expected interface name.");
+    strcpy(n->name, P->current.text);
+    next(P);
+
+    if (P->current.kind != TOKEN_LBRACE) print_error("Expected '{' before interface body.");
+    next(P);
+
+    Node* methods_head = NULL;
+    Node* methods_current = NULL;
+
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+        if (P->current.kind != TOKEN_FUNCTION) {
+            print_error("Expected 'function' keyword in interface.");
+            break;
+        }
+        next(P); 
+
+        Node* method = new_node(NODE_FUNC_DEF);
+        if (P->current.kind != TOKEN_IDENT) print_error("Expected function name.");
+        strcpy(method->name, P->current.text);
+        next(P);
+
+        if (P->current.kind != TOKEN_LPAREN) print_error("Expected '(' after function name.");
+        next(P);
+
+        method->arity = 0;
+        if (P->current.kind != TOKEN_RPAREN) {
+            do {
+                if (P->current.kind != TOKEN_IDENT) print_error("Expected parameter name.");
+                next(P);
+                method->arity++;
+            } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
+        }
+        if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after parameters.");
+        next(P);
+
+        if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after interface method declaration.");
+        next(P);
+
+        method->left = NULL; 
+        method->right = NULL;
+
+        if (methods_head == NULL) {
+            methods_head = method;
+            methods_current = method;
+        } else {
+            methods_current->next = method;
+            methods_current = method;
+        }
+    }
+
+    if (P->current.kind != TOKEN_RBRACE) print_error("Expected '}' after interface body.");
+    next(P);
+    
+    n->left = methods_head;
     return n;
 }
 
