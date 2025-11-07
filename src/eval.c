@@ -438,6 +438,25 @@ Value eval_node(Env* env, Node* n) {
             
             return result;
         }
+
+        case NODE_INTERFACE_DEF: {
+            Interface* iface = malloc(sizeof(Interface));
+            strcpy(iface->name, n->name);
+            iface->methods = env_new(NULL); 
+
+            Node* method = n->left;
+            while(method) {
+                
+                Value arity_val = (Value){VAL_NUMBER, {.number = (double)method->arity}};
+                set_var(iface->methods, method->name, arity_val);
+                
+                method = method->next;
+            }
+
+            Value iface_val = (Value){VAL_INTERFACE, {.interface_obj = iface}};
+            set_var(env, n->name, iface_val);
+            return (Value){VAL_NIL, {0}};
+        }
         
         case NODE_CLASS_DEF: {
 
@@ -445,6 +464,7 @@ Value eval_node(Env* env, Node* n) {
             strcpy(class_obj->name, n->name);
             class_obj->methods = env_new(env);
             class_obj->superclass = NULL;
+            class_obj->interface = NULL;
             
             Node* method = n->left;
             while(method) {
@@ -454,6 +474,16 @@ Value eval_node(Env* env, Node* n) {
                 method = next_method;
             }
 
+
+            if (strlen(n->interface_name) > 0) {
+                Var* iface_var = find_var(env, n->interface_name);
+                if (!iface_var || iface_var->value.type != VAL_INTERFACE) {
+                    print_error("Interface not found or invalid.");
+                } else {
+                    class_obj->interface = iface_var->value.as.interface_obj;
+                }
+            }
+
             if (strlen(n->super_name) > 0) {
                 Var* super_var = find_var(env, n->super_name);
                 if (!super_var || super_var->value.type != VAL_CLASS) {
@@ -461,6 +491,23 @@ Value eval_node(Env* env, Node* n) {
                     return (Value){.type = VAL_NIL, .as = {0}};
                 }
                 class_obj->superclass = super_var->value.as.class_obj;
+            }
+
+            if (class_obj->interface) {
+                Interface* iface = class_obj->interface;
+                Var* required_method = iface->methods->vars;
+                while (required_method) {
+                    Var* implemented = find_var(class_obj->methods, required_method->name);
+                    if (!implemented) {
+                        char buffer[128];
+                        snprintf(buffer, sizeof(buffer), "Class '%s' must implement method '%s' from interface '%s'.", 
+                                 class_obj->name, required_method->name, iface->name);
+                        print_error(buffer);
+                    } else {
+                        Func* impl_func = implemented->value.as.function;
+                    }
+                    required_method = required_method->next;
+                }
             }
 
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
@@ -531,38 +578,40 @@ Value eval_node(Env* env, Node* n) {
             Value callee = eval_node(env, n->left);
             
             if (callee.type == VAL_CLASS) {
+                // 1. Deklarasi & Alokasi 'inst' (INI YANG HILANG)
                 Instance* inst = malloc(sizeof(Instance));
                 inst->class_val = malloc(sizeof(Value));
                 *inst->class_val = callee;
                 inst->fields = env_new(NULL);
+                
+                // 2. Gunakan 'inst'
                 Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
                 
                 Var* init_method = find_method(callee.as.class_obj, "init");
                 if (init_method) {
                     Func* func = init_method->value.as.function;
-                    Env* call_env = env_new(func->env);
                     
-                    Var* this_var = malloc(sizeof(Var));
-                    strcpy(this_var->name, "this");
-                    this_var->value = instance_val;
-                    this_var->next = call_env->vars;
-                    call_env->vars = this_var;
+                    if (n->arity != func->arity) {
+                        print_error("Incorrect number of arguments for init().");
+                        return (Value){.type = VAL_NIL, .as = {0}};
+                    }
 
-                    Node* arg = n->right; Node* param = func->params_head;
-                    for(int i=0; i<n->arity; i++) {
-                        Value v = eval_node(env, arg);
-                        set_var(call_env, param->name, v);
-                        free_value(v);
-                        arg = arg->next; param = param->next;
+                    Env* call_env = env_new(func->env);
+                    set_var(call_env, "this", instance_val);
+
+                    Node* arg_node = n->right;
+                    Node* param_node = func->params_head;
+                    for (int i = 0; i < n->arity; i++) {
+                        Value arg_val = eval_node(env, arg_node);
+                        set_var(call_env, param_node->name, arg_val);
+                        free_value(arg_val);
+                        arg_node = arg_node->next;
+                        param_node = param_node->next;
                     }
                     
-                    Value res = eval_node(call_env, func->body_head);
-                    free_value(res);
-                    
-                    call_env->vars = this_var->next;
-                    free(this_var);
+                    Value init_result = eval_node(call_env, func->body_head);
+                    free_value(init_result);
                     env_free(call_env);
-                    
                     
                     return instance_val;
                 }

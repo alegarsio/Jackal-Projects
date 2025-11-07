@@ -81,6 +81,7 @@ void print_value(Value value) {
             }
             printf("]");
             break;
+        case VAL_INTERFACE: printf("<interface %s>", value.as.interface_obj->name); break;
         case VAL_CLASS:
             if (value.as.class_obj) {
                 printf("<class %s>", value.as.class_obj->name);
@@ -95,6 +96,7 @@ void print_value(Value value) {
                 printf("<instance nil>");
             }
             break;
+        
 
         
     }
@@ -105,28 +107,27 @@ void print_value(Value value) {
  * @param value The Value to be freed.
  */
 void free_value(Value value) {
-    if (value.type == VAL_STRING) {
-        free(value.as.string);
-    }
-    if (value.type == VAL_FUNCTION) {
-        Func* func = value.as.function;
-        
-        free(func);
-    }
-    if (value.type == VAL_RETURN) {
-        free_value(*value.as.return_val);
-        free(value.as.return_val);
-    }
-    if (value.type == VAL_ARRAY) {
-        
+    switch (value.type) {
+        case VAL_STRING: free(value.as.string); 
+            break;
+        case VAL_FUNCTION: free(value.as.function); 
+            break;
+        case VAL_RETURN:
+            free_value(*value.as.return_val);
+            free(value.as.return_val);
+            break;
+        case VAL_ARRAY: 
+            break; 
+        case VAL_CLASS: 
+            break;
+        case VAL_INSTANCE: 
+            break;
+        case VAL_INTERFACE: 
+            break;
+        default: 
+            break;
     }
     
-    if (value.type == VAL_CLASS) {
-
-    }
-    if (value.type == VAL_INSTANCE) {
-        
-    }
 }
 
 /**
@@ -136,30 +137,25 @@ void free_value(Value value) {
  */
 
 Value copy_value(Value value) {
-    if (value.type == VAL_STRING) {
-        char* new_string = malloc(strlen(value.as.string) + 1);
-        if (new_string) { 
-            strcpy(new_string, value.as.string);
+    switch (value.type) {
+        // Tipe Primitif (Deep Copy)
+        case VAL_STRING:
+            return (Value){VAL_STRING, {.string = strdup(value.as.string)}};
+        case VAL_FUNCTION: {
+            Func* new_func = malloc(sizeof(Func));
+            memcpy(new_func, value.as.function, sizeof(Func));
+            return (Value){VAL_FUNCTION, {.function = new_func}};
         }
-        return (Value){VAL_STRING, {.string = new_string}};
-    }
-    if (value.type == VAL_FUNCTION) {
-        Func* old_func = value.as.function;
-        Func* new_func = malloc(sizeof(Func));
-        memcpy(new_func, old_func, sizeof(Func));
-        return (Value){VAL_FUNCTION, {.function = new_func}};
-    }
-    if (value.type == VAL_ARRAY) {
-       return value;
-    }
-    if (value.type == VAL_CLASS || value.type == VAL_INSTANCE) {
-        return value; 
-    }
-
-    if (value.type == VAL_NATIVE) {
-        return value;
-    }
-    return value; 
+        
+        case VAL_ARRAY:
+        case VAL_CLASS:
+        case VAL_INSTANCE:
+        case VAL_INTERFACE:
+        case VAL_NATIVE:
+             return value; // KEMBALIKAN ASLINYA
+             
+        default: return value; // Number, Nil, Bool
+    } 
 }
 
 /**
@@ -177,6 +173,7 @@ bool is_value_truthy(Value value) {
         case VAL_CLASS:    return true;
         case VAL_NATIVE:   return true;
         case VAL_INSTANCE: return true;
+        case VAL_INTERFACE: return true;
         case VAL_RETURN: return is_value_truthy(*value.as.return_val);
     }
     return false;
@@ -201,6 +198,7 @@ Value eval_equals(Value a, Value b) {
             case VAL_ARRAY: result = (a.as.array == b.as.array); break;
             case VAL_CLASS: result = (a.as.class_obj == b.as.class_obj); break;
             case VAL_INSTANCE: result = (a.as.instance == b.as.instance); break;
+            case VAL_INTERFACE: return (Value){VAL_NUMBER, {.number = (a.as.interface_obj == b.as.interface_obj)}};
             default: result = 0.0; break;
         }
     }

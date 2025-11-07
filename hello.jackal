@@ -1,22 +1,19 @@
-class Language{
-    
-    function init(name){
+class Animal {
+    function init(name) {
         this.name = name;
     }
 
-    function compile(){
-        print this.name + " compiled ";
+    function eat() {
+        print this.name + " sedang makan.";
     }
 }
 
-class Jackal extends Language{
-
-    function interpreted(){
-        print this.name + " interpreted";
+class Dog extends Animal {
+    function bark() {
+        print "Guk guk!";
     }
-
 }
 
-let jack = Jackal("jackal");
-jack.interpreted();
-jack.compile();
+let d = Dog("Buddy");
+d.eat();
+d.bark();
