@@ -1,16 +1,22 @@
-class User {
+class Language{
     
     function init(name){
         this.name = name;
     }
 
-    function getName(){
-        return this.name;
+    function compile(){
+        print this.name + " compiled ";
     }
 }
 
-let user = User("ale");
-let names = user.getName();
+class Jackal extends Language{
 
-print names;
+    function interpreted(){
+        print this.name + " interpreted";
+    }
 
+}
+
+let jack = Jackal("jackal");
+jack.interpreted();
+jack.compile();

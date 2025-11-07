@@ -43,7 +43,8 @@ typedef enum {
     NODE_IMPORT,
     NODE_MATCH_STMT, 
     NODE_MATCH_CASE,
-    NODE_SET
+    NODE_SET,
+    NODE_INTERFACE_DEF
 } NodeKind;
 
 /**
@@ -56,6 +57,7 @@ typedef struct Node {
     
     char name[64];
     char super_name[64];
+    char interface_name[64];
     double value;
     struct Node* left;
     struct Node* right;

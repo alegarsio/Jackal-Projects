@@ -3,6 +3,10 @@
 #include <string.h>
 
 /**
+ * @brief Parses an if statement.
+ */
+static Node* parse_interface_def(Parser* P);
+/**
  * @brief Parses an match statement
  * @param P Pointer to the Parser.
  */

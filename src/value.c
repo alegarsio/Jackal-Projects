@@ -2,7 +2,6 @@
  * @file value.c
  * @brief Implements the Value structure and related functions for the Jackal programming language.
  */
-
 #include "value.h"
 #include "parser.h"
 #include "eval.h"

@@ -46,12 +46,20 @@ typedef enum {
     TOKEN_DEFAULT,
     TOKEN_ARROW, 
     TOKEN_EXTENDS,
+    TOKEN_INTERFACE,
+    TOKEN_IMPLEMENTS,
     TOKEN_INVALID
 } TokenKind;
 
 struct Node;
 struct Env;
 struct Value;
+
+/**
+ * @typedef @struct INTERFACE
+ * Forwared declaration of Interface struct
+ */
+typedef struct Interface Interface;
 
 /**
  * @typedef @struct CLASS
@@ -103,7 +111,17 @@ typedef struct {
 struct Class {               
     char name[64];
     struct Env* methods;
-    Class* superclass;       
+    Class* superclass;   
+    Interface* interface;    
+};
+
+/**
+ * @typedef @struct INTERFACE
+ * Represents an interface in the Jackal programming language.
+ */
+struct Interface {
+    char name[64];
+    struct Env* methods; // Hanya menyimpan nama method (Value-nya bisa NIL atau dummy)
 };
 
 /**
@@ -128,7 +146,8 @@ typedef enum {
     VAL_ARRAY,
     VAL_CLASS,
     VAL_NATIVE,
-    VAL_INSTANCE
+    VAL_INSTANCE,
+    VAL_INTERFACE
 } ValueType;
 
 /**
@@ -146,6 +165,7 @@ typedef struct Value {
         Class* class_obj;
         Instance* instance;
         NativeFn native;
+        Interface* interface_obj;
     } as;
 } Value;
 
