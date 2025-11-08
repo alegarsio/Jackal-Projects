@@ -1,5 +1,6 @@
-enum Status {
-    OK = 200,
-    ERROR = 500
-}
-print Status.OK; 
+
+let result = (function(n) {
+    return n + 10; 
+})(20);
+
+print hasil; 

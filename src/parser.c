@@ -3,6 +3,12 @@
 #include <string.h>
 
 /**
+ * @brief Parses a function expression.
+ * @param P Pointer to the Parser.
+ */
+
+static Node* parse_func_expr(Parser* P);
+/**
  * @brief Parses an enum definition.
  * @param P Pointer to the Parser.
  */
@@ -242,6 +248,10 @@ static Node* parse_primary(Parser* P) {
         strcpy(n->name, P->current.text);
         next(P);
         return n;
+    }
+
+    if (P->current.kind == TOKEN_FUNCTION) {
+        return parse_func_expr(P);
     }
 
     if (P->current.kind == TOKEN_LBRACKET) {
@@ -1045,7 +1055,47 @@ static Node* parse_enum_def(Parser* P) {
     if (P->current.kind != TOKEN_RBRACE) print_error("Expected '}' after enum body.");
     next(P);
     
-    n->left = head; // Simpan daftar konstanta di 'left'
+    n->left = head; 
+    return n;
+}
+
+
+static Node* parse_func_expr(Parser* P) {
+    Node* n = new_node(NODE_FUNC_EXPR);
+    next(P);
+
+    
+    if (P->current.kind != TOKEN_LPAREN) print_error("Expected '(' after 'function'.");
+    next(P); 
+
+    Node* params_head = NULL;
+    Node* params_current = NULL;
+    n->arity = 0;
+
+    if (P->current.kind != TOKEN_RPAREN) {
+        do {
+            if (P->current.kind != TOKEN_IDENT) print_error("Expected parameter name.");
+            Node* param_node = new_node(NODE_IDENT);
+            strcpy(param_node->name, P->current.text);
+            next(P);
+            n->arity++;
+            
+            if (params_head == NULL) {
+                params_head = param_node;
+                params_current = param_node;
+            } else {
+                params_current->next = param_node;
+                params_current = param_node;
+            }
+        } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
+    }
+    
+    if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after parameters.");
+    next(P);
+
+    n->left = params_head;
+    n->right = parse_block(P); 
+
     return n;
 }
 

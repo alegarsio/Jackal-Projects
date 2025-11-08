@@ -76,6 +76,17 @@ Value eval_node(Env* env, Node* n) {
 
     switch (n->kind) {
 
+        case NODE_FUNC_EXPR: {
+            Func* func = malloc(sizeof(Func));
+            func->params_head = n->left;
+            func->body_head = n->right;
+            func->env = env; 
+            func->arity = n->arity;
+
+            
+            return (Value){VAL_FUNCTION, {.function = func}};
+        }
+
         case NODE_ENUM_DEF: {
             Enum* en = malloc(sizeof(Enum));
             strcpy(en->name, n->name);

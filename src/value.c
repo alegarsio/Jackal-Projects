@@ -57,7 +57,7 @@ void print_value(Value value) {
             printf("<native fn>");
             break;
         case VAL_NIL:
-            printf("nil");
+           
             break;
         case VAL_NUMBER:
             printf("%g", value.as.number);
@@ -172,6 +172,7 @@ bool is_value_truthy(Value value) {
         case VAL_STRING: return strlen(value.as.string) > 0;
         case VAL_FUNCTION: return true;
         case VAL_ARRAY: return value.as.array->count > 0;
+        case VAL_MAP: return value.as.map && value.as.map->count > 0;
         case VAL_CLASS:    return true;
         case VAL_NATIVE:   return true;
         case VAL_INSTANCE: return true;
