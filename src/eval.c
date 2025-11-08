@@ -617,6 +617,27 @@ Value eval_node(Env* env, Node* n) {
                     if (strcmp(get_node->name, "pop") == 0) {
                         return array_pop(obj.as.array);
                     }
+
+                    if (strcmp(get_node->name, "remove") == 0) {
+                       
+                        if (n->arity != 1) {
+                            print_error("Error: remove() takes exactly 1 argument (index).");
+                            return (Value){VAL_NIL, {0}};
+                        }
+
+                        Value index_val = eval_node(env, n->right);
+                        if (index_val.type != VAL_NUMBER) {
+                            print_error("Error: remove() argument must be a number.");
+                            free_value(index_val);
+                            return (Value){VAL_NIL, {0}};
+                        }
+
+                        int index = (int)index_val.as.number;
+                        array_delete(obj.as.array, index);
+                        
+                        free_value(index_val); 
+                        return (Value){VAL_NIL, {0}}; 
+                    }
                     
                     
                     print_error("Undefined method for Array.");

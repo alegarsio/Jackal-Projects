@@ -1,6 +1,14 @@
 let data = [10];
 data.push(20);
 
+
+for (let i = 0 ; i < data.length() ; i ++){
+    print (data[i]);
+}
+
+data.remove(1);
+
+print "data setelah ada yang di hapus ";
 for (let i = 0 ; i < data.length() ; i ++){
     print (data[i]);
 }
