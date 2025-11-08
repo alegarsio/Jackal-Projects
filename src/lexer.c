@@ -98,6 +98,7 @@ Token lexer_next(Lexer* L) {
         else if (strcmp(tk.text, "match") == 0) tk.kind = TOKEN_MATCH;
         else if (strcmp(tk.text, "default") == 0) tk.kind = TOKEN_DEFAULT;
         else if (strcmp(tk.text, "interface") == 0) tk.kind = TOKEN_INTERFACE;
+        else if (strcmp(tk.text, "enum") == 0) tk.kind = TOKEN_ENUM;
         else if (strcmp(tk.text, "implements") == 0) tk.kind = TOKEN_IMPLEMENTS;
         else tk.kind = TOKEN_IDENT;
 

@@ -49,6 +49,7 @@ typedef enum {
     TOKEN_INTERFACE,
     TOKEN_IMPLEMENTS,
     TOKEN_COLON,
+    TOKEN_ENUM,
     TOKEN_INVALID
 } TokenKind;
 
@@ -68,6 +69,11 @@ typedef struct Interface Interface;
  */
 typedef struct Class Class;
 
+/**
+ * @typedef @struct ENUM
+ * Forwared declaration of Enum struct
+ */
+typedef struct Enum Enum;
 
 /**
  * @typedef @struct INSTANCE
@@ -117,6 +123,15 @@ struct Class {
 };
 
 /**
+ * @typedef @struct ENUM
+ * Represents an enum in the Jackal programming language.
+ */
+struct Enum {
+    char name[64];
+    struct Env* values; 
+};
+
+/**
  * @typedef @struct INTERFACE
  * Represents an interface in the Jackal programming language.
  */
@@ -149,6 +164,7 @@ typedef enum {
     VAL_NATIVE,
     VAL_INSTANCE,
     VAL_MAP,
+    VAL_ENUM,
     VAL_INTERFACE
 } ValueType;
 
@@ -169,6 +185,7 @@ typedef struct Value {
         NativeFn native;
         struct HashMap* map;
         Interface* interface_obj;
+        Enum* enum_obj;
     } as;
 } Value;
 
@@ -230,5 +247,8 @@ typedef struct {
     char text[64];
     double number;
 } Token;
+
+
+
 
 #endif

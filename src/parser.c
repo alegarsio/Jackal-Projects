@@ -3,6 +3,12 @@
 #include <string.h>
 
 /**
+ * @brief Parses an enum definition.
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_enum_def(Parser* P);
+
+/**
  * @brief Parses an array literal.
  * @param P Pointer to the Parser.
  */
@@ -772,6 +778,10 @@ Node* parse_stmt(Parser* P) {
         return parse_block(P);
     }
 
+    if (P->current.kind == TOKEN_ENUM) {
+        return parse_enum_def(P);
+    }
+
     if (P->current.kind == TOKEN_LET) {
         next(P);
         Node* n = new_node(NODE_VARDECL);
@@ -985,6 +995,57 @@ static Node* parse_map_literal(Parser* P) {
     next(P); 
     
     n->left = head;
+    return n;
+}
+
+/**
+ * @brief Parses an enum definition.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_enum_def(Parser* P) {
+    Node* n = new_node(NODE_ENUM_DEF);
+    next(P); 
+
+    if (P->current.kind != TOKEN_IDENT) print_error("Expected enum name.");
+    strcpy(n->name, P->current.text);
+    next(P);
+
+    if (P->current.kind != TOKEN_LBRACE) print_error("Expected '{' before enum body.");
+    next(P);
+
+    Node* head = NULL;
+    Node* current = NULL;
+    int currentValue = 0; 
+
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+        if (P->current.kind != TOKEN_IDENT) {
+            print_error("Expected enum constant name.");
+        }
+        Node* entry = new_node(NODE_ENUM_DEF); 
+        strcpy(entry->name, P->current.text);
+        next(P);
+
+        if (P->current.kind == TOKEN_ASSIGN) {
+            next(P);
+            if (P->current.kind != TOKEN_NUMBER) print_error("Enum value must be a number.");
+            entry->value = P->current.number;
+            currentValue = (int)P->current.number + 1; // Update counter
+            next(P);
+        } else {
+            entry->value = (double)currentValue++;
+        }
+
+        if (head == NULL) { head = entry; current = entry; }
+        else { current->next = entry; current = entry; }
+
+        if (P->current.kind == TOKEN_COMMA) next(P);
+    }
+
+    if (P->current.kind != TOKEN_RBRACE) print_error("Expected '}' after enum body.");
+    next(P);
+    
+    n->left = head; // Simpan daftar konstanta di 'left'
     return n;
 }
 

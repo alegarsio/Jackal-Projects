@@ -76,6 +76,23 @@ Value eval_node(Env* env, Node* n) {
 
     switch (n->kind) {
 
+        case NODE_ENUM_DEF: {
+            Enum* en = malloc(sizeof(Enum));
+            strcpy(en->name, n->name);
+            en->values = env_new(NULL); 
+
+            Node* entry = n->left;
+            while (entry) {
+                Value val = (Value){VAL_NUMBER, {.number = entry->value}};
+                set_var(en->values, entry->name, val);
+                entry = entry->next;
+            }
+
+            Value enum_val = (Value){VAL_ENUM, {.enum_obj = en}};
+            set_var(env, n->name, enum_val);
+            return (Value){VAL_NIL, {0}};
+        }
+
 
         case NODE_MAP_LITERAL: {
             HashMap* map = map_new();
@@ -292,9 +309,26 @@ Value eval_node(Env* env, Node* n) {
         
         case NODE_GET: {
             Value obj = eval_node(env, n->left);
-            if (obj.type != VAL_INSTANCE) {
-                print_error("Only instances have properties.");
-                return (Value){.type = VAL_NIL, .as = {0}};
+            if (obj.type == VAL_INSTANCE) {
+                Var* field = find_var(obj.as.instance->fields, n->name);
+                if (field) {
+                    
+                    return copy_value(field->value);
+                }
+                
+                Var* method = find_method(obj.as.instance->class_val->as.class_obj, n->name);
+                if (method) {
+                    return copy_value(method->value);
+                }
+            }
+
+            if (obj.type == VAL_ENUM) {
+                Var* constant = find_var(obj.as.enum_obj->values, n->name);
+                if (constant) {
+                    return copy_value(constant->value);
+                }
+                print_error("Undefined enum constant.");
+                return (Value){VAL_NIL, {0}};
             }
             
             Var* field = find_var(obj.as.instance->fields, n->name);

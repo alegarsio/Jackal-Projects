@@ -1,14 +1,5 @@
-let data = [10];
-data.push(20);
-
-
-for (let i = 0 ; i < data.length() ; i ++){
-    print (data[i]);
+enum Status {
+    OK = 200,
+    ERROR = 500
 }
-
-data.remove(1);
-
-print "data setelah ada yang di hapus ";
-for (let i = 0 ; i < data.length() ; i ++){
-    print (data[i]);
-}
+print Status.OK; 

@@ -96,6 +96,7 @@ void print_value(Value value) {
                 printf("<instance nil>");
             }
             break;
+        case VAL_ENUM: printf("<enum %s>", value.as.enum_obj->name); break;
         
 
         
@@ -118,12 +119,12 @@ void free_value(Value value) {
         case VAL_ARRAY: 
             break;
         case VAL_CLASS: 
-         
             break;
         case VAL_INSTANCE:
-           
             break;
         case VAL_INTERFACE:
+            break;
+        case VAL_ENUM:
             break;
         
         default: break;
@@ -152,6 +153,8 @@ Value copy_value(Value value) {
         case VAL_INTERFACE:
         case VAL_NATIVE:
              return value; 
+        case VAL_ENUM: 
+             return value;   
              
         default: return value; 
     }
@@ -173,6 +176,7 @@ bool is_value_truthy(Value value) {
         case VAL_NATIVE:   return true;
         case VAL_INSTANCE: return true;
         case VAL_INTERFACE: return true;
+        case VAL_ENUM: return true;
         case VAL_RETURN: return is_value_truthy(*value.as.return_val);
     }
     return false;
@@ -198,6 +202,7 @@ Value eval_equals(Value a, Value b) {
             case VAL_CLASS: result = (a.as.class_obj == b.as.class_obj); break;
             case VAL_INSTANCE: result = (a.as.instance == b.as.instance); break;
             case VAL_INTERFACE: return (Value){VAL_NUMBER, {.number = (a.as.interface_obj == b.as.interface_obj)}};
+            case VAL_ENUM: return (Value){VAL_NUMBER, {.number = (a.as.enum_obj == b.as.enum_obj)}};
             default: result = 0.0; break;
         }
     }
