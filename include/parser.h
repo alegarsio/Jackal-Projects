@@ -44,6 +44,7 @@ typedef enum {
     NODE_MATCH_STMT, 
     NODE_MATCH_CASE,
     NODE_SET,
+    NODE_MAP_LITERAL,
     NODE_INTERFACE_DEF
 } NodeKind;
 

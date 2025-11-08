@@ -4,6 +4,26 @@
 #include <stdbool.h>
 
 /**
+ * @typedef @struct ENTRY
+ * Represents a key-value pair in the HashMap.
+ */
+typedef struct {
+    char* key;
+    Value value;
+} Entry;
+
+/**
+ * @typedef @struct HASHMAP
+ * Represents a hash map (dictionary) in the Jackal programming language.
+ */
+typedef struct HashMap {
+    int count;
+    int capacity;
+    Entry* entries;
+} HashMap;
+
+
+/**
  * @typedef @struct VALUEARRAY
  * Represents a dynamic array of Values in the Jackal programming language.
  */
@@ -69,3 +89,32 @@ void array_delete(ValueArray* arr, int index);
  * @return The popped Value.
  */
 Value array_pop(ValueArray* arr);
+
+/**
+ * @typedef @struct HASHMAP
+ * Represents a hash map (dictionary) in the Jackal programming language.
+ */
+HashMap* map_new(void);
+
+/**
+ * Frees the memory associated with a HashMap.
+ * @param map The HashMap to be freed.
+ */
+void map_free(HashMap* map);
+
+/**
+ * Retrieves a Value from the HashMap by key.
+ * @param map The HashMap to retrieve from.
+ * @param key The key of the Value to retrieve.
+ * @param out_val Pointer to store the retrieved Value.
+ * @return true if the key exists and out_val is set, false otherwise.
+ */
+bool map_get(HashMap* map, const char* key, Value* out_val);
+
+/**
+ * Sets a key-value pair in the HashMap.
+ * @param map The HashMap to set the value in.
+ * @param key The key of the Value to set.
+ * @param val The Value to set.
+ */
+void map_set(HashMap* map, const char* key, Value val);

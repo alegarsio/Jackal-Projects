@@ -258,3 +258,121 @@ Value array_pop(ValueArray* arr) {
     }
    return arr->values[--arr->count];
 }
+
+
+/**
+ * @brief Hashes a string using the FNV-1a algorithm.
+ * @param key The string to be hashed.
+ * @return The resulting hash value.
+ */
+static uint32_t hash_string(const char* key) {
+    uint32_t hash = 2166136261u;
+    for (int i = 0; key[i] != '\0'; i++) {
+        hash ^= (uint8_t)key[i];
+        hash *= 16777619;
+    }
+    return hash;
+}
+/**
+ * Creates a new HashMap.
+ * @return Pointer to the newly created HashMap.
+ */
+HashMap* map_new(void) {
+    HashMap* map = malloc(sizeof(HashMap));
+    map->count = 0;
+    map->capacity = 0;
+    map->entries = NULL;
+    return map;
+}
+
+/**
+ * Frees the memory associated with a HashMap.
+ * @param map The HashMap to be freed.
+ */
+void map_free(HashMap* map) {
+    if (!map) return;
+    for (int i = 0; i < map->capacity; i++) {
+        if (map->entries[i].key != NULL) {
+            free(map->entries[i].key);
+            
+        }
+    }
+    free(map->entries);
+    free(map);
+}
+
+/**
+ * @brief Finds an entry in the HashMap by key.
+ * @param entries The array of entries in the HashMap.
+ * @param capacity The capacity of the HashMap.
+ * @param key The key to search for.
+ */
+static Entry* find_entry(Entry* entries, int capacity, const char* key) {
+    uint32_t index = hash_string(key) % capacity;
+    for (;;) {
+        Entry* entry = &entries[index];
+        if (entry->key == NULL) {
+            if (entry->value.type == VAL_NIL) return entry; // Empty found
+        } else if (strcmp(entry->key, key) == 0) {
+            return entry; // Key found
+        }
+        index = (index + 1) % capacity;
+    }
+}
+
+/**
+ * @brief Adjusts the capacity of the HashMap.
+ * @param map The HashMap to adjust.
+ * @param capacity The new capacity.
+ */
+static void map_adjust_capacity(HashMap* map, int capacity) {
+    Entry* entries = calloc(capacity, sizeof(Entry));
+    map->count = 0;
+    for (int i = 0; i < map->capacity; i++) {
+        Entry* entry = &map->entries[i];
+        if (entry->key == NULL) continue;
+        Entry* dest = find_entry(entries, capacity, entry->key);
+        dest->key = entry->key;
+        dest->value = entry->value;
+        map->count++;
+    }
+    free(map->entries);
+    map->entries = entries;
+    map->capacity = capacity;
+}
+
+/**
+ * Sets a key-value pair in the HashMap.
+ * @param map The HashMap to set the key-value pair in.
+ * @param key The key as a string.
+ * @param value The Value to associate with the key.
+ */
+bool map_get(HashMap* map, const char* key, Value* out_val) {
+    if (map->count == 0) return false;
+    Entry* entry = find_entry(map->entries, map->capacity, key);
+    if (entry->key == NULL) return false;
+    *out_val = entry->value;
+    return true;
+}
+
+
+/**
+ * Sets a key-value pair in the HashMap.
+ * @param map The HashMap to set the value in.
+ * @param key The key of the Value to set.
+ * @param val The Value to set.
+ */
+
+void map_set(HashMap* map, const char* key, Value val) {
+    if (map->count + 1 > map->capacity * 0.75) {
+        int capacity = map->capacity < 8 ? 8 : map->capacity * 2;
+        map_adjust_capacity(map, capacity);
+    }
+    Entry* entry = find_entry(map->entries, map->capacity, key);
+    bool is_new_key = (entry->key == NULL);
+    if (is_new_key) {
+        map->count++;
+        entry->key = strdup(key);
+    }
+    entry->value = copy_value(val); 
+}

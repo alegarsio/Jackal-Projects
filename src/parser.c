@@ -3,7 +3,14 @@
 #include <string.h>
 
 /**
- * @brief Parses an if statement.
+ * @brief Parses an array literal.
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_map_literal(Parser* P);
+
+/**
+ * @brief Parses an interface definition.
+ * @param P Pointer to the Parser.
  */
 static Node* parse_interface_def(Parser* P);
 /**
@@ -234,6 +241,10 @@ static Node* parse_primary(Parser* P) {
     if (P->current.kind == TOKEN_LBRACKET) {
         next(P);
         return parse_array_literal(P);
+    }
+
+    if (P->current.kind == TOKEN_LBRACE) {
+        return parse_map_literal(P);
     }
     
     if (P->current.kind == TOKEN_THIS) {
@@ -931,6 +942,49 @@ static Node* parse_interface_def(Parser* P) {
     next(P);
     
     n->left = methods_head;
+    return n;
+}
+
+/**
+ * @brief Parses a map literal.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+
+static Node* parse_map_literal(Parser* P) {
+    Node* n = new_node(NODE_MAP_LITERAL);
+    next(P); 
+    
+    Node* head = NULL; 
+    Node* current = NULL;
+
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+        if (P->current.kind != TOKEN_STRING) {
+             print_error("Expected string key in map literal.");
+        }
+        char key_str[64];
+        strncpy(key_str, P->current.text, 63);
+        key_str[63] = '\0';
+        next(P); 
+
+        if (P->current.kind != TOKEN_COLON) print_error("Expected ':' after map key.");
+        next(P); 
+
+        Node* value_node = parse_expr(P); 
+
+        Node* entry = new_node(NODE_MAP_LITERAL);
+        strcpy(entry->name, key_str);
+        entry->left = value_node;
+
+        if (head == NULL) { head = entry; current = entry; }
+        else { current->next = entry; current = entry; }
+
+        if (P->current.kind == TOKEN_COMMA) next(P);
+    }
+    if (P->current.kind != TOKEN_RBRACE) print_error("Expected '}' after map.");
+    next(P); 
+    
+    n->left = head;
     return n;
 }
 

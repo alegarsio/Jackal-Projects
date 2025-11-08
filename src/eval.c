@@ -6,7 +6,10 @@
 #include <stdio.h>
 
 /**
- * 
+ * @brief Recursively searches for a method in a class and its superclasses.
+ * @param klass The class to search in.
+ * @param name The name of the method to find.
+ * @return Pointer to the Var representing the method, or NULL if not found.
  */
 static Var* find_method(Class* klass, const char* name);
 
@@ -72,6 +75,19 @@ Value eval_node(Env* env, Node* n) {
     if (!n) return (Value){.type = VAL_NIL, .as = {0}};
 
     switch (n->kind) {
+
+
+        case NODE_MAP_LITERAL: {
+            HashMap* map = map_new();
+            Node* entry = n->left;
+            while (entry) {
+                Value val = eval_node(env, entry->left);
+                map_set(map, entry->name, val);
+                free_value(val); 
+                entry = entry->next;
+            }
+            return (Value){VAL_MAP, {.map = map}};
+        }
 
         case NODE_IMPORT: {
             char* source = read_file(n->name);
@@ -158,28 +174,50 @@ Value eval_node(Env* env, Node* n) {
         }
         
         case NODE_ARRAY_ACCESS: {
+            Value container = eval_node(env, n->left);
+            Value index = eval_node(env, n->right);
+
+            /**
+             * Unused variables to hold evaluated values.
+             */
             Value arr_val = eval_node(env, n->left);
             Value idx_val = eval_node(env, n->right);
             
-            if (arr_val.type != VAL_ARRAY) {
-                print_error("Value is not an array.");
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
-            if (idx_val.type != VAL_NUMBER) {
-                print_error("Index must be a number.");
-                return (Value){.type = VAL_NIL, .as = {0}};
+            if (container.type == VAL_ARRAY) {
+                if (index.type != VAL_NUMBER) {
+                    print_error("Array index must be a number.");
+                    free_value(container); free_value(index);
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                int idx = (int)index.as.number;
+                if (idx < 0 || idx >= container.as.array->count) {
+                    print_error("Array index out of bounds.");
+                    free_value(container); free_value(index);
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                Value result = copy_value(container.as.array->values[idx]);
+                free_value(container); free_value(index);
+                return result;
+            } 
+            else if (container.type == VAL_MAP) {
+                if (index.type != VAL_STRING) {
+                    print_error("Map key must be a string.");
+                    free_value(container); free_value(index);
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                Value result;
+                if (map_get(container.as.map, index.as.string, &result)) {
+                    free_value(container); free_value(index);
+                    return copy_value(result);
+                } else {
+                    free_value(container); free_value(index);
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
             }
             
-            int idx = (int)idx_val.as.number;
-            if (idx < 0 || idx >= arr_val.as.array->count) {
-                print_error("Array index out of bounds.");
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
-            
-            free_value(idx_val);
-            Value result = copy_value(arr_val.as.array->values[idx]);
-            free_value(arr_val);
-            return result;
+            print_error("Invalid access operation (not an array or map).");
+            free_value(container); free_value(index);
+            return (Value){.type = VAL_NIL, .as = {0}};
         }
         
         case NODE_ARRAY_ASSIGN: {
@@ -188,27 +226,36 @@ Value eval_node(Env* env, Node* n) {
             Node* access_node = n->left;
             Value arr_val = eval_node(env, access_node->left);
             Value idx_val = eval_node(env, access_node->right);
+
+            Value container = eval_node(env, access_node->left);
+            Value index = eval_node(env, access_node->right);
             
-            if (arr_val.type != VAL_ARRAY) {
-                print_error("Value is not an array.");
-                return (Value){.type = VAL_NIL, .as = {0}};
+            if (container.type == VAL_ARRAY) {
+                if (index.type != VAL_NUMBER) {
+                    print_error("Array index must be a number.");
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                int idx = (int)index.as.number;
+                if (idx < 0 || idx >= container.as.array->count) {
+                    print_error("Array index out of bounds.");
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                free_value(container.as.array->values[idx]);
+                container.as.array->values[idx] = copy_value(new_val);
+            } 
+            else if (container.type == VAL_MAP) {
+                if (index.type != VAL_STRING) {
+                    print_error("Map key must be a string.");
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                map_set(container.as.map, index.as.string, new_val);
+            } 
+            else {
+                print_error("Invalid assignment target.");
             }
-            if (idx_val.type != VAL_NUMBER) {
-                print_error("Index must be a number.");
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
             
-            int idx = (int)idx_val.as.number;
-            if (idx < 0 || idx >= arr_val.as.array->count) {
-                print_error("Array index out of bounds.");
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
-            
-            free_value(arr_val.as.array->values[idx]);
-            arr_val.as.array->values[idx] = copy_value(new_val);
-            
-            free_value(arr_val);
-            free_value(idx_val);
+            free_value(container);
+            free_value(index);
             return new_val;
         }
 

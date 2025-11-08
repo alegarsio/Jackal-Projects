@@ -11,6 +11,7 @@ Thumbs.db
 .idea/
 *.swp
 *~
+.codeviz/
 
 math.jackal
 hello.jackal

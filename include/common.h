@@ -48,6 +48,7 @@ typedef enum {
     TOKEN_EXTENDS,
     TOKEN_INTERFACE,
     TOKEN_IMPLEMENTS,
+    TOKEN_COLON,
     TOKEN_INVALID
 } TokenKind;
 
@@ -147,6 +148,7 @@ typedef enum {
     VAL_CLASS,
     VAL_NATIVE,
     VAL_INSTANCE,
+    VAL_MAP,
     VAL_INTERFACE
 } ValueType;
 
@@ -165,6 +167,7 @@ typedef struct Value {
         Class* class_obj;
         Instance* instance;
         NativeFn native;
+        struct HashMap* map;
         Interface* interface_obj;
     } as;
 } Value;
