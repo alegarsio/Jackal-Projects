@@ -1,5 +1,24 @@
 #pragma once
 #include "parser.h" 
+#include <setjmp.h>
+
+
+/**
+ * @typedef @struct EXCEPTIONSTATE
+ * Represents the state of exceptions in the Jackal programming language.
+ */
+typedef struct {
+    jmp_buf buf;
+    int active;
+    Value error_val; 
+} ExceptionState;
+
+
+/**
+ * Global exception state for the interpreter.
+ */
+extern ExceptionState global_ex_state;
+
 
 /**
  * @typedef @struct ENV

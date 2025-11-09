@@ -50,6 +50,9 @@ typedef enum {
     TOKEN_IMPLEMENTS,
     TOKEN_COLON,
     TOKEN_ENUM,
+    TOKEN_TRY,
+    TOKEN_CATCH,
+    TOKEN_THROW,
     TOKEN_INVALID
 } TokenKind;
 

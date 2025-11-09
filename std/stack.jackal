@@ -1,42 +1,37 @@
+
 class Stack {
-    // Konstruktor: inisialisasi array internal
     function init() {
         this.items = [];
     }
 
-    // Menambahkan item ke atas stack
     function push(item) {
-        // Menggunakan fungsi native 'push' yang sudah kita buat
-        push(this.items, item);
+        this.items.push(item);
     }
 
-    // Mengambil dan menghapus item teratas
     function pop() {
-        if (len(this.items) == 0) {
-            // Stack kosong, kembalikan nil
+        if (this.isEmpty()) {
+            print "Error: Stack kosong!";
             return nil;
         }
-        // Menggunakan fungsi native 'pop' yang sudah kita buat
-        return pop(this.items);
+        return this.items.pop();
     }
 
-    // Melihat item teratas tanpa menghapusnya
     function peek() {
-        let lastIdx = len(this.items) - 1;
-        if (lastIdx < 0) {
-             return nil;
+
+        let count = this.items.length();
+        if (count == 0) {
+            return nil;
         }
-        // Mengakses array menggunakan indeks
-        return this.items[lastIdx];
+        return this.items[count - 1];
     }
     
-    // Mendapatkan jumlah item di stack
     function size() {
-        return len(this.items);
+        // PERBAIKAN: Menggunakan .length()
+        return this.items.length();
     }
-
-    // Mengecek apakah stack kosong
+    
     function isEmpty() {
-        return len(this.items) == 0;
+        // PERBAIKAN: Menggunakan .length()
+        return this.items.length() == 0;
     }
 }

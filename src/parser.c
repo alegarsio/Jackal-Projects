@@ -2,6 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+/**
+ * @brief Parses a try statement.
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_try_stmt(Parser* P);
+
+/**
+ * @brief Parses a throw statement.
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_throw_stmt(Parser* P);
+
 /**
  * @brief Parses a function expression.
  * @param P Pointer to the Parser.
@@ -759,6 +772,14 @@ Node* parse_stmt(Parser* P) {
         return parse_interface_def(P);
     }
 
+    if (P->current.kind == TOKEN_TRY) {
+        return parse_try_stmt(P);
+    }
+    
+    if (P->current.kind == TOKEN_THROW) {
+        return parse_throw_stmt(P);
+    }
+
     if (P->current.kind == TOKEN_IMPORT) { 
         return parse_import_stmt(P);
     }
@@ -1095,6 +1116,48 @@ static Node* parse_func_expr(Parser* P) {
 
     n->left = params_head;
     n->right = parse_block(P); 
+
+    return n;
+}
+
+/**
+ * @brief Parses a throw statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_throw_stmt(Parser* P) {
+    Node* n = new_node(NODE_THROW_STMT);
+    next(P); 
+    n->left = parse_expr(P); 
+    if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after throw.");
+    if (P->current.kind == TOKEN_SEMI) next(P);
+    return n;
+}
+
+/**
+ * @brief Parses a try statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_try_stmt(Parser* P) {
+    Node* n = new_node(NODE_TRY_STMT);
+    next(P); 
+    n->left = parse_block(P);
+
+    if (P->current.kind != TOKEN_CATCH) {
+        print_error("Expected 'catch' after try block.");
+        return n;
+    }
+    next(P); 
+    if (P->current.kind != TOKEN_LPAREN) print_error("Expected '(' after catch.");
+    next(P);
+    if (P->current.kind != TOKEN_IDENT) print_error("Expected error variable name.");
+    strcpy(n->name, P->current.text); 
+    next(P);
+    if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after error variable.");
+    next(P);
+
+    n->right = parse_block(P);
 
     return n;
 }

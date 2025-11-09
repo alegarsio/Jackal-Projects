@@ -47,6 +47,8 @@ typedef enum {
     NODE_MAP_LITERAL,
     NODE_ENUM_DEF,
     NODE_FUNC_EXPR,
+    NODE_TRY_STMT,    
+    NODE_THROW_STMT,
     NODE_INTERFACE_DEF
 } NodeKind;
 

@@ -1,6 +1,12 @@
+function bagi(a, b) {
+    if (b == 0) {
+        throw "Pembagian dengan nol tidak diperbolehkan!";
+    }
+    return a / b;
+}
 
-let result = (function(n) {
-    return n + 10; 
-})(20);
-
-print hasil; 
+try {
+    print bagi(10, 2);
+} catch (e) {
+    print "Error: " + e;
+}

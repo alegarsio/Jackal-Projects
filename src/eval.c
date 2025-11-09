@@ -6,6 +6,12 @@
 #include <stdio.h>
 
 /**
+ * Global exception state for the interpreter.
+ */
+
+ExceptionState global_ex_state = {.active = 0};
+
+/**
  * @brief Recursively searches for a method in a class and its superclasses.
  * @param klass The class to search in.
  * @param name The name of the method to find.
@@ -102,6 +108,49 @@ Value eval_node(Env* env, Node* n) {
             Value enum_val = (Value){VAL_ENUM, {.enum_obj = en}};
             set_var(env, n->name, enum_val);
             return (Value){VAL_NIL, {0}};
+        }
+
+
+        case NODE_THROW_STMT: {
+            Value err_val = eval_node(env, n->left);
+            
+            if (global_ex_state.active) {
+                global_ex_state.error_val = err_val; 
+                longjmp(global_ex_state.buf, 1); 
+            } else {
+                printf("Uncaught Exception: ");
+                print_value(err_val);
+                printf("\n");
+                exit(1); 
+            }
+            return (Value){VAL_NIL, {0}}; 
+        }
+
+        case NODE_TRY_STMT: {
+            jmp_buf old_buf;
+            memcpy(old_buf, global_ex_state.buf, sizeof(jmp_buf));
+            int was_active = global_ex_state.active;
+
+            global_ex_state.active = 1;
+            if (setjmp(global_ex_state.buf) == 0) {
+                Value res = eval_node(env, n->left);
+                
+                memcpy(global_ex_state.buf, old_buf, sizeof(jmp_buf));
+                global_ex_state.active = was_active;
+                return res;
+            } else {
+                memcpy(global_ex_state.buf, old_buf, sizeof(jmp_buf));
+                global_ex_state.active = was_active;
+
+                Env* catch_env = env_new(env);
+                set_var(catch_env, n->name, global_ex_state.error_val);
+                
+                Value catch_res = eval_node(catch_env, n->right);
+                
+                env_free(catch_env);
+                
+                return catch_res;
+            }
         }
 
 
