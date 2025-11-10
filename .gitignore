@@ -12,6 +12,7 @@ Thumbs.db
 *.swp
 *~
 .codeviz/
+.std/
 
 math.jackal
 hello.jackal

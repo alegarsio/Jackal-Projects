@@ -49,6 +49,7 @@ typedef enum {
     NODE_FUNC_EXPR,
     NODE_TRY_STMT,    
     NODE_THROW_STMT,
+    NODE_CONSTDECL,
     NODE_INTERFACE_DEF
 } NodeKind;
 

@@ -160,12 +160,12 @@ int main(int argc, char **argv) {
     Lexer L;
     Parser P;
     Env* env = env_new(NULL);
-    set_var(env, "nil", (Value){VAL_NIL, {0}});
+    set_var(env, "nil", (Value){VAL_NIL, {0}},true);
 
     #define DEFINE_NATIVE(name_str, func_ptr) \
         do { \
             Value val = (Value){VAL_NATIVE, {.native = func_ptr}}; \
-            set_var(env, name_str, val); \
+            set_var(env, name_str, val,true); \
         } while(0)
 
 

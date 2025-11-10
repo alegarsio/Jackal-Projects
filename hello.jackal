@@ -1,12 +1,22 @@
-function bagi(a, b) {
-    if (b == 0) {
-        throw "Pembagian dengan nol tidak diperbolehkan!";
-    }
-    return a / b;
-}
 
-try {
-    print bagi(10, 2);
-} catch (e) {
-    print "Error: " + e;
-}
+import "std/stack.jackal";
+let s = Stack();
+
+print "Mendorong (push) 'Apel', 'Jeruk', 'Mangga'...";
+s.push("Apel");
+s.push("Jeruk");
+s.push("Mangga");
+
+print "Ukuran stack:";
+print s.size();
+
+print "Item teratas (peek):";
+print s.peek();
+
+print "Mengambil (pop) item:";
+print s.pop();
+
+print "Item teratas sekarang:";
+print s.peek();
+
+print "--- Selesai ---";

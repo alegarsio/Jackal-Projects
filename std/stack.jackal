@@ -1,4 +1,3 @@
-
 class Stack {
     function init() {
         this.items = [];
@@ -17,7 +16,6 @@ class Stack {
     }
 
     function peek() {
-
         let count = this.items.length();
         if (count == 0) {
             return nil;
@@ -26,12 +24,10 @@ class Stack {
     }
     
     function size() {
-        // PERBAIKAN: Menggunakan .length()
         return this.items.length();
     }
     
     function isEmpty() {
-        // PERBAIKAN: Menggunakan .length()
         return this.items.length() == 0;
     }
 }

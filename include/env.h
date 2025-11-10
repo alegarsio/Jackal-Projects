@@ -21,5 +21,8 @@ Var* find_var(Env* env, const char* name);
  * @param env The environment to set the variable in.
  * @param name The name of the variable.
  * @param value The value to assign to the variable.
+ * @param is_const Boolean indicating if the variable is constant.
  */
-void set_var(Env* env, const char* name, Value value);
+void set_var(Env* env, const char* name, Value value,bool is_const);
+
+

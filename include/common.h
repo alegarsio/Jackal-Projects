@@ -6,6 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <stdbool.h>
 
 /**
  * @typedef @enum TOKENKIND
@@ -13,7 +14,7 @@
  */
 typedef enum {
     TOKEN_END, TOKEN_NUMBER, TOKEN_IDENT,
-    TOKEN_LET, TOKEN_PRINT,
+    TOKEN_LET, TOKEN_CONST, TOKEN_PRINT,
     TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR, TOKEN_SLASH,
     TOKEN_ASSIGN, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_SEMI,
     TOKEN_STRING, 
@@ -200,6 +201,7 @@ typedef struct Value {
 typedef struct Var {
     char name[64];
     Value value;
+    bool is_const;
     struct Var* next;
 } Var;
 

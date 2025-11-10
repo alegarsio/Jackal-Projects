@@ -101,12 +101,12 @@ Value eval_node(Env* env, Node* n) {
             Node* entry = n->left;
             while (entry) {
                 Value val = (Value){VAL_NUMBER, {.number = entry->value}};
-                set_var(en->values, entry->name, val);
+                set_var(en->values, entry->name, val,true);
                 entry = entry->next;
             }
 
             Value enum_val = (Value){VAL_ENUM, {.enum_obj = en}};
-            set_var(env, n->name, enum_val);
+            set_var(env, n->name, enum_val,true);
             return (Value){VAL_NIL, {0}};
         }
 
@@ -143,7 +143,7 @@ Value eval_node(Env* env, Node* n) {
                 global_ex_state.active = was_active;
 
                 Env* catch_env = env_new(env);
-                set_var(catch_env, n->name, global_ex_state.error_val);
+                set_var(catch_env, n->name, global_ex_state.error_val,false);
                 
                 Value catch_res = eval_node(catch_env, n->right);
                 
@@ -362,9 +362,25 @@ Value eval_node(Env* env, Node* n) {
                 free_value(val);
                 return (Value){.type = VAL_NIL, .as = {0}};
             }
+
+            if (v->is_const) {
+                char buffer[128];
+                snprintf(buffer, sizeof(buffer), "Cannot reassign to constant '%s'.", n->name);
+                print_error(buffer);
+                free_value(val);
+                return (Value){.type = VAL_NIL, .as = {0}};
+            }
+
             free_value(v->value);
             v->value = copy_value(val);
             return val;
+        }
+
+        case NODE_CONSTDECL: {
+            Value val = eval_node(env, n->right);
+            set_var(env, n->name, val, true); 
+            free_value(val);
+            return (Value){VAL_NIL, {0}};
         }
         
         case NODE_GET: {
@@ -418,7 +434,7 @@ Value eval_node(Env* env, Node* n) {
             }
             
             Value val = eval_node(env, n->right);
-            set_var(obj.as.instance->fields, n->left->name, val);
+            set_var(obj.as.instance->fields, n->left->name, val,false);
             free_value(obj);
             return val;
         }
@@ -549,7 +565,7 @@ Value eval_node(Env* env, Node* n) {
         
         case NODE_VARDECL: {
             Value val = eval_node(env, n->right);
-            set_var(env, n->name, val);
+            set_var(env, n->name, val,true);
             free_value(val); 
             return (Value){.type = VAL_NIL, .as = {0}}; 
         }
@@ -589,13 +605,13 @@ Value eval_node(Env* env, Node* n) {
             while(method) {
                 
                 Value arity_val = (Value){VAL_NUMBER, {.number = (double)method->arity}};
-                set_var(iface->methods, method->name, arity_val);
+                set_var(iface->methods, method->name, arity_val,true);
                 
                 method = method->next;
             }
 
             Value iface_val = (Value){VAL_INTERFACE, {.interface_obj = iface}};
-            set_var(env, n->name, iface_val);
+            set_var(env, n->name, iface_val,true);
             return (Value){VAL_NIL, {0}};
         }
         
@@ -652,7 +668,7 @@ Value eval_node(Env* env, Node* n) {
             }
 
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
-            set_var(env, n->name, class_val);
+            set_var(env, n->name, class_val,true);
             return (Value){.type = VAL_NIL, .as = {0}};
 
         }
@@ -668,7 +684,7 @@ Value eval_node(Env* env, Node* n) {
             n->right = NULL;
 
             Value func_val = (Value){VAL_FUNCTION, {.function = func}};
-            set_var(env, n->name, func_val);
+            set_var(env, n->name, func_val,true);
             
             return (Value){.type = VAL_NIL, .as = {0}};
         }
@@ -739,7 +755,7 @@ Value eval_node(Env* env, Node* n) {
                 }
 
                 if (obj.type == VAL_STRING) {
-                    // Method: .length()
+                   
                     if (strcmp(get_node->name, "length") == 0) {
                         return (Value){VAL_NUMBER, {.number = (double)strlen(obj.as.string)}};
                     }
@@ -760,26 +776,22 @@ Value eval_node(Env* env, Node* n) {
                     Func* func = method_var->value.as.function;
                     Env* call_env = env_new(func->env);
                     
-                    // Set 'this' (Manual reference, no copy)
                     Var* this_var = malloc(sizeof(Var));
                     strcpy(this_var->name, "this");
                     this_var->value = obj; 
                     this_var->next = call_env->vars;
                     call_env->vars = this_var;
                     
-                    // Bind arguments
                     Node* arg = n->right; Node* param = func->params_head;
                     for (int i=0; i<n->arity; i++) {
                         Value v = eval_node(env, arg);
-                        set_var(call_env, param->name, v);
+                        set_var(call_env, param->name, v,false);
                         free_value(v);
                         arg = arg->next; param = param->next;
                     }
                     
-                    // Execute
                     Value res = eval_node(call_env, func->body_head);
                     
-                    // Cleanup 'this' manual
                     call_env->vars = this_var->next;
                     free(this_var);
                     env_free(call_env);
@@ -799,13 +811,11 @@ Value eval_node(Env* env, Node* n) {
             Value callee = eval_node(env, n->left);
             
             if (callee.type == VAL_CLASS) {
-                // 1. Deklarasi & Alokasi 'inst' (INI YANG HILANG)
                 Instance* inst = malloc(sizeof(Instance));
                 inst->class_val = malloc(sizeof(Value));
                 *inst->class_val = callee;
                 inst->fields = env_new(NULL);
                 
-                // 2. Gunakan 'inst'
                 Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
                 
                 Var* init_method = find_method(callee.as.class_obj, "init");
@@ -818,13 +828,13 @@ Value eval_node(Env* env, Node* n) {
                     }
 
                     Env* call_env = env_new(func->env);
-                    set_var(call_env, "this", instance_val);
+                    set_var(call_env, "this", instance_val,true);
 
                     Node* arg_node = n->right;
                     Node* param_node = func->params_head;
                     for (int i = 0; i < n->arity; i++) {
                         Value arg_val = eval_node(env, arg_node);
-                        set_var(call_env, param_node->name, arg_val);
+                        set_var(call_env, param_node->name, arg_val,false);
                         free_value(arg_val);
                         arg_node = arg_node->next;
                         param_node = param_node->next;
@@ -846,7 +856,7 @@ Value eval_node(Env* env, Node* n) {
                  Node* arg = n->right; Node* param = func->params_head;
                  for(int i=0; i<n->arity; i++) {
                      Value v = eval_node(env, arg);
-                     set_var(call_env, param->name, v);
+                     set_var(call_env, param->name, v,false);
                      free_value(v);
                      arg = arg->next; param = param->next;
                  }

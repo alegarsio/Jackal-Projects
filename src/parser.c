@@ -840,6 +840,24 @@ Node* parse_stmt(Parser* P) {
         return n;
     }
 
+
+    if (P->current.kind == TOKEN_CONST) {
+        next(P);
+        Node* n = new_node(NODE_CONSTDECL); 
+        if (P->current.kind != TOKEN_IDENT) print_error("Expected identifier after 'const'.");
+        strcpy(n->name, P->current.text);
+        next(P);
+        
+        if (P->current.kind != TOKEN_ASSIGN) print_error("Expected '=' after constant name.");
+        next(P);
+        
+        n->right = parse_expr(P);
+        
+        if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after statement.");
+        if (P->current.kind == TOKEN_SEMI) next(P);
+        return n;
+    }
+
     Node* expr = parse_expr(P);
     if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after statement.");
     if (P->current.kind == TOKEN_SEMI) next(P);
