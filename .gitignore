@@ -12,7 +12,7 @@ Thumbs.db
 *.swp
 *~
 .codeviz/
-
+.jackal-vscode/
 
 math.jackal
 hello.jackal

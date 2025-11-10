@@ -1,0 +1,14 @@
+{
+  "$schema": "vscode://schemas/color-theme",
+  "name": "Jackal Dark",
+  "type": "dark",
+  "colors": {},
+  "tokenColors": [
+    {
+      "scope": "support.class.jackal",
+      "settings": {
+        "foreground": "#FFD700" 
+      }
+    }
+  ]
+}

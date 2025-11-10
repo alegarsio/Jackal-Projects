@@ -10,7 +10,7 @@ class Queue {
 
     function dequeue() {
         if (this.isEmpty()) {
-            print "Error: Queue is isEmpty!";
+            print ("Error: Queue is isEmpty!");
             return nil;
         }
         
