@@ -1,0 +1,29 @@
+class ArrayList {
+    function init() {
+        this.data = [];
+    }
+
+    function add(element) {
+        this.data.push(element);
+    }
+
+    function get(index) {
+        return this.data[index];
+    }
+
+    function set(index, value) {
+        this.data[index] = value;
+    }
+
+    function removeAt(index) {
+        this.data.remove(index);
+    }
+
+    function size() {
+        return this.data.length();
+    }
+
+    function printList() {
+        print this.data;
+    }
+}

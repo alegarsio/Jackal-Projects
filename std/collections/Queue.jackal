@@ -1,4 +1,3 @@
-print "--- Demo Implementasi Queue ---";
 
 class Queue {
     function init() {
@@ -11,7 +10,7 @@ class Queue {
 
     function dequeue() {
         if (this.isEmpty()) {
-            print "Error: Queue kosong!";
+            print "Error: Queue is isEmpty!";
             return nil;
         }
         
@@ -35,28 +34,3 @@ class Queue {
         return this.items.length() == 0;
     }
 }
-
-let q = Queue();
-
-print "Enqueue (masuk): A";
-q.enqueue("A");
-print "Enqueue (masuk): B";
-q.enqueue("B");
-print "Enqueue (masuk): C";
-q.enqueue("C");
-
-print "Item terdepan (front):";
-print q.front();
-
-print "Dequeue (keluar):";
-print q.dequeue();
-print "Dequeue (keluar):";
-print q.dequeue();
-
-print "Item terdepan (front) sekarang:";
-print q.front();
-
-print "Ukuran queue:";
-print q.size();
-
-print "--- Selesai ---";

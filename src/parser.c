@@ -873,12 +873,29 @@ static Node* parse_import_stmt(Parser* P) {
     Node* n = new_node(NODE_IMPORT);
     next(P); 
 
-    if (P->current.kind != TOKEN_STRING) {
-        print_error("Expected string filename after 'import'.");
-        return NULL;
+    char path[256] = {0}; 
+
+    if (P->current.kind != TOKEN_IDENT) {
+        print_error("Expected library name after 'import'.");
     }
-    strcpy(n->name, P->current.text);
-    next(P); 
+    strcat(path, P->current.text);
+    next(P);
+
+    while (P->current.kind == TOKEN_DOT) {
+        strcat(path, "/"); 
+        next(P); 
+        
+        if (P->current.kind != TOKEN_IDENT) {
+             print_error("Expected library name after '.' in import.");
+             break;
+        }
+        strcat(path, P->current.text);
+        next(P); 
+    }
+
+    strcat(path, ".jackal");
+
+    strcpy(n->name, path);
 
     if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after import.");
     if (P->current.kind == TOKEN_SEMI) next(P);
