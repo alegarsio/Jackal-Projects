@@ -9,7 +9,7 @@ class Stack {
 
     function pop() {
         if (this.isEmpty()) {
-            print "Error: Stack kosong!";
+            print "Error: Stack Is Empty!";
             return nil;
         }
         return this.items.pop();

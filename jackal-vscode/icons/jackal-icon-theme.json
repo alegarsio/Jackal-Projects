@@ -1,0 +1,11 @@
+
+{
+    "iconDefinitions": {
+        "jackal_icon": {
+            "iconPath": "./jackal.png"
+        }
+    },
+    "fileExtensions": {
+        "jackal": "jackal_icon"
+    }
+}

@@ -1,0 +1,82 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Jackal",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#functions"
+		},
+		{
+			"include": "#constants"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"comment": "Control keywords",
+				"name": "keyword.control.jackal",
+				"match": "\\b(if|else|while|for|return|match|default|import|try|catch|throw)\\b"
+			},
+			{
+				"comment": "Storage/Definition keywords",
+				"name": "storage.type.jackal",
+				"match": "\\b(let|const|class|extends|implements|interface|function|enum)\\b"
+			},
+			{
+				"comment": "'this' keyword",
+				"name": "variable.language.this.jackal",
+				"match": "\\b(this)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.jackal",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.jackal",
+					"match": "\\\\."
+				}
+			]
+		},
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.line.double-slash.jackal",
+					"match": "//.*$"
+				},
+				{
+					"name": "comment.block.jackal",
+					"begin": "/\\*",
+					"end": "\\*/"
+				}
+			]
+		},
+		"functions": {
+			"patterns": [{
+				"comment": "Function call",
+				"name": "entity.name.function.jackal",
+				"match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
+			}]
+		},
+		"constants": {
+			"patterns": [{
+				"name": "constant.numeric.jackal",
+				"match": "\\b\\d+(\\.\\d+)?\\b"
+			},
+			{
+				"name": "constant.language.jackal",
+				"match": "\\b(true|false|nil)\\b"
+			}]
+		}
+	},
+	"scopeName": "source.jackal"
+}

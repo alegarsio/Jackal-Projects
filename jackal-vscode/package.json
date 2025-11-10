@@ -1,0 +1,31 @@
+{
+    "name": "jackal-lang",
+    "displayName": "Jackal Language Support",
+    "description": "Syntax highlighting and icon theme for the Jackal programming language.",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.50.0"
+    },
+    "categories": [
+        "Programming Languages",
+        "Themes"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "jackal",
+            "aliases": ["Jackal", "jackal"],
+            "extensions": [".jackal"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "jackal",
+            "scopeName": "source.jackal",
+            "path": "./syntaxes/jackal.tmLanguage.json"
+        }],
+        "iconThemes": [{
+            "id": "jackal-icon-theme",
+            "label": "Jackal Icon Theme",
+            "path": "./icons/jackal-icon-theme.json"
+        }]
+    }
+}
