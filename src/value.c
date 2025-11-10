@@ -97,6 +97,13 @@ void print_value(Value value) {
                 printf("<instance nil>");
             }
             break;
+        case VAL_FILE:
+            if (value.as.file) {
+                printf("<file>");
+            } else {
+                printf("<closed file>");
+            }
+            break;
         case VAL_ENUM: printf("<enum %s>", value.as.enum_obj->name); break;
         
 
@@ -152,6 +159,10 @@ Value copy_value(Value value) {
         case VAL_CLASS:
         case VAL_INSTANCE:
         case VAL_INTERFACE:
+
+        case VAL_FILE:
+             return value;
+
         case VAL_NATIVE:
              return value; 
         case VAL_ENUM: 
@@ -174,6 +185,7 @@ bool is_value_truthy(Value value) {
         case VAL_FUNCTION: return true;
         case VAL_ARRAY: return value.as.array->count > 0;
         case VAL_MAP: return value.as.map && value.as.map->count > 0;
+        case VAL_FILE:  return value.as.file != NULL;
         case VAL_CLASS:    return true;
         case VAL_NATIVE:   return true;
         case VAL_INSTANCE: return true;
@@ -197,6 +209,7 @@ Value eval_equals(Value a, Value b) {
     } else {
         switch(a.type) {
             case VAL_NIL: result = 1.0; break;
+            case VAL_FILE: return (Value){VAL_NUMBER, {.number = (a.as.file == b.as.file)}};
             case VAL_NUMBER: result = (a.as.number == b.as.number); break;
             case VAL_STRING: result = (strcmp(a.as.string, b.as.string) == 0); break;
             case VAL_FUNCTION: result = (a.as.function == b.as.function); break;

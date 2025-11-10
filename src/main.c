@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /**
  * Main entry point for the Jackal interpreter.
@@ -14,6 +15,34 @@
 #include "value.h"
 #include "parser.h"
 #include "eval.h"
+
+/**
+ * 
+ */
+
+Value builtin_file_open(int argCount, Value* args) {
+    
+    if (argCount != 2) {
+        fprintf(stderr, "[DEBUG] Error: Argumen File() kurang atau lebih dari 2\n");
+        return (Value){VAL_NIL, {0}};
+    }
+    if (args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
+        fprintf(stderr, "[DEBUG] Error: Argumen File() bukan string\n");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char* path = args[0].as.string;
+    const char* mode = args[1].as.string;
+
+    FILE* f = fopen(path, mode);
+    if (f == NULL) {
+        perror(""); 
+        return (Value){VAL_NIL, {0}};
+    }
+
+   
+    return (Value){VAL_FILE, {.file = f}};
+}
 
 /**
  * @brief Built-in function 'len' to get the length of a string or array.
@@ -35,20 +64,15 @@ Value builtin_len(int argCount, Value* args) {
     }
     
     if (arg.type == VAL_ARRAY) {
-        // Debug print untuk memastikan array valid
-        // printf("[DEBUG] len() called on ARRAY, count: %d\n", arg.as.array->count);
         return (Value){VAL_NUMBER, {.number = (double)arg.as.array->count}};
     }
 
-    // --- DEBUGGING ---
-    // Jika sampai sini, berarti tipe datanya salah. Kita cetak tipenya.
-    // 0=NIL, 1=NUMBER, 2=STRING, 3=FUNC, 4=RETURN, 5=ARRAY, 6=CLASS, 7=INSTANCE, ...
     fprintf(stderr, "[DEBUG] len() called on invalid type: %d\n", arg.type);
     
     if (arg.type == VAL_NIL) {
          fprintf(stderr, "Runtime Error: Argument to 'len' is NIL (variable might be empty).\n");
     }
-    // -----------------
+    
 
     return (Value){VAL_NIL, {0}};
 }
@@ -173,6 +197,7 @@ int main(int argc, char **argv) {
     DEFINE_NATIVE("push", builtin_push);
     DEFINE_NATIVE("pop", builtin_pop);
     DEFINE_NATIVE("remove", builtin_remove);
+    DEFINE_NATIVE("File", builtin_file_open);
 
     lexer_init(&L, source);
     parser_init(&P, &L);

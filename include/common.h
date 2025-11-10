@@ -169,6 +169,7 @@ typedef enum {
     VAL_INSTANCE,
     VAL_MAP,
     VAL_ENUM,
+    VAL_FILE,
     VAL_INTERFACE
 } ValueType;
 
@@ -190,6 +191,7 @@ typedef struct Value {
         struct HashMap* map;
         Interface* interface_obj;
         Enum* enum_obj;
+        FILE* file;
     } as;
 } Value;
 

@@ -126,6 +126,9 @@ Value eval_node(Env* env, Node* n) {
             return (Value){VAL_NIL, {0}}; 
         }
 
+
+        
+
         case NODE_TRY_STMT: {
             jmp_buf old_buf;
             memcpy(old_buf, global_ex_state.buf, sizeof(jmp_buf));
@@ -754,6 +757,52 @@ Value eval_node(Env* env, Node* n) {
                     return (Value){VAL_NIL, {0}};
                 }
 
+                if (obj.type == VAL_FILE) {
+                    FILE* f = obj.as.file;
+                    if (f == NULL) {
+                        print_error("Error: File is closed.");
+                        return (Value){VAL_NIL, {0}};
+                    }
+
+                    if (strcmp(get_node->name, "readAll") == 0) {
+                        fseek(f, 0, SEEK_END);
+                        long fsize = ftell(f);
+                        rewind(f);
+
+                        char* content = malloc(fsize + 1);
+                        if (!content) return (Value){VAL_NIL, {0}};
+                        
+                        size_t read_size = fread(content, 1, fsize, f);
+                        content[read_size] = '\0';
+
+                        return (Value){VAL_STRING, {.string = content}};
+                    }
+
+                    if (strcmp(get_node->name, "write") == 0) {
+                        Node* arg = n->right;
+                        while (arg) {
+                            Value val = eval_node(env, arg);
+                            if (val.type == VAL_STRING) {
+                                fputs(val.as.string, f);
+                            } else if (val.type == VAL_NUMBER) {
+                                fprintf(f, "%g", val.as.number);
+                            }
+                            free_value(val);
+                            arg = arg->next;
+                        }
+                        return (Value){VAL_NIL, {0}};
+                    }
+
+                    if (strcmp(get_node->name, "close") == 0) {
+                        fclose(f);
+                        obj.as.file = NULL; 
+                        return (Value){VAL_NIL, {0}};
+                    }
+
+                    print_error("Undefined method for File.");
+                    return (Value){VAL_NIL, {0}};
+                }
+
                 if (obj.type == VAL_STRING) {
                    
                     if (strcmp(get_node->name, "length") == 0) {
@@ -764,9 +813,8 @@ Value eval_node(Env* env, Node* n) {
                     return (Value){VAL_NIL, {0}};
                 }
 
-                // --- CLASS INSTANCE METHODS (Logika Lama) ---
                 if (obj.type == VAL_INSTANCE) {
-                    // Cari method di class
+                    
                     Var* method_var = find_method(obj.as.instance->class_val->as.class_obj, get_node->name);
                     if (!method_var) {
                         print_error("Undefined method.");
@@ -849,7 +897,6 @@ Value eval_node(Env* env, Node* n) {
                 return instance_val;
             }
             
-            // (Bagian fungsi biasa...)
             if (callee.type == VAL_FUNCTION) {
                  Func* func = callee.as.function;
                  Env* call_env = env_new(func->env);
@@ -871,8 +918,18 @@ Value eval_node(Env* env, Node* n) {
             }
 
              if (callee.type == VAL_NATIVE) {
-               
-                 return (Value){VAL_NIL, {0}}; 
+                 NativeFn native = callee.as.native;
+                 Value args[255];
+                 int arg_count = 0;
+                 Node* arg_node = n->right;
+                 while(arg_node) {
+                     args[arg_count++] = eval_node(env, arg_node);
+                     
+                     arg_node = arg_node->next;
+                 }
+                 Value res = native(arg_count, args);
+                 for(int i=0; i<arg_count; i++) free_value(args[i]);
+                 return res;
             }
 
             return (Value){VAL_NIL, {0}};
