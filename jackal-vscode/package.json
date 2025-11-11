@@ -17,11 +17,19 @@
             "extensions": [".jackal"],
             "configuration": "./language-configuration.json"
         }],
+
+        
         "grammars": [{
             "language": "jackal",
             "scopeName": "source.jackal",
             "path": "./syntaxes/jackal.tmLanguage.json"
         }],
+        "snippets": [
+            {
+                "language": "jackal",
+                "path": "./snippets/jackal.code-snippets"
+            }
+        ],
         "iconThemes": [{
             "id": "jackal-icon-theme",
             "label": "Jackal Icon Theme",

@@ -127,15 +127,22 @@ Token lexer_next(Lexer* L) {
     }
 
     if (c == '"') {
-        get(L);
+        get(L); 
         int i = 0;
+        
         while (peek(L) != '"' && peek(L) != '\0') {
-            if (i < 63) tk.text[i++] = get(L);
-            else get(L);
+            char ch = get(L); 
+            if (ch == '\\') {
+                if (peek(L) == '\0') break; 
+                ch = get(L); 
+            }
+            
+            if (i < 63) tk.text[i++] = ch;
+            else { }
         }
         tk.text[i] = '\0';
 
-        if (peek(L) == '"') get(L);
+        if (peek(L) == '"') get(L); 
         
         tk.kind = TOKEN_STRING;
         return tk;

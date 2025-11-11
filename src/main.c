@@ -16,8 +16,43 @@
 #include "parser.h"
 #include "eval.h"
 
+
+
+Value builtin_typeof(int argCount, Value* args) {
+    if (argCount != 1) {
+        fprintf(stderr, "Runtime Error: typeof() takes exactly 1 argument.\n");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    Value arg = args[0];
+    const char* type_string;
+
+    switch (arg.type) {
+        case VAL_NIL:       type_string = "nil"; break;
+        case VAL_NUMBER:    type_string = "number"; break;
+        case VAL_STRING:    type_string = "string"; break;
+        case VAL_FUNCTION:  type_string = "function"; break;
+        case VAL_NATIVE:    type_string = "function"; break;
+        case VAL_ARRAY:     type_string = "array"; break;
+        case VAL_MAP:       type_string = "map"; break;
+        case VAL_CLASS:     type_string = "class"; break;
+        case VAL_INSTANCE:  type_string = "instance"; break;
+        case VAL_INTERFACE: type_string = "interface"; break;
+        case VAL_ENUM:      type_string = "enum"; break;
+        case VAL_FILE:      type_string = "file"; break;
+        default:            type_string = "unknown"; break;
+    }
+
+    char* str_copy = malloc(strlen(type_string) + 1);
+    strcpy(str_copy, type_string);
+    return (Value){VAL_STRING, {.string = str_copy}};
+}
+
 /**
- * 
+ * @brief Built-in function File() to read and write FILE
+ * @param argCount The number of arguments passed to the function.
+ * @param args The array of argument Values.
+ * @return A Value representing the length.
  */
 
 Value builtin_file_open(int argCount, Value* args) {
@@ -184,8 +219,17 @@ int main(int argc, char **argv) {
     Lexer L;
     Parser P;
     Env* env = env_new(NULL);
-    set_var(env, "nil", (Value){VAL_NIL, {0}},true);
 
+    /**
+     * Set Of Jackal Built In Method Entry
+     */
+    set_var(env, "nil", (Value){VAL_NIL, {0}},true);
+    set_var(env, "typeof", (Value){VAL_NATIVE, {.native = builtin_typeof}}, true);
+
+
+    /**
+     * Macro for nativce syntax
+     */
     #define DEFINE_NATIVE(name_str, func_ptr) \
         do { \
             Value val = (Value){VAL_NATIVE, {.native = func_ptr}}; \
@@ -198,6 +242,7 @@ int main(int argc, char **argv) {
     DEFINE_NATIVE("pop", builtin_pop);
     DEFINE_NATIVE("remove", builtin_remove);
     DEFINE_NATIVE("File", builtin_file_open);
+    
 
     lexer_init(&L, source);
     parser_init(&P, &L);
