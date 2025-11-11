@@ -193,22 +193,21 @@ static Node* parse_func_def(Parser* P);
  */
 static Node* parse_func_call(Parser* P, Node* callee) {
     Node* n = new_node(NODE_FUNC_CALL);
-    n->left = callee;
+    n->left = callee; 
     
     Node* args_head = NULL;
     Node* args_current = NULL;
-    n->arity = 0;
+    n->arity = 0; 
 
     if (P->current.kind != TOKEN_RPAREN) {
         do {
             Node* arg_expr = parse_expr(P);
-            n->arity++;
+            n->arity++; 
             
             if (args_head == NULL) {
                 args_head = arg_expr;
                 args_current = arg_expr;
             } else {
-                // -> next
                 args_current->next = arg_expr;
                 args_current = arg_expr;
             }
@@ -218,9 +217,8 @@ static Node* parse_func_call(Parser* P, Node* callee) {
     if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after function arguments.");
     next(P);
     
-    n->right = args_head;
-    return n;
-}
+    n->right = args_head; 
+    return n;}
 
 /**
  * @brief Parses an array literal.

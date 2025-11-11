@@ -54,6 +54,46 @@ static char* read_file(const char* filename) {
     return source;
 }
 
+
+/**
+ * @brief call stream built in method
+ * 
+ */
+Value call_jackal_function(Env* env, Value func_val, int arg_count, Value* args) {
+    if (func_val.type != VAL_FUNCTION) {
+        print_error("Invalid callback: not a function.");
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    Func* func = func_val.as.function;
+    
+    if (arg_count != func->arity) {
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer), "Callback function expected %d arguments but got %d.", func->arity, arg_count);
+        print_error(buffer);
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    Env* call_env = env_new(func->env);
+    Node* param = func->params_head;
+    
+    for(int i = 0; i < arg_count; i++) {
+        set_var(call_env, param->name, args[i], false); 
+        param = param->next;
+    }
+    
+    Value result = eval_node(call_env, func->body_head);
+    env_free(call_env);
+    
+    if (result.type == VAL_RETURN) {
+        Value actual_return = *result.as.return_val;
+        free(result.as.return_val);
+        return actual_return;
+    }
+    
+    return (Value){VAL_NIL, {0}}; 
+}
+
 /**
  * @brief Recursively searches for a method in a class and its superclasses.
  * @param klass The class to search in.
@@ -811,8 +851,82 @@ Value eval_node(Env* env, Node* n) {
             if (n->left->kind == NODE_GET) {
                 Node* get_node = n->left;
                 Value obj = eval_node(env, get_node->left);
+
+                
                 
                 if (obj.type == VAL_ARRAY) {
+                    Value callback = (Value){VAL_NIL, {0}};
+                    
+                    if (n->right) {
+                        callback = eval_node(env, n->right);
+                    }
+
+                    if (strcmp(get_node->name, "map") == 0) {
+                        ValueArray* old_arr = obj.as.array;
+                        ValueArray* new_arr = array_new();
+                        Value args[1]; 
+                        
+                        for (int i = 0; i < old_arr->count; i++) {
+                            args[0] = old_arr->values[i];
+                            Value new_val = call_jackal_function(env, callback, 1, args);
+                            array_append(new_arr, new_val);
+                        }
+                        free_value(callback);
+                        return (Value){VAL_ARRAY, {.array = new_arr}};
+                    }
+
+
+                    if (strcmp(get_node->name, "filter") == 0) {
+                        ValueArray* old_arr = obj.as.array;
+                        ValueArray* new_arr = array_new();
+                        Value args[1];
+                        
+                        for (int i = 0; i < old_arr->count; i++) {
+                            args[0] = old_arr->values[i];
+                            Value result = call_jackal_function(env, callback, 1, args);
+                            if (is_value_truthy(result)) {
+                                array_append(new_arr, copy_value(args[0])); // Salin nilai asli
+                            }
+                            free_value(result);
+                        }
+                        free_value(callback);
+                        return (Value){VAL_ARRAY, {.array = new_arr}};
+                    }
+
+                    if (strcmp(get_node->name, "reduce") == 0) {
+                        ValueArray* arr = obj.as.array;
+                        Value accumulator;
+                        int start_index = 0;
+                        
+                        if (n->arity == 2) {
+                            accumulator = eval_node(env, n->right->next);
+                        } else if (n->arity == 1) {
+                            if (arr->count == 0) return (Value){VAL_NIL, {0}};
+                            accumulator = copy_value(arr->values[0]);
+                            start_index = 1;
+                        } else {
+                            print_error("Error: .reduce() takes 1 or 2 arguments.");
+                            return (Value){VAL_NIL, {0}};
+                        }
+
+                        Value args[2]; 
+                        for (int i = start_index; i < arr->count; i++) {
+                            args[0] = accumulator;
+                            args[1] = arr->values[i];
+                            
+                            Value new_acc = call_jackal_function(env, callback, 2, args);
+                            
+                            free_value(accumulator);
+                            accumulator = new_acc;
+                        }
+                        
+                        free_value(callback);
+                        return accumulator; 
+                    }
+
+
+                    
+
                     
                     if (strcmp(get_node->name, "length") == 0) {
                         return (Value){VAL_NUMBER, {.number = (double)obj.as.array->count}};
