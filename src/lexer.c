@@ -163,6 +163,7 @@ Token lexer_next(Lexer* L) {
         case '{': tk.kind = TOKEN_LBRACE; strcpy(tk.text, "{"); break;
         case '}': tk.kind = TOKEN_RBRACE; strcpy(tk.text, "}"); break;
         case ',': tk.kind = TOKEN_COMMA; strcpy(tk.text, ","); break;
+        case '%': tk.kind = TOKEN_PERCENT; strcpy(tk.text, "%"); break;
         case '[': tk.kind = TOKEN_LBRACKET; strcpy(tk.text, "["); break;
         case ']': tk.kind = TOKEN_RBRACKET; strcpy(tk.text, "]"); break;
         case '.': tk.kind = TOKEN_DOT; strcpy(tk.text, "."); break;

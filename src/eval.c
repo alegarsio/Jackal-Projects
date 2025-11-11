@@ -1,9 +1,13 @@
+
 #include "eval.h"
 #include "value.h"
 #include "env.h"
+
+
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <math.h>
 
 /**
  * Global exception state for the interpreter.
@@ -569,6 +573,15 @@ Value eval_node(Env* env, Node* n) {
                     }
                     print_error("Operands must be numbers for '/'.");
                     break;
+
+                case TOKEN_PERCENT:
+                    if (is_number(left, right)) {
+                       
+                        return (Value){VAL_NUMBER, {.number = fmod(left.as.number, right.as.number)}};
+                    }
+                    print_error("Operands must be numbers for '%'.");
+                    break;
+                    
                 case TOKEN_GREATER:
                     if (is_number(left, right)) {
                         return (Value){VAL_NUMBER, {.number = (left.as.number > right.as.number) ? 1.0 : 0.0}};

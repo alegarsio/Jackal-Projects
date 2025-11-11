@@ -350,13 +350,15 @@ static Node* parse_postfix(Parser* P) {
  * @return Pointer to the parsed Node.
  */
 static Node* parse_multiplication(Parser* P) {
+    
     Node* left = parse_postfix(P);
-    while (P->current.kind == TOKEN_STAR || P->current.kind == TOKEN_SLASH) {
+    while (P->current.kind == TOKEN_STAR || P->current.kind == TOKEN_SLASH || P->current.kind == TOKEN_PERCENT) {
+   
         Node* n = new_node(NODE_BINOP);
         n->op = P->current.kind;
         next(P);
         n->left = left;
-        n->right = parse_postfix(P);
+        n->right = parse_postfix(P); 
         left = n;
     }
     return left;

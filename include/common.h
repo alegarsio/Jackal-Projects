@@ -54,6 +54,7 @@ typedef enum {
     TOKEN_TRY,
     TOKEN_CATCH,
     TOKEN_THROW,
+    TOKEN_PERCENT,
     TOKEN_INVALID
 } TokenKind;
 
