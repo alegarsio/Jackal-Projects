@@ -241,7 +241,6 @@ static Node* parse_array_literal(Parser* P) {
                 items_head = item_expr;
                 items_current = item_expr;
             } else {
-                // GUNAKAN 'next'
                 items_current->next = item_expr;
                 items_current = item_expr;
             }
@@ -265,6 +264,27 @@ static Node* parse_primary(Parser* P) {
         Node* n = new_node(NODE_NUMBER);
         n->value = P->current.number;
         next(P);
+        return n;
+    }
+
+    /**
+     * True Token 
+     */
+    if (P->current.kind == TOKEN_TRUE) {
+        next(P);
+        Node* n = new_node(NODE_NUMBER);
+        n->value = 1.0; 
+        return n;
+    }
+
+    /**
+     * False Token
+     */
+
+    if (P->current.kind == TOKEN_FALSE) {
+        next(P); 
+        Node* n = new_node(NODE_NUMBER);
+        n->value = 0.0; 
         return n;
     }
     

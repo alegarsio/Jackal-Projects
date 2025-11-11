@@ -22,6 +22,8 @@ typedef enum {
     TOKEN_RBRACE,
     TOKEN_IF,
     TOKEN_ELSE,
+    TOKEN_TRUE,
+    TOKEN_FALSE,
     TOKEN_BANG,
     TOKEN_BANG_EQUAL,
     TOKEN_EQUAL_EQUAL,
