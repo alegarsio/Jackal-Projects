@@ -190,6 +190,8 @@ bool is_value_truthy(Value value) {
         case VAL_NATIVE:   return true;
         case VAL_INSTANCE: return true;
         case VAL_INTERFACE: return true;
+        case VAL_BREAK: return false;
+        case VAL_CONTINUE: return false;
         case VAL_ENUM: return true;
         case VAL_RETURN: return is_value_truthy(*value.as.return_val);
     }
@@ -218,6 +220,8 @@ Value eval_equals(Value a, Value b) {
             case VAL_INSTANCE: result = (a.as.instance == b.as.instance); break;
             case VAL_INTERFACE: return (Value){VAL_NUMBER, {.number = (a.as.interface_obj == b.as.interface_obj)}};
             case VAL_ENUM: return (Value){VAL_NUMBER, {.number = (a.as.enum_obj == b.as.enum_obj)}};
+            case VAL_BREAK: return (Value){VAL_NUMBER, {.number = 0.0}}; 
+            case VAL_CONTINUE: return (Value){VAL_NUMBER, {.number = 0.0}}; 
             default: result = 0.0; break;
         }
     }

@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 /**
  * @typedef @enum TOKENKIND
@@ -58,6 +59,8 @@ typedef enum {
     TOKEN_CATCH,
     TOKEN_THROW,
     TOKEN_PERCENT,
+    TOKEN_BREAK,
+    TOKEN_CONTINUE,
     TOKEN_INVALID
 } TokenKind;
 
@@ -174,6 +177,8 @@ typedef enum {
     VAL_MAP,
     VAL_ENUM,
     VAL_FILE,
+    VAL_BREAK,    
+    VAL_CONTINUE,
     VAL_INTERFACE
 } ValueType;
 
@@ -247,8 +252,7 @@ void array_free(ValueArray* arr);
  * Prints an error message to stderr.
  * @param message Error message to be printed.
  */
-void print_error(const char *message);
-
+void print_error(const char *format, ...);
 /**
  * @struct TOKEN
  * Represents a token in the Jackal programming language.

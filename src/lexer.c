@@ -91,8 +91,14 @@ Token lexer_next(Lexer* L) {
         else if (strcmp(tk.text, "function") == 0) tk.kind = TOKEN_FUNCTION;
         else if (strcmp(tk.text, "return") == 0) tk.kind = TOKEN_RETURN;
         else if (strcmp(tk.text, "while") == 0) tk.kind = TOKEN_WHILE;
+        
         else if (strcmp(tk.text, "true") == 0) tk.kind = TOKEN_TRUE;
         else if (strcmp(tk.text, "false") == 0) tk.kind = TOKEN_FALSE;
+
+        else if (strcmp(tk.text, "break") == 0) tk.kind = TOKEN_BREAK;
+        else if (strcmp(tk.text, "continue") == 0) tk.kind = TOKEN_CONTINUE;
+
+
         else if (strcmp(tk.text, "for") == 0) tk.kind = TOKEN_FOR;
         else if (strcmp(tk.text, "class") == 0) tk.kind = TOKEN_CLASS;
         else if (strcmp(tk.text, "extends") == 0) tk.kind = TOKEN_EXTENDS;

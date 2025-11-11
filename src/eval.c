@@ -137,6 +137,12 @@ Value eval_node(Env* env, Node* n) {
             return (Value){VAL_FUNCTION, {.function = func}};
         }
 
+        case NODE_BREAK_STMT:
+            return (Value){VAL_BREAK, {0}};
+            
+        case NODE_CONTINUE_STMT:
+            return (Value){VAL_CONTINUE, {0}};
+
         case NODE_ENUM_DEF: {
             Enum* en = malloc(sizeof(Enum));
             strcpy(en->name, n->name);
@@ -411,7 +417,7 @@ Value eval_node(Env* env, Node* n) {
         case NODE_IDENT: {
             Var* v = find_var(env, n->name);
             if (!v) { 
-                print_error("Undefined variable."); 
+                print_error("Undefined variable '%s'.", n->name);
                 return (Value){.type = VAL_NIL, .as = {0}}; 
             }
             return copy_value(v->value);
@@ -1173,6 +1179,10 @@ Value eval_node(Env* env, Node* n) {
                 if (result.type == VAL_RETURN) {
                     break;
                 }
+
+                if (result.type == VAL_RETURN || result.type == VAL_BREAK || result.type == VAL_CONTINUE) {
+                    break;
+                }
                 current = current->next;
             }
             
@@ -1190,7 +1200,17 @@ Value eval_node(Env* env, Node* n) {
                 if (result.type == VAL_RETURN) {
                     return result;
                 }
-                free_value(result);
+                
+                if (result.type == VAL_BREAK) {
+                    free_value(result);
+                    break; 
+                }
+                if (result.type == VAL_CONTINUE) {
+                    free_value(result);
+                    
+                } else {
+                    free_value(result); 
+                }
                 
                 cond = eval_node(env, n->left);
             }
@@ -1223,6 +1243,17 @@ Value eval_node(Env* env, Node* n) {
                     return body_res;
                 }
                 free_value(body_res);
+
+                if (body_res.type == VAL_BREAK) {
+                    free_value(body_res);
+                    break; 
+                }
+                
+                if (body_res.type == VAL_CONTINUE) {
+                     free_value(body_res);
+                } else {
+                     free_value(body_res); 
+                }
                 
                 Value inc_res = eval_node(for_env, increment);
                 free_value(inc_res);

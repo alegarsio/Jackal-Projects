@@ -2,7 +2,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Parses unary break statement.
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_break_stmt(Parser* P);
 
+
+/**
+ * @brief Parses unary continue statement.
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_continue_stmt(Parser* P);
 
 /**
  * @brief Parses unary ! operator statement.
@@ -809,6 +820,14 @@ Node* parse_stmt(Parser* P) {
         return parse_match_stmt(P);
     }
 
+    if (P->current.kind == TOKEN_BREAK) {
+        return parse_break_stmt(P);
+    }
+    
+    if (P->current.kind == TOKEN_CONTINUE) {
+        return parse_continue_stmt(P);
+    }
+
     if (P->current.kind == TOKEN_INTERFACE) {
         return parse_interface_def(P);
     }
@@ -1206,6 +1225,27 @@ static Node* parse_throw_stmt(Parser* P) {
     next(P); 
     n->left = parse_expr(P); 
     if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after throw.");
+    if (P->current.kind == TOKEN_SEMI) next(P);
+    return n;
+}
+
+/**
+ * @brief Parses a break statement.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_break_stmt(Parser* P) {
+    Node* n = new_node(NODE_BREAK_STMT);
+    next(P); 
+    if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after 'break'.");
+    if (P->current.kind == TOKEN_SEMI) next(P);
+    return n;
+}
+
+static Node* parse_continue_stmt(Parser* P) {
+    Node* n = new_node(NODE_CONTINUE_STMT);
+    next(P); // Lewati 'continue'
+    if (P->current.kind != TOKEN_SEMI) print_error("Expected ';' after 'continue'.");
     if (P->current.kind == TOKEN_SEMI) next(P);
     return n;
 }

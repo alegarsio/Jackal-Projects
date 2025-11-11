@@ -51,6 +51,8 @@ typedef enum {
     NODE_THROW_STMT,
     NODE_CONSTDECL,
     NODE_UNARY,
+    NODE_BREAK_STMT,
+    NODE_CONTINUE_STMT,
     NODE_INTERFACE_DEF
 } NodeKind;
 
