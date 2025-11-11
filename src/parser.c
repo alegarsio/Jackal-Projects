@@ -4,6 +4,12 @@
 
 
 /**
+ * @brief Parses or || operator statement.
+ * @param P Pointer to the Parser.
+ */
+static Node* parse_logical_or(Parser* P);
+
+/**
  * @brief Parses a try statement.
  * @param P Pointer to the Parser.
  */
@@ -350,7 +356,7 @@ static Node* parse_postfix(Parser* P) {
  * @return Pointer to the parsed Node.
  */
 static Node* parse_multiplication(Parser* P) {
-    
+
     Node* left = parse_postfix(P);
     while (P->current.kind == TOKEN_STAR || P->current.kind == TOKEN_SLASH || P->current.kind == TOKEN_PERCENT) {
    
@@ -443,7 +449,13 @@ static Node* parse_logical_and(Parser* P) {
  * @return Pointer to the parsed Node.
  */
 static Node* parse_assignment(Parser* P) {
-    Node* node = parse_logical_and(P);
+
+  
+
+    /**
+     * Logical (||) or operator
+     */
+    Node* node = parse_logical_or(P);
 
     if (P->current.kind == TOKEN_ASSIGN) {
         next(P);
@@ -1197,6 +1209,24 @@ static Node* parse_try_stmt(Parser* P) {
     n->right = parse_block(P);
 
     return n;
+}
+/**
+ * @brief Parses a logical operator.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_logical_or(Parser* P) {
+    Node* left = parse_logical_and(P); 
+
+    while (P->current.kind == TOKEN_PIPE_PIPE) {
+        Node* n = new_node(NODE_BINOP);
+        n->op = P->current.kind;
+        next(P);
+        n->left = left;
+        n->right = parse_logical_and(P); 
+        left = n;
+    }
+    return left;
 }
 
 /**

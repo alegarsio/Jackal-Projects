@@ -525,6 +525,24 @@ Value eval_node(Env* env, Node* n) {
         }
 
         case NODE_BINOP: {
+
+            /**
+             * Token (||)
+             * Or
+             */
+            if (n->op == TOKEN_PIPE_PIPE) {
+                Value left = eval_node(env, n->left);
+                if (is_value_truthy(left)) {
+                    return left;
+                }
+                free_value(left);
+                return eval_node(env, n->right);
+            }
+
+            /**
+             * Token (&&)
+             * And 
+             */
             if (n->op == TOKEN_AND_AND) {
                 Value left = eval_node(env, n->left);
                 if (!is_value_truthy(left)) {
@@ -581,7 +599,7 @@ Value eval_node(Env* env, Node* n) {
                     }
                     print_error("Operands must be numbers for '%'.");
                     break;
-                    
+
                 case TOKEN_GREATER:
                     if (is_number(left, right)) {
                         return (Value){VAL_NUMBER, {.number = (left.as.number > right.as.number) ? 1.0 : 0.0}};

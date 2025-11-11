@@ -183,6 +183,10 @@ Token lexer_next(Lexer* L) {
         case '>': 
             tk.kind = match(L, '=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER; 
             break;
+        case '|':
+            if (match(L, '|')) tk.kind = TOKEN_PIPE_PIPE;
+            else tk.kind = TOKEN_INVALID; // (Kita tidak mendukung bitwise OR)
+            break;
         case '&':
             if (match(L, '&')) tk.kind = TOKEN_AND_AND;
             else tk.kind = TOKEN_INVALID;
