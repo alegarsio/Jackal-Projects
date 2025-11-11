@@ -198,10 +198,35 @@ Value eval_node(Env* env, Node* n) {
             return (Value){VAL_NIL, {0}};
         }
 
-        
-
         case NODE_NUMBER:
             return (Value){VAL_NUMBER, {.number = n->value}};
+        
+        case NODE_UNARY: {
+            Value right = eval_node(env, n->right);
+
+            switch (n->op) {
+                case TOKEN_MINUS: { 
+                    if (right.type != VAL_NUMBER) {
+                        print_error("Operand for '-' must be a number.");
+                        free_value(right);
+                        return (Value){VAL_NIL, {0}};
+                    }
+                    double val = -right.as.number;
+                    free_value(right);
+                    return (Value){VAL_NUMBER, {.number = val}};
+                } 
+
+                case TOKEN_BANG: { 
+                    bool is_true = is_value_truthy(right);
+                    free_value(right);
+                    return (Value){VAL_NUMBER, {.number = is_true ? 0.0 : 1.0}};
+                } 
+                
+                default: 
+                    break; 
+            }
+            return (Value){VAL_NIL, {0}};
+        }
         
         /**
          * Strings must be heap-allocated because they are passed around by pointer.

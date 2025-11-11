@@ -3,6 +3,14 @@
 #include <string.h>
 
 
+
+/**
+ * @brief Parses unary ! operator statement.
+ * @param P Pointer to the Parser.
+ */
+
+static Node* parse_unary(Parser* P);
+
 /**
  * @brief Parses or || operator statement.
  * @param P Pointer to the Parser.
@@ -357,14 +365,15 @@ static Node* parse_postfix(Parser* P) {
  */
 static Node* parse_multiplication(Parser* P) {
 
-    Node* left = parse_postfix(P);
+    Node* left = parse_unary(P);
+    
     while (P->current.kind == TOKEN_STAR || P->current.kind == TOKEN_SLASH || P->current.kind == TOKEN_PERCENT) {
    
         Node* n = new_node(NODE_BINOP);
         n->op = P->current.kind;
         next(P);
         n->left = left;
-        n->right = parse_postfix(P); 
+        n->right = parse_unary(P);
         left = n;
     }
     return left;
@@ -1229,6 +1238,24 @@ static Node* parse_logical_or(Parser* P) {
     return left;
 }
 
+/**
+ * @brief Parses a unary operator.
+ * @param P Pointer to the Parser.
+ * @return Pointer to the parsed Node.
+ */
+static Node* parse_unary(Parser* P) {
+
+    if (P->current.kind == TOKEN_BANG || P->current.kind == TOKEN_MINUS) {
+        Node* n = new_node(NODE_UNARY);
+        n->op = P->current.kind;
+        next(P);
+
+        n->right = parse_unary(P); 
+        return n;
+    }
+
+    return parse_postfix(P);
+}
 /**
  * @brief Frees the memory allocated for the given AST node and its children.
  * @param n Pointer to the Node to be freed.
