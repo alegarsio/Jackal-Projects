@@ -1,0 +1,69 @@
+class Node {
+    function init(value) {
+        this.value = value;
+        this.next = nil;
+    }
+}
+
+class List {
+    function init() {
+        this.head = nil;
+        this.tail = nil;
+        this.count = 0;
+    }
+
+    function isEmpty() {
+        return this.head == nil;
+    }
+
+    function size() {
+        return this.count;
+    }
+
+    function append(value) {
+        let node = Node(value);
+        if (this.head == nil) {
+            this.head = node;
+            this.tail = node;
+        } else {
+            this.tail.next = node;
+            this.tail = node;
+        }
+        this.count++;
+    }
+
+    function prepend(value) {
+        let node = Node(value);
+        if (this.head == nil) {
+            this.head = node;
+            this.tail = node;
+        } else {
+            node.next = this.head;
+            this.head = node;
+        }
+        this.count++;
+    }
+
+    function removeFirst() {
+        if (this.head == nil) {
+            return nil;
+        }
+        let val = this.head.value;
+        this.head = this.head.next;
+        if (this.head == nil) {
+            this.tail = nil;
+        }
+        this.count--;
+        return val;
+    }
+
+    function printList() {
+        let current = this.head;
+      
+        while (current != nil) {
+            print current.value;
+            current = current.next;
+        }
+     
+    }
+}

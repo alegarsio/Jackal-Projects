@@ -443,35 +443,81 @@ Value eval_node(Env* env, Node* n) {
         }
         
         case NODE_POST_INC: {
-            if (n->left->kind != NODE_IDENT) {
-                print_error("Invalid l-value for '++'.");
-                return (Value){.type = VAL_NIL, .as = {0}};
+
+            Node* lvalue = n->left;
+
+            if (lvalue->kind == NODE_IDENT) {
+                
+                Var* v = find_var(env, lvalue->name);
+                if (v == NULL || v->value.type != VAL_NUMBER) {
+                    print_error("Operand for '++' must be a number variable.");
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                double old_val = v->value.as.number;
+                v->value.as.number++;
+                return (Value){VAL_NUMBER, {.number = old_val}};
+
+            } else if (lvalue->kind == NODE_GET) {
+                Value obj = eval_node(env, lvalue->left);
+                if (obj.type != VAL_INSTANCE) {
+                    print_error("Invalid l-value for '++'.");
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                
+                Var* v = find_var(obj.as.instance->fields, lvalue->name);
+                if (v == NULL || v->value.type != VAL_NUMBER) {
+                    print_error("Operand for '++' must be a number property.");
+                    free_value(obj);
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                
+                double old_val = v->value.as.number;
+                v->value.as.number++;
+                free_value(obj);
+                return (Value){VAL_NUMBER, {.number = old_val}};
             }
-            Var* v = find_var(env, n->left->name);
-            if (v->value.type != VAL_NUMBER) {
-                print_error("Operand for '++' must be a number.");
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
-            double old_val = v->value.as.number;
-            free_value(v->value);
-            v->value = (Value){VAL_NUMBER, {.number = old_val + 1}};
-            return (Value){VAL_NUMBER, {.number = old_val}};
+
+            print_error("Invalid l-value for '++'.");
+            return (Value){.type = VAL_NIL, .as = {0}};
+        
         }
         
         case NODE_POST_DEC: {
-            if (n->left->kind != NODE_IDENT) {
-                print_error("Invalid l-value for '--'.");
-                return (Value){.type = VAL_NIL, .as = {0}};
+            Node* lvalue = n->left;
+
+            if (lvalue->kind == NODE_IDENT) {
+                Var* v = find_var(env, lvalue->name);
+                if (v == NULL || v->value.type != VAL_NUMBER) {
+                    print_error("Operand for '--' must be a number variable.");
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                double old_val = v->value.as.number;
+                v->value.as.number--;
+                return (Value){VAL_NUMBER, {.number = old_val}};
+
+            } else if (lvalue->kind == NODE_GET) {
+                
+                Value obj = eval_node(env, lvalue->left);
+                if (obj.type != VAL_INSTANCE) {
+                    print_error("Invalid l-value for '--'.");
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                
+                Var* v = find_var(obj.as.instance->fields, lvalue->name);
+                if (v == NULL || v->value.type != VAL_NUMBER) {
+                    print_error("Operand for '--' must be a number property.");
+                    free_value(obj);
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                
+                double old_val = v->value.as.number;
+                v->value.as.number--;
+                free_value(obj);
+                return (Value){VAL_NUMBER, {.number = old_val}};
             }
-            Var* v = find_var(env, n->left->name);
-            if (v->value.type != VAL_NUMBER) {
-                print_error("Operand for '--' must be a number.");
-                return (Value){.type = VAL_NIL, .as = {0}};
-            }
-            double old_val = v->value.as.number;
-            free_value(v->value);
-            v->value = (Value){VAL_NUMBER, {.number = old_val - 1}};
-            return (Value){VAL_NUMBER, {.number = old_val}};
+
+            print_error("Invalid l-value for '--'.");
+            return (Value){.type = VAL_NIL, .as = {0}};
         }
 
         case NODE_BINOP: {
@@ -568,7 +614,7 @@ Value eval_node(Env* env, Node* n) {
         
         case NODE_VARDECL: {
             Value val = eval_node(env, n->right);
-            set_var(env, n->name, val,true);
+            set_var(env, n->name, val,false);
             free_value(val); 
             return (Value){.type = VAL_NIL, .as = {0}}; 
         }
