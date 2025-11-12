@@ -77,6 +77,7 @@ typedef struct Node {
     bool is_deprecated;
     
     int arity;
+    char return_type[64];
 } Node;
 
 

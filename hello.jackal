@@ -1,0 +1,16 @@
+class System{
+    function write(){
+        print("Writing");
+    }
+}
+
+class Device extends System{
+
+    @override
+    function write(){
+        print("Device Writing");
+    }
+}
+
+let device = Device();
+device.write();

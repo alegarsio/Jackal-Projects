@@ -648,15 +648,32 @@ static Node* parse_func_def(Parser* P) {
                 params_head = param_node;
                 params_current = param_node;
             } else {
-                // GUNAKAN 'next'
                 params_current->next = param_node;
                 params_current = param_node;
             }
         } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
     }
     
+    
     if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after parameters.");
     next(P);
+
+
+    if (P->current.kind == TOKEN_COLON) {
+        next(P); 
+        if (P->current.kind != TOKEN_IDENT) {
+            print_error("Expected type name after ':'.");
+            n->return_type[0] = '\0'; 
+        } else {
+            strcpy(n->return_type, P->current.text);
+            next(P); 
+        }
+    } else {
+        n->return_type[0] = '\0';
+    }
+
+
+    
 
     n->left = params_head;
     n->right = parse_block(P);

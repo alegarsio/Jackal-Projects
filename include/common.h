@@ -111,6 +111,7 @@ typedef struct Func {
     int arity;
 
     bool is_deprecated;
+    char return_type[64];
 } Func;
 
 struct Value;

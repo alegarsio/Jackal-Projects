@@ -56,6 +56,28 @@ static char* read_file(const char* filename) {
 
 
 /**
+ * @brief get value for return type
+ */
+static const char* get_value_type_name(Value val) {
+    switch (val.type) {
+        case VAL_NIL:       return "nil";
+        case VAL_NUMBER:    return "Number";
+        case VAL_STRING:    return "String";
+        case VAL_ARRAY:     return "Array";
+        case VAL_MAP:       return "Map";
+        case VAL_FUNCTION:  return "Function";
+        case VAL_NATIVE:    return "Function";
+        case VAL_CLASS:     return val.as.class_obj->name; // Nama Class
+        case VAL_INSTANCE:  return val.as.instance->class_val->as.class_obj->name; // Nama Class
+        case VAL_INTERFACE: return val.as.interface_obj->name;
+        case VAL_ENUM:      return val.as.enum_obj->name;
+        case VAL_FILE:      return "File";
+        default:            return "unknown";
+    }
+}
+
+
+/**
  * @brief call stream built in method
  * 
  */
@@ -128,6 +150,7 @@ Value eval_node(Env* env, Node* n) {
 
         case NODE_FUNC_EXPR: {
             Func* func = malloc(sizeof(Func));
+            strcpy(func->return_type, n->return_type);
             func->params_head = n->left;
             func->body_head = n->right;
             func->env = env; 
@@ -858,8 +881,6 @@ Value eval_node(Env* env, Node* n) {
                     required_method = required_method->next;
                 }
             }
-
-            // --- LANGKAH 6: REGISTRASI CLASS ---
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
             set_var(env, n->name, class_val,true);
             return (Value){.type = VAL_NIL, .as = {0}};
@@ -867,6 +888,7 @@ Value eval_node(Env* env, Node* n) {
         
         case NODE_FUNC_DEF: {
             Func* func = malloc(sizeof(Func));
+            strcpy(func->return_type, n->return_type);
             func->params_head = n->left;
             func->body_head = n->right;
             func->env = env;
@@ -877,6 +899,7 @@ Value eval_node(Env* env, Node* n) {
             n->left = NULL;
             n->right = NULL;
 
+            
             Value func_val = (Value){VAL_FUNCTION, {.function = func}};
             set_var(env, n->name, func_val,true);
             
@@ -1148,23 +1171,41 @@ Value eval_node(Env* env, Node* n) {
             }
             
             if (callee.type == VAL_FUNCTION) {
+
                  Func* func = callee.as.function;
                  Env* call_env = env_new(func->env);
                  Node* arg = n->right; Node* param = func->params_head;
+
                  for(int i=0; i<n->arity; i++) {
                      Value v = eval_node(env, arg);
                      set_var(call_env, param->name, v,false);
                      free_value(v);
                      arg = arg->next; param = param->next;
                  }
+
+                 
+                 Value final_result = (Value){VAL_NIL, {0}};
                  Value res = eval_node(call_env, func->body_head);
                  env_free(call_env);
-                 if (res.type == VAL_RETURN) {
+                if (res.type == VAL_RETURN) {
                      Value ret = *res.as.return_val;
                      free(res.as.return_val);
                      return ret;
                  }
                  return (Value){VAL_NIL, {0}};
+
+                if (func->return_type[0] != '\0') { // Cek jika tipe diset
+                    const char* expected_type = func->return_type;
+                    const char* actual_type = get_value_type_name(final_result);
+                    
+                    if (strcmp(expected_type, actual_type) != 0) {
+                        
+                        print_error("Type Mismatch: Function expected return type '%s' but got '%s'.", 
+                                    expected_type, actual_type);
+                        free_value(final_result);
+                        return (Value){VAL_NIL, {0}};
+                    }
+                }
             }
 
              if (callee.type == VAL_NATIVE) {
