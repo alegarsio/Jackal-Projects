@@ -1,16 +1,6 @@
-class System{
-    function write(){
-        print("Writing");
-    }
+function add(a,b){
+    return a + b;
 }
+let hasil = test(1,2);
 
-class Device extends System{
-
-    @override
-    function write(){
-        print("Device Writing");
-    }
-}
-
-let device = Device();
-device.write();
+print(hasil);

@@ -70,6 +70,13 @@ struct Env;
 struct Value;
 
 /**
+ * @typedef @struct List
+ * Forwarded declaration of List Data Strcutre
+ */
+typedef struct LinkedList LinkedList;
+
+
+/**
  * @typedef @struct INTERFACE
  * Forwared declaration of Interface struct
  */
@@ -183,6 +190,7 @@ typedef enum {
     VAL_FILE,
     VAL_BREAK,    
     VAL_CONTINUE,
+    VAL_LINKEDLIST,
     VAL_INTERFACE
 } ValueType;
 
@@ -202,9 +210,12 @@ typedef struct Value {
         Instance* instance;
         NativeFn native;
         struct HashMap* map;
+        struct Linkedlist* list;
         Interface* interface_obj;
         Enum* enum_obj;
         FILE* file;
+
+        
     } as;
 } Value;
 

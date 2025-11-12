@@ -1,4 +1,7 @@
-
+/**
+* Jackal std.io.File
+* provides a 
+**/
 class File {
     function init(path, mode) {
         this.handle = __io_open(path, mode);

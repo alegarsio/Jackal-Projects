@@ -440,7 +440,7 @@ Value eval_node(Env* env, Node* n) {
         case NODE_IDENT: {
             Var* v = find_var(env, n->name);
             if (!v) { 
-                print_error("Undefined variable '%s'.", n->name);
+               print_error("Undefined identifier '%s'.", n->name);
                 return (Value){.type = VAL_NIL, .as = {0}}; 
             }
             return copy_value(v->value);
@@ -1130,6 +1130,8 @@ Value eval_node(Env* env, Node* n) {
             }
 
             Value callee = eval_node(env, n->left);
+
+            
             
             if (callee.type == VAL_CLASS) {
                 Instance* inst = malloc(sizeof(Instance));
@@ -1184,28 +1186,30 @@ Value eval_node(Env* env, Node* n) {
                  }
 
                  
-                 Value final_result = (Value){VAL_NIL, {0}};
-                 Value res = eval_node(call_env, func->body_head);
+              
+                Value result = eval_node(call_env, func->body_head);
                  env_free(call_env);
-                if (res.type == VAL_RETURN) {
-                     Value ret = *res.as.return_val;
-                     free(res.as.return_val);
-                     return ret;
+                 
+                 Value final_result = (Value){VAL_NIL, {0}};
+                 if (result.type == VAL_RETURN) {
+                     final_result = *result.as.return_val;
+                     free(result.as.return_val);
                  }
-                 return (Value){VAL_NIL, {0}};
-
-                if (func->return_type[0] != '\0') { // Cek jika tipe diset
+                 
+                 if (func->return_type[0] != '\0') {
                     const char* expected_type = func->return_type;
                     const char* actual_type = get_value_type_name(final_result);
                     
                     if (strcmp(expected_type, actual_type) != 0) {
-                        
                         print_error("Type Mismatch: Function expected return type '%s' but got '%s'.", 
                                     expected_type, actual_type);
                         free_value(final_result);
-                        return (Value){VAL_NIL, {0}};
+                        return (Value){VAL_NIL, {0}}; 
                     }
-                }
+                 }
+                 
+                 
+                 return final_result;
             }
 
              if (callee.type == VAL_NATIVE) {
