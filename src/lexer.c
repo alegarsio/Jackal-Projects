@@ -204,6 +204,7 @@ Token lexer_next(Lexer* L) {
         case ']': tk.kind = TOKEN_RBRACKET; strcpy(tk.text, "]"); break;
         case '.': tk.kind = TOKEN_DOT; strcpy(tk.text, "."); break;
         case ':': tk.kind = TOKEN_COLON; strcpy(tk.text, ":"); break;
+        case '@': tk.kind = TOKEN_AT; strcpy(tk.text, "@"); break;
 
         case '!': 
             tk.kind = match(L, '=') ? TOKEN_BANG_EQUAL : TOKEN_BANG; 

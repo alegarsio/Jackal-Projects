@@ -61,6 +61,7 @@ typedef enum {
     TOKEN_PERCENT,
     TOKEN_BREAK,
     TOKEN_CONTINUE,
+    TOKEN_AT,
     TOKEN_INVALID
 } TokenKind;
 
@@ -108,6 +109,8 @@ typedef struct Func {
     struct Node* body_head;
     struct Env* env;
     int arity;
+
+    bool is_deprecated;
 } Func;
 
 struct Value;

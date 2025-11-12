@@ -8,7 +8,8 @@
 		{ "include": "#storage" },
 		{ "include": "#constants" },
 		{ "include": "#entities" },
-		{ "include": "#operators" }
+		{ "include": "#operators" },
+		{ "include": "#annotations" }
 	],
 	"repository": {
 		"comments": {
@@ -39,7 +40,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.jackal",
-					"match": "\\b(if|else|while|for|return|match|default|import|try|catch|throw)\\b"
+					"match": "\\b(if|else|while|for|return|match|default|import|try|catch|throw|break|continue)\\b"
 				},
 				{
 					"name": "keyword.other.jackal",
@@ -88,6 +89,14 @@
 				{
 					"name": "keyword.operator.jackal",
 					"match": "(\\+|\\-|\\*|\\/|%|=|==|!=|<|>|<=|>=|&&|\\|\\||!|=>)"
+				}
+			]
+		},
+		"annotations": {
+			"patterns": [
+				{
+					"name": "storage.type.annotation.jackal",
+					"match": "@(override|deprecated)\\b"
 				}
 			]
 		}

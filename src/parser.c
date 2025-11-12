@@ -3,6 +3,14 @@
 #include <string.h>
 
 /**
+ * @brief Parses annotation
+ * @param P Pointer to the Parser.
+ * @param N Node to the Node pointer
+ */
+static void parse_annotations(Parser* P, Node* n);
+
+
+/**
  * @brief Parses unary break statement.
  * @param P Pointer to the Parser.
  */
@@ -703,6 +711,10 @@ static Node* parse_class_def(Parser* P) {
     Node* methods_current = NULL;
 
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+
+        Node meta_node = {0}; 
+        parse_annotations(P, &meta_node);
+
         if (P->current.kind != TOKEN_FUNCTION) {
             print_error("Expected 'function' keyword for method.");
             break;
@@ -710,6 +722,10 @@ static Node* parse_class_def(Parser* P) {
         next(P); 
 
         Node* method = parse_func_def(P);
+
+        method->is_override = meta_node.is_override;
+        method->is_deprecated = meta_node.is_deprecated;
+
         if (methods_head == NULL) {
             methods_head = method;
             methods_current = method;
@@ -812,6 +828,12 @@ static Node* parse_for_stmt(Parser* P) {
  */
 Node* parse_stmt(Parser* P) {
 
+    Node meta_node = {0};
+
+    if (P->current.kind == TOKEN_AT) {
+        parse_annotations(P, &meta_node);
+    }
+
     if (P->current.kind == TOKEN_IF) {
         return parse_if_stmt(P);
     }
@@ -850,7 +872,11 @@ Node* parse_stmt(Parser* P) {
     
     if (P->current.kind == TOKEN_FUNCTION) {
         next(P);
-        return parse_func_def(P);
+        Node* n = parse_func_def(P);
+       
+        n->is_override = meta_node.is_override;
+        n->is_deprecated = meta_node.is_deprecated;
+        return n;
     }
     
     if (P->current.kind == TOKEN_RETURN) {
@@ -1313,6 +1339,32 @@ static Node* parse_unary(Parser* P) {
     }
 
     return parse_postfix(P);
+}
+
+
+
+static void parse_annotations(Parser* P, Node* n) {
+   
+    n->is_override = false;
+    n->is_deprecated = false;
+
+    while (P->current.kind == TOKEN_AT) {
+        next(P);
+        
+        if (P->current.kind != TOKEN_IDENT) {
+            print_error("Expected annotation name after '@'.");
+            return;
+        }
+
+        if (strcmp(P->current.text, "override") == 0) {
+            n->is_override = true;
+        } else if (strcmp(P->current.text, "deprecated") == 0) {
+            n->is_deprecated = true;
+        } else {
+            print_error("Unknown annotation '@%s'.", P->current.text);
+        }
+        next(P); 
+    }
 }
 /**
  * @brief Frees the memory allocated for the given AST node and its children.

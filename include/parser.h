@@ -72,6 +72,9 @@ typedef struct Node {
     struct Node* right;
     
     struct Node* next; 
+
+    bool is_override;
+    bool is_deprecated;
     
     int arity;
 } Node;

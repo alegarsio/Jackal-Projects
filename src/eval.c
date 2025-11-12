@@ -463,6 +463,9 @@ Value eval_node(Env* env, Node* n) {
         
         case NODE_GET: {
             Value obj = eval_node(env, n->left);
+            
+
+            
             if (obj.type == VAL_INSTANCE) {
                 Var* field = find_var(obj.as.instance->fields, n->name);
                 if (field) {
@@ -517,6 +520,8 @@ Value eval_node(Env* env, Node* n) {
                 print_error("Only instances have fields.");
                 return (Value){.type = VAL_NIL, .as = {0}};
             }
+
+            
             
             Value val = eval_node(env, n->right);
             set_var(obj.as.instance->fields, n->left->name, val,false);
@@ -774,13 +779,34 @@ Value eval_node(Env* env, Node* n) {
         }
         
         case NODE_CLASS_DEF: {
-
             Class* class_obj = malloc(sizeof(Class));
             strcpy(class_obj->name, n->name);
             class_obj->methods = env_new(env);
-            class_obj->superclass = NULL;
-            class_obj->interface = NULL;
-            
+            class_obj->superclass = NULL; 
+            class_obj->interface = NULL; 
+
+            if (strlen(n->super_name) > 0) {
+                Var* super_var = find_var(env, n->super_name);
+                if (!super_var || super_var->value.type != VAL_CLASS) {
+                    print_error("Superclass '%s' not found or invalid.", n->super_name);
+                    env_free(class_obj->methods);
+                    free(class_obj);
+                    return (Value){.type = VAL_NIL, .as = {0}}; 
+                }
+                class_obj->superclass = super_var->value.as.class_obj;
+            }
+
+            if (strlen(n->interface_name) > 0) {
+                Var* iface_var = find_var(env, n->interface_name);
+                if (!iface_var || iface_var->value.type != VAL_INTERFACE) {
+                    print_error("Interface '%s' not found or invalid.", n->interface_name);
+                    env_free(class_obj->methods);
+                    free(class_obj);
+                    return (Value){.type = VAL_NIL, .as = {0}};
+                }
+                class_obj->interface = iface_var->value.as.interface_obj;
+            }
+
             Node* method = n->left;
             while(method) {
                 Node* next_method = method->next;
@@ -789,46 +815,54 @@ Value eval_node(Env* env, Node* n) {
                 method = next_method;
             }
 
+            Node* check_node = n->left; 
+            while (check_node) {
+                if (check_node->is_override) {
+                    bool found_in_parent = false;
+                    if (class_obj->superclass != NULL) {
+                        if (find_method(class_obj->superclass, check_node->name) != NULL) {
+                            found_in_parent = true;
+                        }
+                    }
 
-            if (strlen(n->interface_name) > 0) {
-                Var* iface_var = find_var(env, n->interface_name);
-                if (!iface_var || iface_var->value.type != VAL_INTERFACE) {
-                    print_error("Interface not found or invalid.");
-                } else {
-                    class_obj->interface = iface_var->value.as.interface_obj;
+                    if (!found_in_parent && class_obj->interface != NULL) {
+                        if (find_var(class_obj->interface->methods, check_node->name) != NULL) {
+                            found_in_parent = true;
+                        }
+                    }
+
+                    if (!found_in_parent) {
+                        print_error("Method '%s' marked @override but does not override or implement any method from a superclass or interface.", 
+                                    check_node->name);
+                        
+                    }
                 }
+                check_node = check_node->next;
             }
 
-            if (strlen(n->super_name) > 0) {
-                Var* super_var = find_var(env, n->super_name);
-                if (!super_var || super_var->value.type != VAL_CLASS) {
-                    print_error("Superclass must be a valid class.");
-                    return (Value){.type = VAL_NIL, .as = {0}};
-                }
-                class_obj->superclass = super_var->value.as.class_obj;
-            }
 
+            
+            
             if (class_obj->interface) {
                 Interface* iface = class_obj->interface;
                 Var* required_method = iface->methods->vars;
                 while (required_method) {
-                    Var* implemented = find_var(class_obj->methods, required_method->name);
+                    
+                    Var* implemented = find_method(class_obj, required_method->name);
                     if (!implemented) {
                         char buffer[128];
                         snprintf(buffer, sizeof(buffer), "Class '%s' must implement method '%s' from interface '%s'.", 
                                  class_obj->name, required_method->name, iface->name);
                         print_error(buffer);
-                    } else {
-                        Func* impl_func = implemented->value.as.function;
                     }
                     required_method = required_method->next;
                 }
             }
 
+            // --- LANGKAH 6: REGISTRASI CLASS ---
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
             set_var(env, n->name, class_val,true);
             return (Value){.type = VAL_NIL, .as = {0}};
-
         }
         
         case NODE_FUNC_DEF: {
@@ -837,6 +871,8 @@ Value eval_node(Env* env, Node* n) {
             func->body_head = n->right;
             func->env = env;
             func->arity = n->arity;
+
+            func->is_deprecated = n->is_deprecated;
 
             n->left = NULL;
             n->right = NULL;
@@ -866,7 +902,7 @@ Value eval_node(Env* env, Node* n) {
             if (n->left->kind == NODE_GET) {
                 Node* get_node = n->left;
                 Value obj = eval_node(env, get_node->left);
-
+                
                 if (obj.type == VAL_MAP) {
                     Value method_val;
                     if (!map_get(obj.as.map, get_node->name, &method_val)) {
@@ -1030,8 +1066,12 @@ Value eval_node(Env* env, Node* n) {
                         print_error("Undefined method.");
                         return (Value){VAL_NIL, .as = {0}};
                     }
-                    
+
                     Func* func = method_var->value.as.function;
+
+                    if (func->is_deprecated) {
+                        printf("Warning: Method '%s' is deprecated.\n", get_node->name);
+                    }
                     Env* call_env = env_new(func->env);
                     
                     Var* this_var = malloc(sizeof(Var));
