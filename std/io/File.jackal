@@ -1,0 +1,35 @@
+
+class File {
+    function init(path, mode) {
+        this.handle = __io_open(path, mode);
+        if (this.handle == nil) {
+            print "Error: Failed to open file" + path;
+        }
+    }
+
+    function isOpen() {
+        return this.handle != nil;
+    }
+
+    function readAll() {
+        if (!this.isOpen()) {
+            return nil;
+        }
+        return __io_readAll(this.handle);
+    }
+
+    function write(content) {
+        if (!this.isOpen()) {
+            return nil;
+        }
+        __io_write(this.handle, content);
+    }
+
+    function close() {
+        if (!this.isOpen()) {
+            return nil;
+        }
+        __io_close(this.handle);
+        this.handle = nil;
+    }
+}

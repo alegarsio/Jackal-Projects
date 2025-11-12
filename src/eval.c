@@ -476,6 +476,13 @@ Value eval_node(Env* env, Node* n) {
                 }
             }
 
+            else if (obj.type == VAL_MAP) {
+                Value result;
+                if (map_get(obj.as.map, n->name, &result)) {
+                    return copy_value(result);
+                }
+            }
+
             if (obj.type == VAL_ENUM) {
                 Var* constant = find_var(obj.as.enum_obj->values, n->name);
                 if (constant) {
@@ -853,12 +860,38 @@ Value eval_node(Env* env, Node* n) {
                  }
                  return (Value){VAL_NIL, .as = {0}};
             }
+
+            
             
             if (n->left->kind == NODE_GET) {
                 Node* get_node = n->left;
                 Value obj = eval_node(env, get_node->left);
 
-                
+                if (obj.type == VAL_MAP) {
+                    Value method_val;
+                    if (!map_get(obj.as.map, get_node->name, &method_val)) {
+                        print_error("Undefined method for Map.");
+                        return (Value){VAL_NIL, {0}};
+                    }
+                    
+                    if (method_val.type != VAL_NATIVE) {
+                        print_error("Map value is not a callable function.");
+                        return (Value){VAL_NIL, {0}};
+                    }
+
+                    NativeFn native = method_val.as.native;
+                    Value args[255];
+                    int arg_count = 0;
+                    Node* arg_node = n->right;
+                    while (arg_node) {
+                        args[arg_count++] = eval_node(env, arg_node);
+                        arg_node = arg_node->next;
+                    }
+                    
+                    Value res = native(arg_count, args);
+                    for(int i=0; i<arg_count; i++) free_value(args[i]);
+                    return res;
+                }
                 
                 if (obj.type == VAL_ARRAY) {
                     Value callback = (Value){VAL_NIL, {0}};
@@ -979,52 +1012,7 @@ Value eval_node(Env* env, Node* n) {
                     return (Value){VAL_NIL, {0}};
                 }
 
-                if (obj.type == VAL_FILE) {
-                    FILE* f = obj.as.file;
-                    if (f == NULL) {
-                        print_error("Error: File is closed.");
-                        return (Value){VAL_NIL, {0}};
-                    }
-
-                    if (strcmp(get_node->name, "readAll") == 0) {
-                        fseek(f, 0, SEEK_END);
-                        long fsize = ftell(f);
-                        rewind(f);
-
-                        char* content = malloc(fsize + 1);
-                        if (!content) return (Value){VAL_NIL, {0}};
-                        
-                        size_t read_size = fread(content, 1, fsize, f);
-                        content[read_size] = '\0';
-
-                        return (Value){VAL_STRING, {.string = content}};
-                    }
-
-                    if (strcmp(get_node->name, "write") == 0) {
-                        Node* arg = n->right;
-                        while (arg) {
-                            Value val = eval_node(env, arg);
-                            if (val.type == VAL_STRING) {
-                                fputs(val.as.string, f);
-                            } else if (val.type == VAL_NUMBER) {
-                                fprintf(f, "%g", val.as.number);
-                            }
-                            free_value(val);
-                            arg = arg->next;
-                        }
-                        return (Value){VAL_NIL, {0}};
-                    }
-
-                    if (strcmp(get_node->name, "close") == 0) {
-                        fclose(f);
-                        obj.as.file = NULL; 
-                        return (Value){VAL_NIL, {0}};
-                    }
-
-                    print_error("Undefined method for File.");
-                    return (Value){VAL_NIL, {0}};
-                }
-
+                
                 if (obj.type == VAL_STRING) {
                    
                     if (strcmp(get_node->name, "length") == 0) {

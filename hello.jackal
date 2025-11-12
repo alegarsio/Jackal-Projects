@@ -1,3 +1,13 @@
-let a = 10;
+import std.io.File;
 
-print (b);
+let f = File("test.txt", "w");
+if (f.isOpen()) {
+    f.write("Halo dari Jackal STL!\n");
+    f.close();
+}
+
+let f_in = File("test.txt", "r");
+if (f_in.isOpen()) {
+    print f_in.readAll();
+    f_in.close();
+}

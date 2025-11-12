@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <math.h>
 /**
  * Main entry point for the Jackal interpreter.
  * @include necessary headers
@@ -17,7 +17,74 @@
 #include "eval.h"
 
 
+Value builtin_io_open(int argCount, Value* args) {
+    if (argCount != 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) return (Value){VAL_NIL, {0}};
+    FILE* f = fopen(args[0].as.string, args[1].as.string);
+    if (f == NULL) return (Value){VAL_NIL, {0}};
+    return (Value){VAL_FILE, {.file = f}};
+}
 
+Value builtin_io_readAll(int argCount, Value* args) {
+    if (argCount != 1 || args[0].type != VAL_FILE) return (Value){VAL_NIL, {0}};
+    FILE* f = args[0].as.file;
+    if (f == NULL) return (Value){VAL_NIL, {0}};
+    
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    rewind(f);
+    char* content = malloc(fsize + 1);
+    fread(content, 1, fsize, f);
+    content[fsize] = '\0';
+    return (Value){VAL_STRING, {.string = content}};
+}
+
+Value builtin_io_write(int argCount, Value* args) {
+    if (argCount != 2 || args[0].type != VAL_FILE || args[1].type != VAL_STRING) return (Value){VAL_NIL, {0}};
+    FILE* f = args[0].as.file;
+    if (f == NULL) return (Value){VAL_NIL, {0}};
+    fputs(args[1].as.string, f);
+    return (Value){VAL_NIL, {0}};
+}
+
+Value builtin_io_close(int argCount, Value* args) {
+    if (argCount != 1 || args[0].type != VAL_FILE) return (Value){VAL_NIL, {0}};
+    FILE* f = args[0].as.file;
+    if (f == NULL) return (Value){VAL_NIL, {0}};
+    fclose(f);
+    return (Value){VAL_NIL, {0}};
+}
+
+
+
+
+/**
+ * Math Built In operation 
+ * (Beta) 
+ */
+
+Value builtin_math_sqrt(int argCount, Value* args) {
+    if (argCount != 1 || args[0].type != VAL_NUMBER) {
+        print_error("sqrt() requires one number argument.");
+        return (Value){VAL_NIL, {0}};
+    }
+    return (Value){VAL_NUMBER, {.number = sqrt(args[0].as.number)}};
+}
+
+Value builtin_math_pow(int argCount, Value* args) {
+    if (argCount != 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_NUMBER) {
+        print_error("pow() requires two number arguments (base, exponent).");
+        return (Value){VAL_NIL, {0}};
+    }
+    return (Value){VAL_NUMBER, {.number = pow(args[0].as.number, args[1].as.number)}};
+}
+
+
+/**
+ * @brief Built-in function typeof 
+ * @param argCount The number of arguments passed to the function.
+ * @param args The array of argument Values.
+ * @return A Value representing the length.
+ */
 Value builtin_typeof(int argCount, Value* args) {
     if (argCount != 1) {
         fprintf(stderr, "Runtime Error: typeof() takes exactly 1 argument.\n");
@@ -236,6 +303,20 @@ int main(int argc, char **argv) {
             set_var(env, name_str, val,true); \
         } while(0)
 
+    /**
+     * Register Global function
+     */
+    #define REGISTER(name, func) set_var(env, name, (Value){VAL_NATIVE, {.native = func}}, true)
+
+    REGISTER("__math_sqrt", builtin_math_sqrt);
+    REGISTER("__math_pow", builtin_math_pow);
+    set_var(env, "__math_PI", (Value){VAL_NUMBER, {.number = 3.1415926535}}, true);
+
+
+    REGISTER("__io_open", builtin_io_open);
+    REGISTER("__io_readAll", builtin_io_readAll);
+    REGISTER("__io_write", builtin_io_write);
+    REGISTER("__io_close", builtin_io_close);
 
     DEFINE_NATIVE("len", builtin_len);
     DEFINE_NATIVE("push", builtin_push);

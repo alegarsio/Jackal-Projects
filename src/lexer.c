@@ -24,13 +24,41 @@ static char get(Lexer* L) {
 static void skip_ws(Lexer* L) {
     while (1) {
         char c = peek(L);
+        
         if (isspace(c)) {
             get(L);
-        } else if (c == '/' && L->src[L->pos + 1] == '/') {
-            while (peek(L) != '\n' && peek(L) != '\0') {
-                get(L);
+            continue;
+        } 
+        
+        if (c == '/') {
+            char next_char = L->src[L->pos + 1];
+            
+            if (next_char == '/') {
+                while (peek(L) != '\n' && peek(L) != '\0') {
+                    get(L);
+                }
+                continue; 
+            } 
+            else if (next_char == '*') {
+               
+                get(L); 
+                get(L); 
+                
+                while (peek(L) != '\0') {
+                    if (peek(L) == '*' && L->src[L->pos + 1] == '/') {
+                        get(L); 
+                        get(L); 
+                        break;  
+                    }
+                    get(L); 
+                }
+                continue; 
+            } 
+            else {
+                break;
             }
-        } else {
+        } 
+        else {
             break;
         }
     }
