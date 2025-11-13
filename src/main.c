@@ -23,16 +23,26 @@
 
 
 Value builtin_io_open(int argCount, Value* args) {
-    if (argCount != 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) return (Value){VAL_NIL, {0}};
+
+    if (argCount != 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) 
+        return (Value){VAL_NIL, {0}};
+
     FILE* f = fopen(args[0].as.string, args[1].as.string);
-    if (f == NULL) return (Value){VAL_NIL, {0}};
+    
+    if (f == NULL) 
+        return (Value){VAL_NIL, {0}};
     return (Value){VAL_FILE, {.file = f}};
 }
 
 Value builtin_io_readAll(int argCount, Value* args) {
-    if (argCount != 1 || args[0].type != VAL_FILE) return (Value){VAL_NIL, {0}};
+
+    if (argCount != 1 || args[0].type != VAL_FILE) 
+        return (Value){VAL_NIL, {0}};
+
     FILE* f = args[0].as.file;
-    if (f == NULL) return (Value){VAL_NIL, {0}};
+
+    if (f == NULL) 
+        return (Value){VAL_NIL, {0}};
     
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
