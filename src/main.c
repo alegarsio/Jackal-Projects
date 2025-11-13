@@ -16,6 +16,11 @@
 #include "parser.h"
 #include "eval.h"
 
+/**
+ * @include entry collections dsa
+ */
+#include "collections/linkedlist.c"
+
 
 Value builtin_io_open(int argCount, Value* args) {
     if (argCount != 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) return (Value){VAL_NIL, {0}};
@@ -248,6 +253,27 @@ Value builtin_remove(int argCount, Value* args) {
 
 
 
+Value builtin_ll_new(int argCount, Value* args) {
+    (void)argCount; (void)args; // Unused
+    return (Value){VAL_LINKEDLIST, {.list = linkedlist_new()}};
+}
+Value builtin_ll_append(int argCount, Value* args) {
+    linkedlist_append(args[0].as.list, args[1]);
+    return args[0];
+}
+Value builtin_ll_prepend(int argCount, Value* args) {
+    linkedlist_prepend(args[0].as.list, args[1]);
+    return args[0];
+}
+Value builtin_ll_remove_first(int argCount, Value* args) {
+    return linkedlist_remove_first(args[0].as.list);
+}
+Value builtin_ll_size(int argCount, Value* args) {
+    return (Value){VAL_NUMBER, {.number = (double)linkedlist_size(args[0].as.list)}};
+}
+
+
+
 
 
 int main(int argc, char **argv) {
@@ -317,6 +343,15 @@ int main(int argc, char **argv) {
     REGISTER("__io_readAll", builtin_io_readAll);
     REGISTER("__io_write", builtin_io_write);
     REGISTER("__io_close", builtin_io_close);
+
+
+    REGISTER("__ll_new", builtin_ll_new);
+    REGISTER("__ll_append", builtin_ll_append);
+    REGISTER("__ll_prepend", builtin_ll_prepend);
+    REGISTER("__ll_removeFirst", builtin_ll_remove_first);
+    REGISTER("__ll_size", builtin_ll_size);
+
+
 
     DEFINE_NATIVE("len", builtin_len);
     DEFINE_NATIVE("push", builtin_push);

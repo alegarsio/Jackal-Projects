@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -std=c11 -Iinclude
 
 OBJDIR = obj
 
-SRC = src/common.c src/lexer.c src/parser.c src/env.c src/value.c src/eval.c src/main.c
+SRC = src/common.c src/lexer.c src/parser.c src/env.c src/value.c src/eval.c src/main.c 
 
 
 OBJ = $(patsubst src/%.c, $(OBJDIR)/%.o, $(SRC))

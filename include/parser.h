@@ -67,6 +67,7 @@ typedef struct Node {
     char name[256];
     char super_name[64];
     char interface_name[64];
+    char type_name[64];
     double value;
     struct Node* left;
     struct Node* right;

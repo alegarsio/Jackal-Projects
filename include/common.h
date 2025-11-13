@@ -210,8 +210,8 @@ typedef struct Value {
         Instance* instance;
         NativeFn native;
         struct HashMap* map;
-        struct Linkedlist* list;
         Interface* interface_obj;
+        LinkedList* list;
         Enum* enum_obj;
         FILE* file;
 

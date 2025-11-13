@@ -643,6 +643,21 @@ static Node* parse_func_def(Parser* P) {
             strcpy(param_node->name, P->current.text);
             next(P);
             n->arity++;
+
+           
+            if (P->current.kind == TOKEN_COLON) {
+                next(P); 
+                if (P->current.kind != TOKEN_IDENT) {
+                    print_error("Expected type name after ':'.");
+                    param_node->type_name[0] = '\0';
+                } else {
+                    strcpy(param_node->type_name, P->current.text); 
+                    next(P); 
+                }
+            } else {
+                param_node->type_name[0] = '\0'; 
+            }
+            
             
             if (params_head == NULL) {
                 params_head = param_node;
@@ -660,7 +675,7 @@ static Node* parse_func_def(Parser* P) {
 
 
     if (P->current.kind == TOKEN_COLON) {
-        next(P); 
+        next(P);
         if (P->current.kind != TOKEN_IDENT) {
             print_error("Expected type name after ':'.");
             n->return_type[0] = '\0'; 
@@ -747,7 +762,6 @@ static Node* parse_class_def(Parser* P) {
             methods_head = method;
             methods_current = method;
         } else {
-            // GUNAKAN 'next'
             methods_current->next = method;
             methods_current = method;
         }

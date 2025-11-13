@@ -1,13 +1,18 @@
+
 /**
- * @file value.c
- * @brief Implements the Value structure and related functions for the Jackal programming language.
+ * @include src 
+ * represents part of the jackal programming language
  */
 #include "value.h"
 #include "parser.h"
 #include "eval.h"
 #include "env.h"
 
-
+/**
+ * @include collections dsa
+ * represent dsa int collection stl
+ */
+#include "collections/linkedlist.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -98,13 +103,18 @@ void print_value(Value value) {
             }
             break;
         case VAL_FILE:
-            if (value.as.file) {
-                printf("<file>");
-            } else {
-                printf("<closed file>");
-            }
+        if (value.as.file) {
+            printf("<file>");
+        } else {
+            printf("<closed file>");
+        }
+        break;
+        case VAL_LINKEDLIST: 
+            printf("<linkedlist size %d>", value.as.list->count);
             break;
         case VAL_ENUM: printf("<enum %s>", value.as.enum_obj->name); break;
+
+        
         
 
         
@@ -161,12 +171,16 @@ Value copy_value(Value value) {
         case VAL_INTERFACE:
 
         case VAL_FILE:
-             return value;
+            return value;
 
         case VAL_NATIVE:
-             return value; 
+            return value; 
         case VAL_ENUM: 
-             return value;   
+            return value;   
+
+        case VAL_LINKEDLIST: 
+             return value;
+    
              
         default: return value; 
     }
@@ -193,6 +207,7 @@ bool is_value_truthy(Value value) {
         case VAL_BREAK: return false;
         case VAL_CONTINUE: return false;
         case VAL_ENUM: return true;
+        case VAL_LINKEDLIST: return value.as.list->count > 0;
         case VAL_RETURN: return is_value_truthy(*value.as.return_val);
     }
     return false;
@@ -222,6 +237,7 @@ Value eval_equals(Value a, Value b) {
             case VAL_ENUM: return (Value){VAL_NUMBER, {.number = (a.as.enum_obj == b.as.enum_obj)}};
             case VAL_BREAK: return (Value){VAL_NUMBER, {.number = 0.0}}; 
             case VAL_CONTINUE: return (Value){VAL_NUMBER, {.number = 0.0}}; 
+            case VAL_LINKEDLIST: return (Value){VAL_NUMBER, {.number = (a.as.list == b.as.list)}};
             default: result = 0.0; break;
         }
     }

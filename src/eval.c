@@ -10,6 +10,10 @@
 #include <math.h>
 
 /**
+ * @include collections DSA stl 
+ */
+#include "collections/linkedlist.h"
+/**
  * Global exception state for the interpreter.
  */
 
@@ -1174,24 +1178,40 @@ Value eval_node(Env* env, Node* n) {
             
             if (callee.type == VAL_FUNCTION) {
 
-                 Func* func = callee.as.function;
-                 Env* call_env = env_new(func->env);
-                 Node* arg = n->right; Node* param = func->params_head;
-
-                 for(int i=0; i<n->arity; i++) {
-                     Value v = eval_node(env, arg);
-                     set_var(call_env, param->name, v,false);
-                     free_value(v);
-                     arg = arg->next; param = param->next;
-                 }
-
+                Func* func = callee.as.function;
+                Env* call_env = env_new(func->env);
+                Node* arg = n->right; 
+                Node* param = func->params_head;
                  
+
+                for(int i=0; i<n->arity; i++) {
+                    Value v = eval_node(env, arg);
+                    if (param->type_name[0] != '\0') { 
+                        const char* expected_type = param->type_name;
+                        const char* actual_type = get_value_type_name(v);
+
+                        if (strcmp(expected_type, actual_type) != 0) {
+                            print_error("Type Mismatch for parameter '%s'. Expected '%s' but got '%s'.",
+                                        param->name, expected_type, actual_type);
+                            
+                            
+                            free_value(v);
+                            env_free(call_env);
+                            return (Value){VAL_NIL, {0}};
+                        }
+                    }
+
+                    set_var(call_env, param->name, v, false);
+                    free_value(v);
+                    arg = arg->next; 
+                    param = param->next;
+                }
               
                 Value result = eval_node(call_env, func->body_head);
-                 env_free(call_env);
+                env_free(call_env);
                  
-                 Value final_result = (Value){VAL_NIL, {0}};
-                 if (result.type == VAL_RETURN) {
+                Value final_result = (Value){VAL_NIL, {0}};
+                if (result.type == VAL_RETURN) {
                      final_result = *result.as.return_val;
                      free(result.as.return_val);
                  }
