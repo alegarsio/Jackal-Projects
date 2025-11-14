@@ -78,14 +78,12 @@ void print_value(Value value) {
             print_value(*value.as.return_val);
             break;
         case VAL_ARRAY:
-            printf("[");
             for (int i = 0; i < value.as.array->count; i++) {
                 print_value(value.as.array->values[i]);
                 if (i < value.as.array->count - 1) {
                     printf(", ");
                 }
             }
-            printf("]");
             break;
         case VAL_INTERFACE: printf("<interface %s>", value.as.interface_obj->name); break;
         case VAL_CLASS:
@@ -135,6 +133,7 @@ void free_value(Value value) {
             break;
             
         case VAL_ARRAY: 
+
             break;
         case VAL_CLASS: 
             break;

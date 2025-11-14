@@ -28,7 +28,7 @@ Value builtin_io_open(int argCount, Value* args) {
         return (Value){VAL_NIL, {0}};
 
     FILE* f = fopen(args[0].as.string, args[1].as.string);
-    
+
     if (f == NULL) 
         return (Value){VAL_NIL, {0}};
     return (Value){VAL_FILE, {.file = f}};
@@ -360,7 +360,6 @@ int main(int argc, char **argv) {
     REGISTER("__ll_prepend", builtin_ll_prepend);
     REGISTER("__ll_removeFirst", builtin_ll_remove_first);
     REGISTER("__ll_size", builtin_ll_size);
-
 
 
     DEFINE_NATIVE("len", builtin_len);

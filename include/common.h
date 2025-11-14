@@ -19,20 +19,37 @@ typedef enum {
     TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR, TOKEN_SLASH,
     TOKEN_ASSIGN, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_SEMI,
     TOKEN_STRING, 
+
+    
     TOKEN_LBRACE,
     TOKEN_RBRACE,
+
+    /**
+     * Token For if & else and else if
+     */
+
     TOKEN_IF,
     TOKEN_ELSE,
+
+    /**
+     * Token For boolean value e.g., true / false
+     */
     TOKEN_TRUE,
     TOKEN_FALSE,
+
     TOKEN_BANG,
     TOKEN_BANG_EQUAL,
+    
     TOKEN_EQUAL_EQUAL,
+
     TOKEN_LESS,
     TOKEN_LESS_EQUAL,
+
     TOKEN_GREATER,
     TOKEN_GREATER_EQUAL,
+
     TOKEN_AND_AND,
+    
     TOKEN_FUNCTION,
     TOKEN_RETURN,
     TOKEN_COMMA,
@@ -62,6 +79,7 @@ typedef enum {
     TOKEN_BREAK,
     TOKEN_CONTINUE,
     TOKEN_AT,
+    TOKEN_WHEN,
     TOKEN_INVALID
 } TokenKind;
 

@@ -53,6 +53,8 @@ typedef enum {
     NODE_UNARY,
     NODE_BREAK_STMT,
     NODE_CONTINUE_STMT,
+    NODE_WHEN_EXPR,
+    NODE_WHEN_CASE,
     NODE_INTERFACE_DEF
 } NodeKind;
 
