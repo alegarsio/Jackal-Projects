@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 /**
  * @include collections DSA stl
@@ -1113,6 +1114,22 @@ Value eval_node(Env *env, Node *n)
             Node *get_node = n->left;
             Value obj = eval_node(env, get_node->left);
 
+            if (obj.type == VAL_NUMBER) {
+                    if (strcmp(get_node->name, "toString") == 0) {
+                        char buffer[64];
+                       
+                        sprintf(buffer, "%g", obj.as.number);
+                        
+                        char* str_copy = malloc(strlen(buffer) + 1);
+                        strcpy(str_copy, buffer);
+                        
+                        return (Value){VAL_STRING, {.string = str_copy}};
+                    }
+                    
+                    print_error("Undefined method '%s' for Number.", get_node->name);
+                    return (Value){VAL_NIL, {0}};
+                }
+
             if (obj.type == VAL_MAP)
             {
                 Value method_val;
@@ -1281,6 +1298,17 @@ Value eval_node(Env *env, Node *n)
 
             if (obj.type == VAL_STRING)
             {
+
+                if (strcmp(get_node->name, "toNumber") == 0) {
+                       
+                        double val = atof(obj.as.string);
+                        free_value(obj); 
+                        return (Value){VAL_NUMBER, {.number = val}};
+                    }
+                    
+                    if (strcmp(get_node->name, "toString") == 0) {
+                         return obj; 
+                    }
 
                 if (strcmp(get_node->name, "length") == 0)
                 {

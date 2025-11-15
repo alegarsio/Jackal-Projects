@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+
 /**
  * @typedef @struct ENV
  * Represents an environment (scope) in the Jackal programming language.

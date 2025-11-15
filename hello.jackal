@@ -1,1 +1,6 @@
-print("hello world");
+let angka = 123;
+let teks = "456";
+
+print "Angka: " + angka.toString(); 
+
+print 100 + teks.toNumber();

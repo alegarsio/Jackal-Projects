@@ -9,17 +9,20 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+
 /**
  * @typedef @enum TOKENKIND
  * Represents the kinds of tokens in the Jackal programming language.
  */
 typedef enum {
+
     TOKEN_END, TOKEN_NUMBER, TOKEN_IDENT,
     TOKEN_LET, TOKEN_CONST, TOKEN_PRINT,
     TOKEN_PLUS, TOKEN_MINUS, TOKEN_STAR, TOKEN_SLASH,
     TOKEN_ASSIGN, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_SEMI,
     TOKEN_STRING, 
 
+    
     
     TOKEN_LBRACE,
     TOKEN_RBRACE,
@@ -134,7 +137,6 @@ typedef struct Func {
     struct Node* body_head;
     struct Env* env;
     int arity;
-
     bool is_deprecated;
     char return_type[64];
 } Func;
