@@ -284,45 +284,79 @@ Value builtin_ll_size(int argCount, Value* args) {
 
 
 
+/**
+ * Execute Source file
+ */
 
+void execute_source(const char* source, Env* env) {
+    Lexer L;
+    Parser P;
+    
+    lexer_init(&L, source);
+    parser_init(&P, &L);
 
-int main(int argc, char **argv) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <file.jackal>\n", argv[0]);
-        return 1;
+    while (P.current.kind != TOKEN_END) {
+        Node* stmt = parse_stmt(&P);
+        if (stmt) {
+            Value result = eval_node(env, stmt);
+            free_value(result); 
+            free_node(stmt);
+        } else {
+           
+            break;
+        }
     }
+}
 
-    const char *filename = argv[1];
 
-    const char *ext = strrchr(filename, '.');
-    if (!ext || strcmp(ext, ".jackal") != 0) {
-        fprintf(stderr, "Error: file must have .jackal extension\n");
-        return 1;
+/**
+ * REPL initial
+ */
+void runRepl(Env* env) {
+    char line[1024];
+    printf("Jackal Beta Version  Shell\n");
+    printf("Type 'exit' to quit.\n");
+
+    while (1) {
+        printf(">> ");
+        
+        if (!fgets(line, sizeof(line), stdin)) {
+            printf("\n");
+            break;
+        }
+
+        if (strncmp(line, "exit", 4) == 0) break;
+
+        execute_source(line, env);
     }
+}
 
-    FILE *f = fopen(filename, "r");
+/**
+ * Runfile
+ */
+void runFile(const char* path, Env* env) {
+    FILE *f = fopen(path, "r");
     if (!f) {
         perror("Failed to open file");
-        return 1;
+        exit(1);
     }
-
     fseek(f, 0, SEEK_END);
     long len = ftell(f);
     rewind(f);
     char *source = malloc(len + 1);
-    if (!source) {
-        fprintf(stderr, "Failed to allocate memory for file\n");
-        fclose(f);
-        return 1;
-    }
+    if (!source) { fclose(f); return; }
     fread(source, 1, len, f);
     source[len] = '\0';
     fclose(f);
 
-    Lexer L;
-    Parser P;
-    Env* env = env_new(NULL);
+    execute_source(source, env);
+    free(source);
+}
 
+
+int main(int argc, char **argv) {
+    
+    Env* env = env_new(NULL);
     /**
      * Set Of Jackal Built In Method Entry
      */
@@ -369,22 +403,14 @@ int main(int argc, char **argv) {
     DEFINE_NATIVE("File", builtin_file_open);
     
 
-    lexer_init(&L, source);
-    parser_init(&P, &L);
-
-    while (P.current.kind != TOKEN_END) {
-        Node* stmt = parse_stmt(&P);
-
-        if (stmt) {
-            Value result = eval_node(env, stmt);
-            free_value(result); 
-            free_node(stmt);
-        } else {
-            break;
-        }
+    if (argc == 1) {
+    
+        runRepl(env);
+    } else {
+       
+        runFile(argv[1], env);
     }
 
-    free(source);
     env_free(env);
 
     return 0;

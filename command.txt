@@ -1,0 +1,4 @@
+rm -rf /Users/alegrarsiogiftalesmana/.vscode/extensions/jackal-vscode*
+
+
+cp -r /Users/alegrarsiogiftalesmana/Desktop/Jackal/Jackal-Projects/jackal-vscode /Users/alegrarsiogiftalesmana/.vscode/extensions/
