@@ -6,7 +6,6 @@ LDFLAGS = -lm
 
 OBJDIR = obj
 
-# --- DAFTAR FILE SOURCE (HANYA YANG DIPAKAI) ---
 SRC = src/common.c \
       src/lexer.c \
       src/parser.c \
@@ -17,9 +16,7 @@ SRC = src/common.c \
       src/vm/vm.c \
       src/main.c
 
-# (Perhatikan: src/compiler/transpiler.c SUDAH DIHAPUS dari sini)
 
-# --- LOGIKA OTOMATIS ---
 OBJ = $(patsubst src/%.c, $(OBJDIR)/%.o, $(SRC))
 
 all: jackal
