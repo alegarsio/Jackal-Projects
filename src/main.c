@@ -16,11 +16,37 @@
 #include "parser.h"
 #include "eval.h"
 
-/**
- * @include entry collections dsa
- */
-#include "collections/linkedlist.c"
 
+/**
+ * include compiler option
+ */
+
+#include "compiler/compiler.h" 
+#include "vm/vm.h"
+
+/** 
+ * extension for jl
+ */
+int has_extension(const char* filename, const char* ext) {
+    const char* dot = strrchr(filename, '.');
+    return (dot && strcmp(dot, ext) == 0);
+}
+/**
+ * read file content
+ * @param path
+ */
+char* read_file_content(const char* path) {
+    FILE* f = fopen(path, "r");
+    if (!f) return NULL;
+    fseek(f, 0, SEEK_END); long len = ftell(f); rewind(f);
+    char* buf = malloc(len + 1);
+    fread(buf, 1, len, f); buf[len] = 0; fclose(f);
+    return buf;
+}
+
+/**
+ * ----------------------------------------------------
+ */
 
 Value builtin_io_open(int argCount, Value* args) {
 
@@ -263,25 +289,6 @@ Value builtin_remove(int argCount, Value* args) {
 
 
 
-Value builtin_ll_new(int argCount, Value* args) {
-    (void)argCount; (void)args; // Unused
-    return (Value){VAL_LINKEDLIST, {.list = linkedlist_new()}};
-}
-Value builtin_ll_append(int argCount, Value* args) {
-    linkedlist_append(args[0].as.list, args[1]);
-    return args[0];
-}
-Value builtin_ll_prepend(int argCount, Value* args) {
-    linkedlist_prepend(args[0].as.list, args[1]);
-    return args[0];
-}
-Value builtin_ll_remove_first(int argCount, Value* args) {
-    return linkedlist_remove_first(args[0].as.list);
-}
-Value builtin_ll_size(int argCount, Value* args) {
-    return (Value){VAL_NUMBER, {.number = (double)linkedlist_size(args[0].as.list)}};
-}
-
 
 
 /**
@@ -389,13 +396,7 @@ int main(int argc, char **argv) {
     REGISTER("__io_close", builtin_io_close);
 
 
-    REGISTER("__ll_new", builtin_ll_new);
-    REGISTER("__ll_append", builtin_ll_append);
-    REGISTER("__ll_prepend", builtin_ll_prepend);
-    REGISTER("__ll_removeFirst", builtin_ll_remove_first);
-    REGISTER("__ll_size", builtin_ll_size);
-
-
+  
     DEFINE_NATIVE("len", builtin_len);
     DEFINE_NATIVE("push", builtin_push);
     DEFINE_NATIVE("pop", builtin_pop);
@@ -404,14 +405,60 @@ int main(int argc, char **argv) {
     
 
     if (argc == 1) {
-    
-        runRepl(env);
-    } else {
-       
-        runFile(argv[1], env);
+        Env* env = env_new(NULL);
+        
+        runRepl(env);         
+        env_free(env);
+        return 0;
     }
 
-    env_free(env);
+    if (strcmp(argv[1], "-c") == 0) {
+        if (argc < 3) {
+            printf("Usage: jackal -c <file.jackal>\n");
+            return 1;
+        }
+        
+        char* source_path = argv[2];
+        char dest_path[256];
+        strcpy(dest_path, source_path);
+        
+        char* dot = strrchr(dest_path, '.');
+        if (dot) strcpy(dot, ".jl");
+        else strcat(dest_path, ".jl");
+
+        char* source = read_file_content(source_path);
+        if (!source) { printf("File not found.\n"); return 1; }
+
+        Lexer L; lexer_init(&L, source);
+        Parser P; parser_init(&P, &L);
+        
+        Node* root = NULL; 
+        Node* tail = NULL;
+        while(P.current.kind != TOKEN_END) {
+             Node* n = parse_stmt(&P);
+             if(n) {
+                 if(!root) root = n;
+                 else tail->next = n;
+                 tail = n;
+             }
+        }
+
+        compile_to_binary(root, dest_path);
+        free(source);
+        return 0;
+    }
+
+    char* filename = argv[1];
+
+    if (has_extension(filename, ".jl")) {
+        run_binary(filename);
+    } 
+    else {
+        Env* env = env_new(NULL);
+     
+        runFile(filename, env);
+        env_free(env);
+    }
 
     return 0;
 }

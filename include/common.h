@@ -23,7 +23,6 @@ typedef enum {
     TOKEN_STRING, 
 
     
-    
     TOKEN_LBRACE,
     TOKEN_RBRACE,
 
