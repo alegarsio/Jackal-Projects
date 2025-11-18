@@ -1,4 +1,5 @@
-rm -rf /Users/alegrarsiogiftalesmana/.vscode/extensions/jackal-vscode*
+./jackal - c < file.jackal > : jackal compile mode
 
+./jackal : enter erpl mode
 
-cp -r /Users/alegrarsiogiftalesmana/Desktop/Jackal/Jackal-Projects/jackal-vscode /Users/alegrarsiogiftalesmana/.vscode/extensions/
+./jackal < file.jackal > : jackal interpreted mode

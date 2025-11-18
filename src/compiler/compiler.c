@@ -57,7 +57,7 @@ void compile_node(Node* n) {
             break;
         
         default:
-            // printf("Warning: Node %d not implemented in compiler yet.\n", n->kind);
+            
             break;
     }
 }
