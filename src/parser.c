@@ -804,70 +804,71 @@ static Node *parse_func_def(Parser *P)
  * @param P Pointer to the Parser.
  * @return Pointer to the parsed Node.
  */
+/**
+ * @brief Parses a class definition.
+ * Supports: class Name extends Super implements Interface { ... }
+ */
 static Node *parse_class_def(Parser *P)
 {
     Node *n = new_node(NODE_CLASS_DEF);
-    next(P);
+    next(P); // Skip 'class'
 
     if (P->current.kind != TOKEN_IDENT)
         print_error("Expected class name.");
+    
     strcpy(n->name, P->current.text);
-    next(P);
+    next(P); // Skip Class Name
 
-    /**
-     * @if condition for inheritance
-     * keyword extends -> TOKEN_EXTENDS
-     * expect IDENT as superclass nameß
-     */
-    if (P->current.kind == TOKEN_EXTENDS)
-    {
-        next(P);
-        if (P->current.kind != TOKEN_IDENT)
-        {
-            print_error("Expected superclass name after 'extends'.");
-        }
-        strcpy(n->super_name, P->current.text);
-        next(P);
-    }
-    else
-    {
-        n->super_name[0] = '\0';
-    }
+    // Inisialisasi kosong dulu
+    n->super_name[0] = '\0';
+    n->interface_name[0] = '\0';
 
-    if (P->current.kind == TOKEN_IMPLEMENTS)
+    // --- BAGIAN PERUBAHAN UTAMA ---
+    // Gunakan Loop untuk menangkap 'extends' dan 'implements'
+    // Loop ini akan berhenti jika ketemu '{' atau token lain
+    while (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS) 
     {
-        next(P);
-        if (P->current.kind != TOKEN_IDENT)
+        if (P->current.kind == TOKEN_EXTENDS) 
         {
-            print_error("Expected interface name after 'implements'.");
+            next(P); // Skip 'extends'
+            if (P->current.kind != TOKEN_IDENT) {
+                print_error("Expected superclass name after 'extends'.");
+            }
+            strcpy(n->super_name, P->current.text);
+            next(P); // Skip SuperClass Name
+        } 
+        else if (P->current.kind == TOKEN_IMPLEMENTS) 
+        {
+            next(P); // Skip 'implements'
+            if (P->current.kind != TOKEN_IDENT) {
+                print_error("Expected interface name after 'implements'.");
+            }
+            strcpy(n->interface_name, P->current.text);
+            next(P); // Skip Interface Name
         }
-        strcpy(n->interface_name, P->current.text); // Simpan nama interface
-        next(P);
     }
-    else
-    {
-        n->interface_name[0] = '\0';
-    }
+    // -------------------------------
 
     if (P->current.kind != TOKEN_LBRACE)
         print_error("Expected '{' before class body.");
-    next(P);
+    next(P); // Skip '{'
 
     Node *methods_head = NULL;
     Node *methods_current = NULL;
 
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
     {
-
         Node meta_node = {0};
         parse_annotations(P, &meta_node);
 
         if (P->current.kind != TOKEN_FUNCTION)
         {
             print_error("Expected 'function' keyword for method.");
-            break;
+            
+            next(P); 
+            continue;
         }
-        next(P);
+        next(P); // Skip 'function'
 
         Node *method = parse_func_def(P);
 
@@ -888,12 +889,11 @@ static Node *parse_class_def(Parser *P)
 
     if (P->current.kind != TOKEN_RBRACE)
         print_error("Expected '}' after class body.");
-    next(P);
+    next(P); // Skip '}'
 
     n->left = methods_head;
     return n;
 }
-
 /**
  * @brief Parses a return statement.
  * @param P Pointer to the Parser.

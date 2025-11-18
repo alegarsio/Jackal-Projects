@@ -1,1 +1,39 @@
-print ("hello world");
+interface Robot{
+    function walk();
+}
+
+class Auth {
+
+    function init(name){
+        this.name = name;
+    }
+
+    function get_name(name){
+        return this.name ;
+    }
+
+    function userAuth(){
+        print("UserAuth");
+    }
+
+}
+class Humanoid implements Robot extends Auth{
+
+    @override
+    function walk(){
+        print("Humanoid is walking");
+    }
+
+    @override 
+    function userAuth(){
+        print("Oke");
+    }
+
+}
+
+let robot = Humanoid("ale");
+robot.walk();
+robot.userAuth();
+
+let result =robot.get_name();
+print(result);
