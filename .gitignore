@@ -13,9 +13,7 @@ Thumbs.db
 *~
 .codeviz/
 
-# VM directories (Ignored)
-src/vm/
-include/vm/
+
 
 # Local test/script files (Ignored)
 math.jackal
