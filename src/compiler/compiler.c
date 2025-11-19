@@ -194,6 +194,30 @@ void compile_node(Node* n) {
             compile_node(n->right);
             emit_byte(OP_PRINT);
             break;
+        
+
+        case NODE_IF_STMT: {
+            compile_node(n->left);
+
+            int thenJump = emit_jump(OP_JUMP_IF_FALSE);
+
+            emit_byte(OP_POP);
+
+            compile_node(n->right->left);
+
+            int elseJump = emit_jump(OP_JUMP);
+
+            patch_jump(thenJump);
+
+            emit_byte(OP_POP);
+
+            if (n->right->right) {
+                compile_node(n->right->right);
+            }
+
+            patch_jump(elseJump);
+            break;
+        }
 
         
         case NODE_ASSIGN:
