@@ -24,6 +24,32 @@ void emit_string(const char* str) {
     fwrite(str, sizeof(char), len, file_out);
 }
 
+/**
+ * @brief placehoder jump address
+ * @param instruction
+ */
+int emit_jump(uint8_t instruction) {
+    emit_byte(instruction);
+    emit_byte(0xff); 
+    emit_byte(0xff); 
+    return ftell(file_out) - 2; 
+}
+
+
+void patch_jump(int offset) {
+    long current = ftell(file_out); 
+    int jump_len = current - offset - 2;
+
+    fseek(file_out, offset, SEEK_SET);
+    uint8_t high = (jump_len >> 8) & 0xff;
+    uint8_t low = jump_len & 0xff;
+    
+    fwrite(&high, 1, 1, file_out);
+    fwrite(&low, 1, 1, file_out);
+    
+    fseek(file_out, current, SEEK_SET); 
+}
+
 void compile_node(Node* n) {
     if (!n) return;
 
@@ -36,10 +62,112 @@ void compile_node(Node* n) {
             }
             break;
         }
+
+        case NODE_FUNC_DEF: {
+            int jump = emit_jump(OP_JUMP);
+
+            long func_start_addr = ftell(file_out); 
+            
+            Node* param = n->left; 
+            while (param) {
+                emit_byte(OP_SET_VAR);
+                emit_string(param->name);
+                param = param->next;
+            }
+
+            compile_node(n->right);
+
+            emit_byte(OP_NIL); 
+            emit_byte(OP_RETURN);
+
+            patch_jump(jump);
+
+            emit_byte(OP_DEF_FUNC);
+            emit_string(n->name); 
+            
+            emit_byte(OP_CONST_NUM);
+            emit_double((double)func_start_addr); 
+
+            break;
+        }
+
+
+        case NODE_FUNC_CALL: {
+            Node* arg = n->right;
+            int arg_count = 0;
+            while (arg) {
+                compile_node(arg);
+                arg_count++;
+                arg = arg->next;
+            }
+
+            emit_byte(OP_CALL);
+            emit_string(n->left->name); 
+            emit_byte((uint8_t)arg_count); 
+            break;
+        }
+
+
+        case NODE_CLASS_DEF: {
+            emit_byte(OP_CLASS);
+            emit_string(n->name);
+            Node* method = n->left;
+            while (method) {
+                
+                int jump = emit_jump(OP_JUMP);
+                long func_start = ftell(file_out);
+
+                Node* param = method->left;
+                while (param) {
+                    emit_byte(OP_SET_VAR);
+                    emit_string(param->name);
+                    param = param->next;
+                }
+                compile_node(method->right); 
+                
+                emit_byte(OP_NIL);
+                emit_byte(OP_RETURN);
+                patch_jump(jump);
+
+                emit_byte(OP_METHOD);
+                emit_string(method->name);
+               
+                emit_byte(OP_CONST_NUM);
+                emit_double((double)func_start);
+
+                method = method->next;
+            }
+            break;
+        }
+
+        case NODE_GET: {
+            compile_node(n->left); 
+            emit_byte(OP_GET_PROP);
+            emit_string(n->name);  
+            break;
+        }
+
+        case NODE_SET: {
+          
+            compile_node(n->left->left); 
+            compile_node(n->right);      
+            emit_byte(OP_SET_PROP);
+            emit_string(n->left->name);  
+            break;
+        }
+
+
+        case NODE_RETURN_STMT:
+            if (n->left) compile_node(n->left); 
+            else emit_byte(OP_NIL); 
+            emit_byte(OP_RETURN);
+            break;
+
         case NODE_PRINT:
             compile_node(n->right);
             emit_byte(OP_PRINT);
             break;
+
         
         case NODE_ASSIGN:
             compile_node(n->left);  

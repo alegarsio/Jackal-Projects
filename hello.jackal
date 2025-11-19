@@ -5,7 +5,6 @@ class Test{
         this.score = score;
     }
 
-
 }
 
 class Student extends Test{
