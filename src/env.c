@@ -62,3 +62,15 @@ void env_free(Env* env) {
     }
     free(env);
 }
+
+int assign_var(Env* env, const char* name, Value value) {
+    for (Var* v = env->vars; v; v = v->next) {
+        if (strcmp(v->name, name) == 0) {
+           
+            v->value = copy_value(value);
+            return 1; 
+        }
+    }
+    if (env->outer) return assign_var(env->outer, name, value);
+    return 0; 
+}

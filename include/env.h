@@ -31,9 +31,9 @@ struct Var* find_var(Env* env, const char* name);
 void set_var(Env* env, const char* name, Value value, bool is_const);
 
 /**
- * clear the environment
- * 
+ * clear the environment 
  */
 void env_free(Env* env);
 
+int assign_var(Env* env, const char* name, Value value);
 #endif

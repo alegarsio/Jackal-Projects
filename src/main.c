@@ -491,24 +491,74 @@ int main(int argc, char **argv)
     {
         if (argc < 3)
         {
-            printf("Usage: jackal -c <file.jackal>\n");
+            printf("Usage: ./jackal -c <file.jackal>\n");
+            return 1;
+        }
+
+        char *source_file = argv[2];
+        char dest_file[256];
+        strcpy(dest_file, source_file);
+        char *dot = strrchr(dest_file, '.');
+        if (dot)
+            strcpy(dot, ".jlo");
+        else
+            strcat(dest_file, ".jlo");
+
+        char *source = read_file_content(source_file);
+        if (!source)
+        {
+            printf("Error: File %s tidak ditemukan.\n", source_file);
+            return 1;
+        }
+
+        Lexer L;
+        lexer_init(&L, source);
+        Parser P;
+        parser_init(&P, &L);
+
+        Node *root = NULL;
+        Node *tail = NULL;
+
+        while (P.current.kind != TOKEN_END)
+        {
+            Node *stmt = parse_stmt(&P);
+            if (stmt)
+            {
+                if (!root)
+                {
+                    root = stmt;
+                    tail = stmt;
+                }
+                else
+                {
+                    tail->next = stmt;
+                    tail = stmt;
+                }
+            }
+            else
+            {
+                P.current = lexer_next(&L);
+            }
+        }
+
+        compile_to_binary(root, dest_file);
+        free(source);
+        return 0;
+    }
+
+    if (strcmp(argv[1], "--dump") == 0)
+    {
+        if (argc < 3)
+        {
+            printf("Usage: ./jackal --dump <file.jackal>\n");
             return 1;
         }
 
         char *source_path = argv[2];
-        char dest_path[256];
-        strcpy(dest_path, source_path);
-
-        char *dot = strrchr(dest_path, '.');
-        if (dot)
-            strcpy(dot, ".jlo");
-        else
-            strcat(dest_path, ".jlo");
-
         char *source = read_file_content(source_path);
         if (!source)
         {
-            printf("File not found.\n");
+            printf("Error reading source.\n");
             return 1;
         }
 
@@ -521,60 +571,38 @@ int main(int argc, char **argv)
         Node *tail = NULL;
         while (P.current.kind != TOKEN_END)
         {
-            Node *n = parse_stmt(&P);
-            if (n)
+            Node *stmt = parse_stmt(&P);
+            if (stmt)
             {
                 if (!root)
-                    root = n;
+                {
+                    root = stmt;
+                    tail = stmt;
+                }
                 else
-                    tail->next = n;
-                tail = n;
+                {
+                    tail->next = stmt;
+                    tail = stmt;
+                }
             }
         }
 
-        compile_to_binary(root, dest_path);
-        free(source);
-        return 0;
-    }
-
-
-    if (strcmp(argv[1], "--dump") == 0) {
-        if (argc < 3) {
-            printf("Usage: ./jackal --dump <file.jackal>\n");
-            return 1;
-        }
-        
-        char* source_path = argv[2];
-        char* source = read_file_content(source_path);
-        if (!source) { printf("Error reading source.\n"); return 1; }
-
-        Lexer L; lexer_init(&L, source);
-        Parser P; parser_init(&P, &L);
-        
-        Node* root = NULL; Node* tail = NULL;
-        while (P.current.kind != TOKEN_END) {
-            Node* stmt = parse_stmt(&P);
-            if (stmt) {
-                if (!root) { root = stmt; tail = stmt; }
-                else { tail->next = stmt; tail = stmt; }
-            }
-        }
-
-        const char* temp_file = "dump_temp.jlo";
+        const char *temp_file = "dump_temp.jlo";
         compile_to_binary(root, temp_file);
-        
-        // 2. Baca kembali binary-nya
-        FILE* f = fopen(temp_file, "rb");
-        fseek(f, 0, SEEK_END); long fsize = ftell(f); rewind(f);
-        uint8_t* bytecode = malloc(fsize);
+
+        FILE *f = fopen(temp_file, "rb");
+        fseek(f, 0, SEEK_END);
+        long fsize = ftell(f);
+        rewind(f);
+        uint8_t *bytecode = malloc(fsize);
         fread(bytecode, 1, fsize, f);
         fclose(f);
-        
+
         disassemble_chunk(source_path, bytecode, fsize);
 
         free(source);
         free(bytecode);
-        remove(temp_file); 
+        remove(temp_file);
         return 0;
     }
 

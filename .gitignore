@@ -20,6 +20,7 @@ include/vm/
 # Local test/script files (Ignored)
 math.jackal
 hello.jackal
+test.jackal
 
 *.jl
 *.jlo

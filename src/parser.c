@@ -1678,10 +1678,13 @@ static void parse_annotations(Parser *P, Node *n)
  */
 static Node* parse_when_expr(Parser* P) {
     Node* n = new_node(NODE_WHEN_EXPR);
-    next(P); 
-
-    if (P->current.kind != TOKEN_LBRACE) print_error("Expected '{' after 'when'.");
     next(P);
+
+    if (P->current.kind != TOKEN_LBRACE) {
+        print_error("Expected '{' after 'when'.");
+        return n; 
+    }
+    next(P); 
 
     Node* cases_head = NULL;
     Node* cases_current = NULL;
@@ -1689,21 +1692,24 @@ static Node* parse_when_expr(Parser* P) {
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
         Node* case_node = new_node(NODE_WHEN_CASE);
 
-       
         if (P->current.kind == TOKEN_DEFAULT) {
-            next(P);
+            next(P); 
             case_node->left = NULL; 
         } else {
             case_node->left = parse_expr(P); 
         }
 
-        if (P->current.kind != TOKEN_ARROW) print_error("Expected '=>' after when condition.");
-        next(P);
+        if (P->current.kind != TOKEN_ARROW) {
+            print_error("Expected '=>' after when condition.");
+        }
+        next(P); 
 
         case_node->right = parse_expr(P);
 
-        if (P->current.kind == TOKEN_COMMA) next(P);
-        
+        if (P->current.kind == TOKEN_COMMA) {
+            next(P);
+        }
+
         if (cases_head == NULL) {
             cases_head = case_node;
             cases_current = case_node;
@@ -1713,10 +1719,11 @@ static Node* parse_when_expr(Parser* P) {
         }
     }
 
-    if (P->current.kind != TOKEN_RBRACE) print_error("Expected '}' after when cases.");
-    next(P);
+    if (P->current.kind != TOKEN_RBRACE)
+        print_error("Expected '}' after when cases.");
+    next(P); 
 
-    n->left = cases_head; // n->left menunjuk ke awal daftar kasus
+    n->left = cases_head;
     return n;
 }
 /**
