@@ -22,5 +22,6 @@ math.jackal
 hello.jackal
 
 *.jl
+*.jlo
 /.jackal
 

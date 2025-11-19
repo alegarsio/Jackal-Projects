@@ -1,28 +1,39 @@
-#pragma once
-#include "common.h"
-#include "parser.h" 
+#ifndef ENV_H
+#define ENV_H
+
+#include "common.h" 
+
+
+typedef struct Env Env;
+struct Var;
+
 
 /**
- * @typedef @struct ENV
- * Represents an environment (scope) in the Jackal programming language.
+ * Make new environment.
+ * @param outer Parent scope 
  */
 Env* env_new(Env* outer);
 
 /**
- * Finds a variable by name in the given environment or its outer environments.
- * @param env The environment to search.
- * @param name The name of the variable to find.
- * @return A pointer to the Var if found, otherwise NULL.
+ * read variable by name
+ * @param env environment
+ * @param name variable name
  */
-Var* find_var(Env* env, const char* name);
+struct Var* find_var(Env* env, const char* name);
 
 /**
- * Sets a variable in the given environment.
- * @param env The environment to set the variable in.
- * @param name The name of the variable.
- * @param value The value to assign to the variable.
- * @param is_const Boolean indicating if the variable is constant.
+ * set variable
+ * @param env environment
+ * @param name name of then variable
+ * @param value value of the varible e.g., String, Number
+ * @param is_const this true if the variable is const
  */
-void set_var(Env* env, const char* name, Value value,bool is_const);
+void set_var(Env* env, const char* name, Value value, bool is_const);
 
+/**
+ * clear the environment
+ * 
+ */
+void env_free(Env* env);
 
+#endif

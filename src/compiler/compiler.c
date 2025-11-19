@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/**
+ * @include compiler file
+ */
 #include "../../include/compiler/compiler.h"
 #include "../../include/vm/opcode.h"
 
@@ -36,6 +40,23 @@ void compile_node(Node* n) {
             compile_node(n->right);
             emit_byte(OP_PRINT);
             break;
+        
+        case NODE_ASSIGN:
+            compile_node(n->left);  
+            emit_byte(OP_SET_VAR);  
+            emit_string(n->name);   
+            break;
+        
+        case NODE_IDENT:
+            emit_byte(OP_GET_VAR);  
+            emit_string(n->name);   
+        break;
+
+        case NODE_VARDECL:
+            compile_node(n->right); 
+            emit_byte(OP_SET_VAR);  
+            emit_string(n->name);   
+            break;
 
         case NODE_NUMBER:
             emit_byte(OP_CONST_NUM);
@@ -62,6 +83,12 @@ void compile_node(Node* n) {
     }
 }
 
+
+/**
+ * @brief Compile code to binary
+ * @param ast
+ * @param filename
+ */
 void compile_to_binary(Node* ast, const char* filename) {
     file_out = fopen(filename, "wb");
     if (!file_out) {
@@ -69,7 +96,6 @@ void compile_to_binary(Node* ast, const char* filename) {
         return;
     }
 
-    // Header Magic: 'J', 'L', Version 1
     uint8_t magic[] = { 'J', 'L', 0x01 };
     fwrite(magic, 1, 3, file_out);
 

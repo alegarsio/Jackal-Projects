@@ -1,39 +1,42 @@
-interface Robot{
-    function walk();
-}
-
-class Auth {
-
-    function init(name){
+class Test{
+    
+    function init(name,score){
         this.name = name;
+        this.score = score;
     }
 
-    function get_name(name){
-        return this.name ;
-    }
-
-    function userAuth(){
-        print("UserAuth");
-    }
-
-}
-class Humanoid implements Robot extends Auth{
-
-    @override
-    function walk(){
-        print("Humanoid is walking");
-    }
-
-    @override 
-    function userAuth(){
-        print("Oke");
-    }
 
 }
 
-let robot = Humanoid("ale");
-robot.walk();
-robot.userAuth();
+class Student extends Test{
 
-let result =robot.get_name();
-print(result);
+
+    function get_name() : String{
+        return this.name;
+    }
+
+    function get_score() : Number{
+        return this.score;
+    }
+
+    function get_grade(score : Number) : String  {
+
+        let result = when{
+            (this.score >= 90  ) => "A",
+            (this.score > 80 && this.score < 85) => "AB",
+            (this.score < 80 && this.score > 75) => "B",
+        };
+
+        return result;
+    }
+
+    
+
+
+}
+
+let student = Student("ale",90);
+print(student.get_name());
+print(student.get_score());
+
+student.get_grade();

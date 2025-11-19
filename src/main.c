@@ -423,8 +423,8 @@ int main(int argc, char **argv) {
         strcpy(dest_path, source_path);
         
         char* dot = strrchr(dest_path, '.');
-        if (dot) strcpy(dot, ".jl");
-        else strcat(dest_path, ".jl");
+        if (dot) strcpy(dot, ".jlo");
+        else strcat(dest_path, ".jlo");
 
         char* source = read_file_content(source_path);
         if (!source) { printf("File not found.\n"); return 1; }
@@ -450,7 +450,7 @@ int main(int argc, char **argv) {
 
     char* filename = argv[1];
 
-    if (has_extension(filename, ".jl")) {
+    if (has_extension(filename, ".jlo")) {
         run_binary(filename);
     } 
     else {
