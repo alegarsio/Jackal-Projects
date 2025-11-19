@@ -10,6 +10,12 @@
 
 static FILE* file_out;
 
+
+
+void compile_node(Node* n);
+
+
+
 void emit_byte(uint8_t byte) {
     fwrite(&byte, sizeof(uint8_t), 1, file_out);
 }
@@ -33,6 +39,17 @@ int emit_jump(uint8_t instruction) {
     emit_byte(0xff); 
     emit_byte(0xff); 
     return ftell(file_out) - 2; 
+}
+int compile_args_reversed(Node* arg) {
+    if (!arg) return 0;
+    
+    // Rekursi ke ujung dulu
+    int count = compile_args_reversed(arg->next);
+    
+    // Baru compile (Push) saat mundur
+    compile_node(arg);
+    
+    return count + 1;
 }
 
 
@@ -93,17 +110,22 @@ void compile_node(Node* n) {
 
 
         case NODE_FUNC_CALL: {
-            Node* arg = n->right;
-            int arg_count = 0;
-            while (arg) {
-                compile_node(arg);
-                arg_count++;
-                arg = arg->next;
-            }
+            if (n->left->kind == NODE_GET) {
+                compile_node(n->left->left); 
+                
+                int arg_count = compile_args_reversed(n->right);
 
-            emit_byte(OP_CALL);
-            emit_string(n->left->name); 
-            emit_byte((uint8_t)arg_count); 
+                emit_byte(OP_INVOKE);
+                emit_string(n->left->name); 
+                emit_byte((uint8_t)arg_count);
+            
+            } else {
+                int arg_count = compile_args_reversed(n->right);
+
+                emit_byte(OP_CALL);
+                emit_string(n->left->name); 
+                emit_byte((uint8_t)arg_count);
+            }
             break;
         }
 
@@ -139,6 +161,11 @@ void compile_node(Node* n) {
             }
             break;
         }
+
+        case NODE_THIS:
+            emit_byte(OP_GET_VAR);
+            emit_string("this"); 
+            break;
 
         case NODE_GET: {
             compile_node(n->left); 
@@ -237,3 +264,4 @@ void compile_to_binary(Node* ast, const char* filename) {
     fclose(file_out);
     printf("[Compiler] Successfully created '%s'\n", filename);
 }
+
