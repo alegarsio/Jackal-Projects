@@ -17,15 +17,18 @@
 #include "eval.h"
 
 /**
- * include compiler option
+ * @include vm debug option
  */
-
+#include "vm/debug.h"
+/**
+ * @include compiler option
+ */
 #include "compiler/compiler.h"
 #include "vm/vm.h"
 
 /**
  * return true if file extension is jlo for compliled result and jackal for base file
- * @param filename represents the filename 
+ * @param filename represents the filename
  * @param ext
  */
 int has_extension(const char *filename, const char *ext)
@@ -52,13 +55,13 @@ char *read_file_content(const char *path)
     return buf;
 }
 
- /**
-  * this method is part of std.io library
-  * std.io.File Built In Open ( Create ) Method
-  * this method is for create and open file 
-  * @param argCount
-  * @param args
-  */
+/**
+ * this method is part of std.io library
+ * std.io.File Built In Open ( Create ) Method
+ * this method is for create and open file
+ * @param argCount
+ * @param args
+ */
 Value builtin_io_open(int argCount, Value *args)
 {
 
@@ -531,6 +534,47 @@ int main(int argc, char **argv)
 
         compile_to_binary(root, dest_path);
         free(source);
+        return 0;
+    }
+
+
+    if (strcmp(argv[1], "--dump") == 0) {
+        if (argc < 3) {
+            printf("Usage: ./jackal --dump <file.jackal>\n");
+            return 1;
+        }
+        
+        char* source_path = argv[2];
+        char* source = read_file_content(source_path);
+        if (!source) { printf("Error reading source.\n"); return 1; }
+
+        Lexer L; lexer_init(&L, source);
+        Parser P; parser_init(&P, &L);
+        
+        Node* root = NULL; Node* tail = NULL;
+        while (P.current.kind != TOKEN_END) {
+            Node* stmt = parse_stmt(&P);
+            if (stmt) {
+                if (!root) { root = stmt; tail = stmt; }
+                else { tail->next = stmt; tail = stmt; }
+            }
+        }
+
+        const char* temp_file = "dump_temp.jlo";
+        compile_to_binary(root, temp_file);
+        
+        // 2. Baca kembali binary-nya
+        FILE* f = fopen(temp_file, "rb");
+        fseek(f, 0, SEEK_END); long fsize = ftell(f); rewind(f);
+        uint8_t* bytecode = malloc(fsize);
+        fread(bytecode, 1, fsize, f);
+        fclose(f);
+        
+        disassemble_chunk(source_path, bytecode, fsize);
+
+        free(source);
+        free(bytecode);
+        remove(temp_file); 
         return 0;
     }
 

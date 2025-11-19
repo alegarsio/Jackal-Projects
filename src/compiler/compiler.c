@@ -11,7 +11,10 @@
 static FILE* file_out;
 
 
-
+/**
+ * @brief compile node
+ * @param p 
+ */
 void compile_node(Node* n);
 
 
@@ -43,10 +46,8 @@ int emit_jump(uint8_t instruction) {
 int compile_args_reversed(Node* arg) {
     if (!arg) return 0;
     
-    // Rekursi ke ujung dulu
     int count = compile_args_reversed(arg->next);
     
-    // Baru compile (Push) saat mundur
     compile_node(arg);
     
     return count + 1;
@@ -125,6 +126,51 @@ void compile_node(Node* n) {
                 emit_byte(OP_CALL);
                 emit_string(n->left->name); 
                 emit_byte((uint8_t)arg_count);
+            }
+            break;
+        }
+
+        case NODE_MATCH_STMT: {
+            compile_node(n->left); // Push Target
+
+            int exitJumps[256]; 
+            int jumpCount = 0;
+
+            Node* caseNode = n->right;
+            
+            while (caseNode) {
+                if (caseNode->left != NULL) { 
+                    emit_byte(OP_DUP);          
+                    compile_node(caseNode->left); 
+                    emit_byte(OP_EQUAL);        
+                    
+                    int nextJump = emit_jump(OP_JUMP_IF_FALSE);
+
+                    emit_byte(OP_POP);         
+                    emit_byte(OP_POP);         
+                    
+                    compile_node(caseNode->right); 
+                    
+                    if (jumpCount < 256) {
+                        exitJumps[jumpCount++] = emit_jump(OP_JUMP); 
+                    }
+
+                    patch_jump(nextJump);
+                    
+                    emit_byte(OP_POP); 
+                } 
+                else {
+                    emit_byte(OP_POP);
+                    compile_node(caseNode->right); 
+                }
+                
+                caseNode = caseNode->next;
+            }
+
+            emit_byte(OP_POP);
+
+            for(int i=0; i<jumpCount; i++) {
+                patch_jump(exitJumps[i]);
             }
             break;
         }

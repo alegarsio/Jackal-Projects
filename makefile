@@ -12,6 +12,7 @@ SRC = src/common.c \
       src/env.c \
       src/value.c \
       src/eval.c \
+      src/vm/debug.c \
       src/compiler/compiler.c \
       src/vm/vm.c \
       src/main.c
