@@ -8,24 +8,37 @@
 #include "../../include/compiler/compiler.h"
 #include "../../include/vm/opcode.h"
 
+/**
+ * @file 
+ */
 static FILE *file_out;
 
 /**
- * @brief compile node
- * @param p
+ * @brief Compile node to bytecode
+ * @param n
  */
 void compile_node(Node *n);
 
+/**
+ * @brief generate byte code to jackal compiler
+ * @param byte
+ */
 void emit_byte(uint8_t byte)
 {
     fwrite(&byte, sizeof(uint8_t), 1, file_out);
 }
-
+/**
+ * @brief generate double data type to jackal compiler
+ * @param value
+ */
 void emit_double(double value)
 {
     fwrite(&value, sizeof(double), 1, file_out);
 }
-
+/**
+ * @brief generate string data type to jackal compiler
+ * @param str
+ */
 void emit_string(const char *str)
 {
     int len = strlen(str);
@@ -33,6 +46,10 @@ void emit_string(const char *str)
     fwrite(str, sizeof(char), len, file_out);
 }
 
+/**
+ * @brief generate loop in jackal compiler
+ * @param loop_start
+ */
 void emit_loop(int loop_start)
 {
     emit_byte(OP_LOOP);
@@ -59,6 +76,11 @@ int emit_jump(uint8_t instruction)
     emit_byte(0xff);
     return ftell(file_out) - 2;
 }
+
+
+/**
+ * 
+ */
 int compile_args_reversed(Node *arg)
 {
     if (!arg)
@@ -71,6 +93,10 @@ int compile_args_reversed(Node *arg)
     return count + 1;
 }
 
+/**
+ * @brief add jump value to the compiler
+ * @param offset
+ */
 void patch_jump(int offset)
 {
     long current = ftell(file_out);
@@ -86,6 +112,11 @@ void patch_jump(int offset)
     fseek(file_out, current, SEEK_SET);
 }
 
+
+/**
+ * @brief compile node to binary code 
+ * @param n
+ */
 void compile_node(Node *n)
 {
     if (!n)
