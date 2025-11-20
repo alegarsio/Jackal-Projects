@@ -26,6 +26,13 @@
 #include "compiler/compiler.h"
 #include "vm/vm.h"
 
+
+Value builtin_vm_memory(int argCount, Value* args) {
+    (void)argCount; (void)args; 
+    
+    return (Value){VAL_NUMBER, {.number = (double)bytesAllocated}};
+}
+
 /**
  * return true if file extension is jlo for compliled result and jackal for base file
  * @param filename represents the filename
@@ -471,6 +478,7 @@ int main(int argc, char **argv)
     REGISTER("__io_readAll", builtin_io_readAll);
     REGISTER("__io_write", builtin_io_write);
     REGISTER("__io_close", builtin_io_close);
+    
 
     DEFINE_NATIVE("len", builtin_len);
     DEFINE_NATIVE("push", builtin_push);

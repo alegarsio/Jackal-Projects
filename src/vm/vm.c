@@ -30,8 +30,10 @@ static uint8_t *ip;
 
 static void push(Value v) { *sp++ = v; }
 static Value pop() { return *--sp; }
-
 static uint8_t read_byte() { return *ip++; }
+
+
+
 
 static double read_double()
 {
@@ -45,6 +47,8 @@ static Value peek(int distance)
 {
     return sp[-1 - distance];
 }
+
+
 
 static int is_falsey(Value v)
 {
@@ -87,7 +91,7 @@ static char *read_string()
     memcpy(&len, ip, sizeof(int));
     ip += sizeof(int);
 
-    char *str = malloc(len + 1);
+    char* str = jackal_malloc(len + 1);
     memcpy(str, ip, len);
     str[len] = '\0';
     ip += len;
@@ -131,6 +135,7 @@ void run_binary(const char *filename)
 
     frame_count = 0;
 
+    
     while (ip < code + fsize)
     {
         uint8_t opcode = read_byte();

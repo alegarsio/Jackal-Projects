@@ -8,6 +8,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <stddef.h>
 
 
 /**
@@ -88,6 +89,23 @@ typedef enum {
 struct Node;
 struct Env;
 struct Value;
+
+
+/**
+ * track memory usage
+ */
+extern size_t bytesAllocated;
+
+/**
+ * forward declaration 
+ */
+void* jackal_malloc(size_t size);
+
+/**
+ * 
+ */
+void jackal_free(void* ptr, size_t size);
+
 
 /**
  * @typedef @struct List

@@ -2,6 +2,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 
+size_t bytesAllocated = 0;
 
 /**
  * src/common.c
@@ -18,4 +19,22 @@ void print_error(const char *format, ...) {
     va_end(args);
     
     fprintf(stderr, "\n"); 
+}
+
+
+
+void* jackal_malloc(size_t size) {
+    void* ptr = malloc(size);
+    if (ptr == NULL) {
+        fprintf(stderr, "Fatal Error: Out of Memory!\n");
+        exit(1);
+    }
+    bytesAllocated += size; 
+    return ptr;
+}
+
+void jackal_free(void* ptr, size_t size) {
+    if (ptr == NULL) return;
+    free(ptr);
+    bytesAllocated -= size; 
 }
