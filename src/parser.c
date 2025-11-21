@@ -817,15 +817,10 @@ static Node *parse_class_def(Parser *P)
         print_error("Expected class name.");
     
     strcpy(n->name, P->current.text);
-    next(P); // Skip Class Name
-
-    // Inisialisasi kosong dulu
+    next(P); 
     n->super_name[0] = '\0';
     n->interface_name[0] = '\0';
 
-    // --- BAGIAN PERUBAHAN UTAMA ---
-    // Gunakan Loop untuk menangkap 'extends' dan 'implements'
-    // Loop ini akan berhenti jika ketemu '{' atau token lain
     while (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS) 
     {
         if (P->current.kind == TOKEN_EXTENDS) 
@@ -835,23 +830,22 @@ static Node *parse_class_def(Parser *P)
                 print_error("Expected superclass name after 'extends'.");
             }
             strcpy(n->super_name, P->current.text);
-            next(P); // Skip SuperClass Name
+            next(P); 
         } 
         else if (P->current.kind == TOKEN_IMPLEMENTS) 
         {
-            next(P); // Skip 'implements'
+            next(P); 
             if (P->current.kind != TOKEN_IDENT) {
                 print_error("Expected interface name after 'implements'.");
             }
             strcpy(n->interface_name, P->current.text);
-            next(P); // Skip Interface Name
+            next(P); 
         }
     }
-    // -------------------------------
 
     if (P->current.kind != TOKEN_LBRACE)
         print_error("Expected '{' before class body.");
-    next(P); // Skip '{'
+    next(P); 
 
     Node *methods_head = NULL;
     Node *methods_current = NULL;
@@ -868,7 +862,7 @@ static Node *parse_class_def(Parser *P)
             next(P); 
             continue;
         }
-        next(P); // Skip 'function'
+        next(P); 
 
         Node *method = parse_func_def(P);
 
