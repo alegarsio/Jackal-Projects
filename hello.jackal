@@ -1,41 +1,6 @@
-class Test{
-    
-    function init(name,score){
-        this.name = name;
-        this.score = score;
-    }
+let counter = 0;
 
-}
-
-class Student extends Test{
-
-
-    function get_name() : String{
-        return this.name;
-    }
-
-    function get_score() : Number{
-        return this.score;
-    }
-
-    function get_grade(score : Number) : String  {
-
-        let result = when{
-            (this.score >= 90  ) => "A",
-            (this.score > 80 && this.score < 85) => "AB",
-            (this.score < 80 && this.score > 75) => "B",
-        };
-
-        return result;
-    }
-
-    
-
-
-}
-
-let student = Student("ale",90);
-print(student.get_name());
-print(student.get_score());
-
-student.get_grade();
+every(1000){
+    counter = counter + 1;
+    print(counter);
+} until (counter >= 10){}

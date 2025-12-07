@@ -1,5 +1,8 @@
 ./jackal - c < file.jackal > : jackal compile mode
 
+./jackal < file.jlo > : execute bytecode STDOUT
+
 ./jackal : enter erpl mode
 
 ./jackal < file.jackal > : jackal interpreted mode
+

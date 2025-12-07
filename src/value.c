@@ -16,7 +16,13 @@
 
 #include <string.h>
 #include <stdio.h>
+#include<curl/curl.h>
 
+typedef struct {
+    CURLcode result_code;
+    long http_code;
+    char *response_body;
+} HttpClientResult;
 
 /**
  * @typedef @struct VALUEARRAY

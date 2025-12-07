@@ -1,0 +1,30 @@
+
+/**
+ * Jackal std.network.Inet
+ * Provides network Ip Address Api
+**/
+class Inet{
+
+    /* *
+     * Inet::gethostbyname()
+     * @return String of ip address hostname
+     * @param hostname
+    * */
+    function gethostbyname(hostname : String) : String{ 
+        return __net_resolve_ip(hostname);
+    }
+    /* *
+     * Inet::htons()
+     * @return String of ip address format
+     * @param hostname
+    * */
+    function htons(port : Number) : Number{
+        return __net_htons(port);
+    }
+    function aton(ip : String) : Number{
+        return __net_aton(ip);
+    }
+    function ntoa(ip : Number) : String{
+        return __net_ntoa(ip);
+    } 
+}

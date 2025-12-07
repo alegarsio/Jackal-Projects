@@ -30,7 +30,10 @@ static Var *find_method(Class *klass, const char *name);
 /**
  * @brief Checks if two values are both numbers.
  */
-static bool is_number(Value a, Value b) { return a.type == VAL_NUMBER && b.type == VAL_NUMBER; }
+static bool is_number(Value a, Value b)
+{
+    return a.type == VAL_NUMBER && b.type == VAL_NUMBER;
+}
 
 /**
  * @brief Checks if two values are both strings.
@@ -449,8 +452,6 @@ Value eval_node(Env *env, Node *n)
         /**
          * Unused variables to hold evaluated values.
          */
-        Value arr_val = eval_node(env, n->left);
-        Value idx_val = eval_node(env, n->right);
 
         if (container.type == VAL_ARRAY)
         {
@@ -509,8 +510,6 @@ Value eval_node(Env *env, Node *n)
         Value new_val = eval_node(env, n->right);
 
         Node *access_node = n->left;
-        Value arr_val = eval_node(env, access_node->left);
-        Value idx_val = eval_node(env, access_node->right);
 
         Value container = eval_node(env, access_node->left);
         Value index = eval_node(env, access_node->right);
@@ -667,19 +666,29 @@ Value eval_node(Env *env, Node *n)
     }
 
     case NODE_SET:
+{
+    Value obj = eval_node(env, n->left->left);
+    if (obj.type != VAL_INSTANCE)
     {
-        Value obj = eval_node(env, n->left->left);
-        if (obj.type != VAL_INSTANCE)
-        {
-            print_error("Only instances have fields.");
-            return (Value){.type = VAL_NIL, .as = {0}};
-        }
-
-        Value val = eval_node(env, n->right);
-        set_var(obj.as.instance->fields, n->left->name, val, false);
+        print_error("Only instances have fields.");
         free_value(obj);
-        return val;
+        return (Value){.type = VAL_NIL, .as = {0}};
     }
+
+    if (obj.as.instance->class_val->as.class_obj->is_record) {
+        print_error("Cannot modify field of immutable record instance.");
+        free_value(obj);
+        return (Value){.type = VAL_NIL, .as = {0}};
+    }
+
+    Value val = eval_node(env, n->right);
+    
+    set_var(obj.as.instance->fields, n->left->name, val, false);
+    
+    free_value(val); 
+
+    return (Value){.type = VAL_NIL, .as = {0}};
+}
 
     case NODE_POST_INC:
     {
@@ -1114,21 +1123,23 @@ Value eval_node(Env *env, Node *n)
             Node *get_node = n->left;
             Value obj = eval_node(env, get_node->left);
 
-            if (obj.type == VAL_NUMBER) {
-                    if (strcmp(get_node->name, "toString") == 0) {
-                        char buffer[64];
-                       
-                        sprintf(buffer, "%g", obj.as.number);
-                        
-                        char* str_copy = malloc(strlen(buffer) + 1);
-                        strcpy(str_copy, buffer);
-                        
-                        return (Value){VAL_STRING, {.string = str_copy}};
-                    }
-                    
-                    print_error("Undefined method '%s' for Number.", get_node->name);
-                    return (Value){VAL_NIL, {0}};
+            if (obj.type == VAL_NUMBER)
+            {
+                if (strcmp(get_node->name, "toString") == 0)
+                {
+                    char buffer[64];
+
+                    sprintf(buffer, "%g", obj.as.number);
+
+                    char *str_copy = malloc(strlen(buffer) + 1);
+                    strcpy(str_copy, buffer);
+
+                    return (Value){VAL_STRING, {.string = str_copy}};
                 }
+
+                print_error("Undefined method '%s' for Number.", get_node->name);
+                return (Value){VAL_NIL, {0}};
+            }
 
             if (obj.type == VAL_MAP)
             {
@@ -1299,16 +1310,18 @@ Value eval_node(Env *env, Node *n)
             if (obj.type == VAL_STRING)
             {
 
-                if (strcmp(get_node->name, "toNumber") == 0) {
-                       
-                        double val = atof(obj.as.string);
-                        free_value(obj); 
-                        return (Value){VAL_NUMBER, {.number = val}};
-                    }
-                    
-                    if (strcmp(get_node->name, "toString") == 0) {
-                         return obj; 
-                    }
+                if (strcmp(get_node->name, "toNumber") == 0)
+                {
+
+                    double val = atof(obj.as.string);
+                    free_value(obj);
+                    return (Value){VAL_NUMBER, {.number = val}};
+                }
+
+                if (strcmp(get_node->name, "toString") == 0)
+                {
+                    return obj;
+                }
 
                 if (strcmp(get_node->name, "length") == 0)
                 {
@@ -1426,22 +1439,59 @@ Value eval_node(Env *env, Node *n)
             Node *arg = n->right;
             Node *param = func->params_head;
 
+            const char *expected_type = NULL;
+            const char *actual_type = NULL;
+            Value v = (Value){VAL_NIL, {0}}; // PINDAHKAN DEKLARASI v KE SINI
+
             for (int i = 0; i < n->arity; i++)
             {
-                Value v = eval_node(env, arg);
+                // HAPUS DEKLARASI Value v = eval_node(env, arg);
+                v = eval_node(env, arg);
+
                 if (param->type_name[0] != '\0')
                 {
-                    const char *expected_type = param->type_name;
-                    const char *actual_type = get_value_type_name(v);
+                    expected_type = param->type_name;
+                    actual_type = get_value_type_name(v);
 
                     if (strcmp(expected_type, actual_type) != 0)
                     {
-                        print_error("Type Mismatch for parameter '%s'. Expected '%s' but got '%s'.",
-                                    param->name, expected_type, actual_type);
+                        if (v.type == VAL_INSTANCE)
+                        {
 
-                        free_value(v);
-                        env_free(call_env);
-                        return (Value){VAL_NIL, {0}};
+                            Var *expected_class_var = find_var(env, expected_type);
+
+                            if (expected_class_var && expected_class_var->value.type == VAL_CLASS)
+                            {
+
+                                Class *expected_class = expected_class_var->value.as.class_obj;
+                                Class *actual_class = v.as.instance->class_val->as.class_obj;
+
+                                bool is_match = false;
+                                Class *current_class = actual_class;
+                                while (current_class)
+                                {
+                                    if (strcmp(current_class->name, expected_class->name) == 0)
+                                    {
+                                        is_match = true;
+                                        break;
+                                    }
+                                    current_class = current_class->superclass;
+                                }
+
+                                if (!is_match)
+                                {
+                                    goto type_mismatch_error;
+                                }
+                            }
+                            else
+                            {
+                                goto type_mismatch_error;
+                            }
+                        }
+                        else
+                        {
+                            goto type_mismatch_error;
+                        }
                     }
                 }
 
@@ -1463,8 +1513,8 @@ Value eval_node(Env *env, Node *n)
 
             if (func->return_type[0] != '\0')
             {
-                const char *expected_type = func->return_type;
-                const char *actual_type = get_value_type_name(final_result);
+                expected_type = func->return_type;
+                actual_type = get_value_type_name(final_result);
 
                 if (strcmp(expected_type, actual_type) != 0)
                 {
@@ -1476,6 +1526,14 @@ Value eval_node(Env *env, Node *n)
             }
 
             return final_result;
+
+        type_mismatch_error:
+            print_error("Type Mismatch for parameter '%s'. Expected '%s' but got '%s'.",
+                        param->name, expected_type, actual_type);
+
+            free_value(v);
+            env_free(call_env);
+            return (Value){VAL_NIL, {0}};
         }
 
         if (callee.type == VAL_NATIVE)
@@ -1624,6 +1682,64 @@ Value eval_node(Env *env, Node *n)
         }
 
         env_free(for_env);
+        return (Value){.type = VAL_NIL, .as = {0}};
+    }
+case NODE_EVERY_LOOP:
+    {
+        Env *every_env = env_new(env);
+        
+        Value time_val = eval_node(every_env, n->left); 
+        if (time_val.type != VAL_NUMBER || time_val.as.number < 0) {
+            print_error("Every loop time must be a non-negative number (milliseconds).");
+            free_value(time_val);
+            env_free(every_env);
+            return (Value){.type = VAL_NIL, .as = {0}};
+        }
+        
+        Value sleep_time_ms = time_val; 
+
+        Var *sleep_var = find_var(every_env, "__jackal_sleep");
+        if (!sleep_var || sleep_var->value.type != VAL_NATIVE) {
+             print_error("Internal error: __jackal_sleep native function not found.");
+             free_value(sleep_time_ms);
+             env_free(every_env);
+             return (Value){.type = VAL_NIL, .as = {0}};
+        }
+        NativeFn sleep_fn = sleep_var->value.as.native;
+
+        Node *body = n->right->left;
+        Node *until_condition = n->right->right;
+        
+        while (1)
+        {
+            Value until_cond_res = eval_node(every_env, until_condition);
+            if (is_value_truthy(until_cond_res))
+            {
+                free_value(until_cond_res);
+                break;
+            }
+            free_value(until_cond_res);
+
+            Value sleep_res = sleep_fn(1, &sleep_time_ms);
+            free_value(sleep_res); 
+
+            Value body_res = eval_node(every_env, body);
+            
+            if (body_res.type == VAL_RETURN || body_res.type == VAL_BREAK || body_res.type == VAL_CONTINUE)
+            {
+                free_value(body_res);
+                if (body_res.type == VAL_RETURN || body_res.type == VAL_BREAK) {
+                    break;
+                }
+                
+            }
+
+            free_value(body_res);
+
+        }
+        
+        free_value(sleep_time_ms);
+        env_free(every_env);
         return (Value){.type = VAL_NIL, .as = {0}};
     }
 

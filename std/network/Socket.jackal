@@ -1,0 +1,66 @@
+class Socket {
+    
+    function init(port) {
+        this.port = port;
+        this.fd = -1; 
+    }
+
+    function listen() {
+        if (this.fd != -1) {
+            print "Warning: Socket is already listening. Close it first.";
+            return this.fd;
+        }
+        
+        let fd = __net_listen(this.port);
+        
+        if (fd == -1) {
+            print "Error: Failed to listen on port ";
+            return -1;
+        }
+        
+        this.fd = fd; 
+        return this.fd;
+    }
+    function accept() {
+        if (this.fd == -1) {
+            print "Error: Cannot accept; listener not active.";
+            return -1;
+        }
+        
+        let client_fd = __net_accept(this.fd);
+        
+        if (client_fd == -1) {
+            print "Error: Failed to accept connection.";
+            return -1;
+        }
+        
+        return client_fd;
+    }
+    function send(target_fd, data) {
+        let sent = __net_send(target_fd, data);
+        
+        if (sent == -1) {
+            print "Error: Failed to send data to FD ";
+        }
+        return sent;
+    }
+    
+    function close(target_fd) {
+        let fd_to_close = target_fd; 
+        
+        if (fd_to_close == nil) {
+            fd_to_close = this.fd;
+        }
+        
+        if (fd_to_close == -1) {
+            return 0; 
+        }
+
+        __net_close(fd_to_close);
+        
+        if (fd_to_close == this.fd) {
+            this.fd = -1;
+        }
+        return 0;
+    }
+}

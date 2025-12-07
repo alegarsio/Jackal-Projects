@@ -55,7 +55,8 @@ typedef enum {
     NODE_CONTINUE_STMT,
     NODE_WHEN_EXPR,
     NODE_WHEN_CASE,
-    NODE_INTERFACE_DEF
+    NODE_INTERFACE_DEF,
+    NODE_EVERY_LOOP
 } NodeKind;
 
 /**
@@ -78,9 +79,13 @@ typedef struct Node {
 
     bool is_override;
     bool is_deprecated;
+    bool is_record;
     
     int arity;
     char return_type[64];
+
+
+    
 } Node;
 
 
@@ -119,3 +124,6 @@ void free_node(Node* n);
  * @return Pointer to the root Node of the AST.
  */
 Node *parse(const char *source);
+
+
+Node *new_node(NodeKind kind);

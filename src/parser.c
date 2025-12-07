@@ -4,11 +4,13 @@
 
 
 
+
+static Node *parse_every_loop(Parser *P);
 /**
  * @brief parse when expresssion
  * @param P Pointer to the parser
  */
-static Node* parse_when_expr(Parser* P);
+static Node *parse_when_expr(Parser *P);
 
 /**
  * @brief Parses annotation
@@ -111,7 +113,7 @@ void parser_init(Parser *P, Lexer *L)
  * @param kind The kind of the node to be created.
  * @return Pointer to the newly created Node.
  */
-static Node *new_node(NodeKind kind)
+Node *new_node(NodeKind kind)
 {
     Node *n = calloc(1, sizeof(Node));
     n->kind = kind;
@@ -348,7 +350,8 @@ static Node *parse_primary(Parser *P)
         return parse_func_expr(P);
     }
 
-    if (P->current.kind == TOKEN_WHEN) {
+    if (P->current.kind == TOKEN_WHEN)
+    {
         return parse_when_expr(P);
     }
 
@@ -708,7 +711,7 @@ static Node *parse_if_stmt(Parser *P)
 }
 
 /**
- * 
+ *
  */
 static Node *parse_func_def(Parser *P)
 {
@@ -799,11 +802,7 @@ static Node *parse_func_def(Parser *P)
     return n;
 }
 
-/**
- * @brief Parses a class definition.
- * @param P Pointer to the Parser.
- * @return Pointer to the parsed Node.
- */
+
 /**
  * @brief Parses a class definition.
  * Supports: class Name extends Super implements Interface { ... }
@@ -811,21 +810,87 @@ static Node *parse_func_def(Parser *P)
 static Node *parse_class_def(Parser *P)
 {
     Node *n = new_node(NODE_CLASS_DEF);
-    next(P); // Skip 'class'
+    
+    if (P->current.kind == TOKEN_RECORD) { 
+        n->is_record = true;
+    } else {
+        n->is_record = false;
+    }
+    next(P); 
 
     if (P->current.kind != TOKEN_IDENT)
-        print_error("Expected class name.");
+        print_error("Expected class/record name.");
     
     strcpy(n->name, P->current.text);
     next(P); 
     n->super_name[0] = '\0';
     n->interface_name[0] = '\0';
 
+    Node *fields_head = NULL;
+    Node *fields_current = NULL;
+    
+    if (P->current.kind == TOKEN_LPAREN) {
+        next(P); 
+        
+        if (P->current.kind != TOKEN_RPAREN) {
+            do {
+                if (P->current.kind != TOKEN_IDENT) 
+                    print_error("Expected field name in definition.");
+                
+                Node *field_node = new_node(NODE_IDENT);
+                strcpy(field_node->name, P->current.text);
+                next(P);
+
+                field_node->type_name[0] = '\0';
+                if (P->current.kind == TOKEN_COLON) {
+                    next(P);
+                    if (P->current.kind != TOKEN_IDENT) 
+                        print_error("Expected type name after ':'.");
+                    else {
+                        strcpy(field_node->type_name, P->current.text);
+                        next(P);
+                    }
+                }
+                
+                if (fields_head == NULL) {
+                    fields_head = field_node;
+                    fields_current = field_node;
+                } else {
+                    fields_current->next = field_node;
+                    fields_current = field_node;
+                }
+            } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
+        }
+        
+        if (P->current.kind != TOKEN_RPAREN)
+            print_error("Expected ')' after parameters.");
+        next(P); 
+        
+        n->right = fields_head;
+    }
+
+    if (n->is_record) {
+        if (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS) {
+            print_error("Record cannot extend or implement other types.");
+        }
+        if (P->current.kind == TOKEN_LBRACE) {
+            print_error("Record definition cannot have a body or methods.");
+            
+            while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+                next(P); 
+            }
+            if (P->current.kind == TOKEN_RBRACE) next(P);
+        }
+        
+        n->left = NULL; 
+        return n;
+    }
+
     while (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS) 
     {
         if (P->current.kind == TOKEN_EXTENDS) 
         {
-            next(P); // Skip 'extends'
+            next(P); 
             if (P->current.kind != TOKEN_IDENT) {
                 print_error("Expected superclass name after 'extends'.");
             }
@@ -883,7 +948,7 @@ static Node *parse_class_def(Parser *P)
 
     if (P->current.kind != TOKEN_RBRACE)
         print_error("Expected '}' after class body.");
-    next(P); // Skip '}'
+    next(P); 
 
     n->left = methods_head;
     return n;
@@ -1006,6 +1071,12 @@ Node *parse_stmt(Parser *P)
         return parse_if_stmt(P);
     }
 
+    if (P->current.kind == TOKEN_EVERY)
+    {
+        return parse_every_loop(P);
+    }
+    
+
     if (P->current.kind == TOKEN_MATCH)
     {
         return parse_match_stmt(P);
@@ -1041,7 +1112,7 @@ Node *parse_stmt(Parser *P)
         return parse_import_stmt(P);
     }
 
-    if (P->current.kind == TOKEN_CLASS)
+    if (P->current.kind == TOKEN_CLASS || P->current.kind == TOKEN_RECORD)
     {
         return parse_class_def(P);
     }
@@ -1670,44 +1741,55 @@ static void parse_annotations(Parser *P, Node *n)
  * @brief parse when expression
  * @param P to parser pointer
  */
-static Node* parse_when_expr(Parser* P) {
-    Node* n = new_node(NODE_WHEN_EXPR);
+static Node *parse_when_expr(Parser *P)
+{
+    Node *n = new_node(NODE_WHEN_EXPR);
     next(P);
 
-    if (P->current.kind != TOKEN_LBRACE) {
+    if (P->current.kind != TOKEN_LBRACE)
+    {
         print_error("Expected '{' after 'when'.");
-        return n; 
+        return n;
     }
-    next(P); 
+    next(P);
 
-    Node* cases_head = NULL;
-    Node* cases_current = NULL;
+    Node *cases_head = NULL;
+    Node *cases_current = NULL;
 
-    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
-        Node* case_node = new_node(NODE_WHEN_CASE);
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
+    {
+        Node *case_node = new_node(NODE_WHEN_CASE);
 
-        if (P->current.kind == TOKEN_DEFAULT) {
-            next(P); 
-            case_node->left = NULL; 
-        } else {
-            case_node->left = parse_expr(P); 
+        if (P->current.kind == TOKEN_DEFAULT)
+        {
+            next(P);
+            case_node->left = NULL;
+        }
+        else
+        {
+            case_node->left = parse_expr(P);
         }
 
-        if (P->current.kind != TOKEN_ARROW) {
+        if (P->current.kind != TOKEN_ARROW)
+        {
             print_error("Expected '=>' after when condition.");
         }
-        next(P); 
+        next(P);
 
         case_node->right = parse_expr(P);
 
-        if (P->current.kind == TOKEN_COMMA) {
+        if (P->current.kind == TOKEN_COMMA)
+        {
             next(P);
         }
 
-        if (cases_head == NULL) {
+        if (cases_head == NULL)
+        {
             cases_head = case_node;
             cases_current = case_node;
-        } else {
+        }
+        else
+        {
             cases_current->next = case_node;
             cases_current = case_node;
         }
@@ -1715,9 +1797,45 @@ static Node* parse_when_expr(Parser* P) {
 
     if (P->current.kind != TOKEN_RBRACE)
         print_error("Expected '}' after when cases.");
-    next(P); 
+    next(P);
 
     n->left = cases_head;
+    return n;
+}
+
+static Node *parse_every_loop(Parser *P)
+{
+    Node *n = new_node(NODE_EVERY_LOOP);
+    next(P);
+
+    if (P->current.kind != TOKEN_LPAREN)
+        print_error("Expected '(' after 'every'.");
+    next(P);
+
+    n->left = parse_expr(P);
+
+    if (P->current.kind != TOKEN_RPAREN)
+        print_error("Expected ')' after every count.");
+    next(P);
+
+    n->right = new_node(NODE_IDENT);
+
+    n->right->left = parse_block(P);
+
+    if (P->current.kind != TOKEN_UNTIL)
+        print_error("Expected 'until' after every block.");
+    next(P);
+
+    if (P->current.kind != TOKEN_LPAREN)
+        print_error("Expected '(' after 'until'.");
+    next(P);
+
+    n->right->right = parse_expr(P);
+
+    if (P->current.kind != TOKEN_RPAREN)
+        print_error("Expected ')' after until condition.");
+    next(P);
+
     return n;
 }
 /**

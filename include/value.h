@@ -2,7 +2,7 @@
 #include "parser.h"
 #include "common.h"
 #include <stdbool.h>
-
+#include<cjson/cJSON.h>
 
 /**
  * @typedef @struct ENTRY
@@ -119,3 +119,10 @@ bool map_get(HashMap* map, const char* key, Value* out_val);
  * @param val The Value to set.
  */
 void map_set(HashMap* map, const char* key, Value val);
+
+/**
+ * Jackal_value_to_cjson
+ * @brief parse jackal std value to json format
+ * @param jackal_val
+ */
+cJSON *jackal_value_to_cjson(Value jackal_val);

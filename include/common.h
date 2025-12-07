@@ -83,7 +83,11 @@ typedef enum {
     TOKEN_CONTINUE,
     TOKEN_AT,
     TOKEN_WHEN,
-    TOKEN_INVALID
+    TOKEN_INVALID,
+    TOKEN_RECORD,
+
+    TOKEN_EVERY,
+    TOKEN_UNTIL
 } TokenKind;
 
 struct Node;
@@ -178,7 +182,8 @@ struct Class {
     char name[64];
     struct Env* methods;
     Class* superclass;   
-    Interface* interface;    
+    Interface* interface;  
+    bool is_record;  
 };
 
 /**
@@ -228,7 +233,8 @@ typedef enum {
     VAL_BREAK,    
     VAL_CONTINUE,
     VAL_LINKEDLIST,
-    VAL_INTERFACE
+    VAL_INTERFACE,
+    VAL_SOCKET
 } ValueType;
 
 /**

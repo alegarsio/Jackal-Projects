@@ -3,6 +3,24 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+#include <errno.h>
+#include<curl/curl.h>
+#include <cjson/cJSON.h>
+
+/**
+ * @include socket built in
+ * represents the usage
+ */
+#include<sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+/**
+ * @incude network DB
+ */
+#include <netdb.h>
+
+
 /**
  * Main entry point for the Jackal interpreter.
  * @include necessary headers
@@ -25,6 +43,9 @@
  */
 #include "compiler/compiler.h"
 #include "vm/vm.h"
+
+#define HTTP_DEFAULT_PORT 80
+#define BUFFER_SIZE 4096
 
 
 Value builtin_vm_memory(int argCount, Value* args) {
@@ -61,7 +82,289 @@ char *read_file_content(const char *path)
     fclose(f);
     return buf;
 }
+struct Memory {
+    char *memory;
+    size_t size;
+};
 
+
+
+Value builtin_net_listen(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_NUMBER)
+        return (Value){VAL_NIL, {0}};
+
+    int port = (int)args[0].as.number;
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (server_fd == -1) return (Value){VAL_NUMBER, {.number = -1.0}};
+
+    struct sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        close(server_fd);
+        return (Value){VAL_NUMBER, {.number = -1.0}};
+    }
+
+    if (listen(server_fd, 5) < 0) {
+        close(server_fd);
+        return (Value){VAL_NUMBER, {.number = -1.0}};
+    }
+
+    return (Value){VAL_NUMBER, {.number = (double)server_fd}};
+}
+
+Value builtin_net_accept(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_NUMBER)
+        return (Value){VAL_NIL, {0}};
+    
+    int server_fd = (int)args[0].as.number;
+    struct sockaddr_in address;
+    socklen_t addrlen = sizeof(address);
+    int new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen);
+
+    if (new_socket < 0) return (Value){VAL_NUMBER, {.number = -1.0}};
+
+    return (Value){VAL_NUMBER, {.number = (double)new_socket}};
+}
+
+Value builtin_net_send(int argCount, Value *args) {
+    if (argCount != 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_STRING)
+        return (Value){VAL_NIL, {0}};
+        
+    int socket_fd = (int)args[0].as.number;
+    const char* message = args[1].as.string;
+    
+    ssize_t sent = send(socket_fd, message, strlen(message), 0);
+    return (Value){VAL_NUMBER, {.number = (double)sent}};
+}
+
+Value builtin_net_close(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_NUMBER)
+        return (Value){VAL_NIL, {0}};
+        
+    int socket_fd = (int)args[0].as.number;
+    int res = close(socket_fd);
+    return (Value){VAL_NUMBER, {.number = (double)res}};
+}
+
+
+Value builtin_net_resolve_ip(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_STRING) {
+        print_error("resolve_ip() requires one string argument (hostname).");
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    const char *hostname = args[0].as.string;
+    struct addrinfo hints, *res, *p;
+    int status;
+    char ipstr[INET6_ADDRSTRLEN];
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC; 
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((status = getaddrinfo(hostname, NULL, &hints, &res)) != 0) {
+        print_error("getaddrinfo error: %s", gai_strerror(status));
+        return (Value){VAL_NIL, {0}};
+    }
+
+    for(p = res; p != NULL; p = p->ai_next) {
+        void *addr;
+        char *ipver;
+
+        if (p->ai_family == AF_INET) { 
+            struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+            addr = &(ipv4->sin_addr);
+            ipver = "IPv4";
+        } else { 
+            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
+            addr = &(ipv6->sin6_addr);
+            ipver = "IPv6";
+        }
+
+        inet_ntop(p->ai_family, addr, ipstr, sizeof ipstr);
+        break; 
+    }
+
+    freeaddrinfo(res); 
+
+    if (ipstr[0] == '\0') {
+        print_error("Could not find IP address for hostname '%s'.", hostname);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    char *ip_copy = malloc(strlen(ipstr) + 1);
+    strcpy(ip_copy, ipstr);
+    
+    return (Value){VAL_STRING, {.string = ip_copy}};
+}
+
+
+static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    size_t realsize = size * nmemb;
+    struct Memory *mem = (struct MemoryStruct *)userp;
+
+    char *ptr = realloc(mem->memory, mem->size + realsize + 1);
+    if(ptr == NULL) {
+        return 0;
+    }
+
+    mem->memory = ptr;
+    memcpy(&(mem->memory[mem->size]), contents, realsize);
+    mem->size += realsize;
+    mem->memory[mem->size] = 0;
+
+    return realsize;
+}
+
+Value builtin_http_request(int argCount, Value *args) {
+    if (argCount < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
+        print_error("http_request() requires method (string) and url (string).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char *method = args[0].as.string;
+    const char *url = args[1].as.string;
+    const char *body = (argCount > 2 && args[2].type != VAL_NIL) ? args[2].as.string : NULL;
+    
+    const char *custom_header_value = (argCount > 3 && args[3].type == VAL_STRING) ? args[3].as.string : NULL;
+
+    CURL *curl_handle;
+    CURLcode res;
+    struct Memory chunk;
+    chunk.memory = malloc(1);
+    chunk.size = 0;
+    
+    curl_global_init(CURL_GLOBAL_DEFAULT); 
+    curl_handle = curl_easy_init();
+    
+    if (curl_handle == NULL) {
+        free(chunk.memory);
+        print_error("Failed to initialize cURL handle.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
+    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "Jackal-HTTP-Client/1.0");
+
+    struct curl_slist *headers = NULL;
+    
+    if (strcmp(method, "POST") == 0) {
+        curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+
+        const char *content_type_to_send = custom_header_value;
+        if (!content_type_to_send) {
+            content_type_to_send = "application/x-www-form-urlencoded";
+        }
+        
+        char content_type_buffer[512];
+        sprintf(content_type_buffer, "Content-Type: %s", content_type_to_send);
+        headers = curl_slist_append(headers, content_type_buffer);
+        
+        headers = curl_slist_append(headers, "Accept: application/json");
+
+        curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
+
+        if (body) {
+            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, body);
+            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, (long)strlen(body));
+        } else {
+            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, 0L);
+        }
+        
+    } else if (strcmp(method, "GET") == 0) {
+        if (custom_header_value) {
+            char accept_buffer[512];
+            sprintf(accept_buffer, "Accept: %s", custom_header_value);
+            headers = curl_slist_append(headers, accept_buffer);
+            curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
+        }
+    } else {
+        print_error("Unsupported HTTP method: %s", method);
+        curl_easy_cleanup(curl_handle);
+        free(chunk.memory);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    res = curl_easy_perform(curl_handle);
+    
+    if(res != CURLE_OK) {
+        print_error("cURL request failed: %s", curl_easy_strerror(res));
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl_handle);
+        free(chunk.memory);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    long http_code = 0;
+    curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
+    
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl_handle);
+
+    if (http_code >= 400) {
+        print_error("HTTP Error: Code %ld", http_code);
+        free(chunk.memory);
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    char *response_body = chunk.memory;
+    return (Value){VAL_STRING, {.string = response_body}};
+}
+
+
+cJSON *jackal_value_to_cjson(Value jackal_val) {
+    if (jackal_val.type == VAL_NIL) {
+        return cJSON_CreateNull();
+    }
+    if (jackal_val.type == VAL_NUMBER) {
+        return cJSON_CreateNumber(jackal_val.as.number);
+    }
+    if (jackal_val.type == VAL_STRING) {
+        return cJSON_CreateString(jackal_val.as.string);
+    }
+    
+    if (jackal_val.type == VAL_MAP) {
+        return cJSON_CreateObject();
+    }
+    
+    if (jackal_val.type == VAL_ARRAY) {
+        return cJSON_CreateArray();
+    }
+
+    return NULL;
+}
+
+Value builtin_json_encode(int argCount, Value *args) {
+    if (argCount != 1) {
+        print_error("json_encode requires one argument.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    cJSON *root = jackal_value_to_cjson(args[0]);
+
+    if (root == NULL) {
+        print_error("json_encode failed to serialize object (Unsupported type).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    char *json_string = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
+    if (json_string == NULL) {
+        print_error("cJSON_PrintUnformatted failed.");
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    Value result = (Value){VAL_STRING, {.string = json_string}};
+    
+    return result;
+}
 /**
  * this method is part of std.io library
  * std.io.File Built In Open ( Create ) Method
@@ -121,6 +424,79 @@ Value builtin_io_close(int argCount, Value *args)
     if (f == NULL)
         return (Value){VAL_NIL, {0}};
     fclose(f);
+    return (Value){VAL_NIL, {0}};
+}
+
+Value builtin_net_htons(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_NUMBER) {
+        print_error("htons() requires one number argument (port).");
+        return (Value){VAL_NUMBER, {.number = -1.0}};
+    }
+    
+    uint16_t port = (uint16_t)args[0].as.number;
+    
+    uint16_t net_port = htons(port);
+    
+    return (Value){VAL_NUMBER, {.number = (double)net_port}};
+}
+
+Value builtin_math_fmod(int argCount, Value *args)
+{
+    if (argCount != 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_NUMBER)
+    {
+        print_error("fmod() requires two number arguments (numerator, denominator).");
+        return (Value){VAL_NIL, {0}};
+    }
+    return (Value){VAL_NUMBER, {.number = fmod(args[0].as.number, args[1].as.number)}};
+}
+
+Value builtin_net_aton(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_STRING) {
+        print_error("aton() requires one string argument (IPv4 address).");
+        return (Value){VAL_NUMBER, {.number = -1.0}};
+    }
+    
+    const char *ip_string = args[0].as.string;
+    
+    in_addr_t binary_address = inet_addr(ip_string);
+    
+    if (binary_address == INADDR_NONE) {
+        print_error("Invalid IPv4 address format: %s", ip_string);
+        return (Value){VAL_NUMBER, {.number = -1.0}};
+    }
+    
+    return (Value){VAL_NUMBER, {.number = (double)binary_address}};
+}
+
+Value builtin_net_ntoa(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_NUMBER) {
+        print_error("ntoa() requires one number argument (binary IP).");
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    in_addr_t binary_address = (in_addr_t)args[0].as.number;
+    
+    struct in_addr addr;
+    addr.s_addr = binary_address;
+    
+    char *ip_string = inet_ntoa(addr);
+    
+    if (ip_string == NULL) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    char *ip_copy = malloc(strlen(ip_string) + 1);
+    strcpy(ip_copy, ip_string);
+    
+    return (Value){VAL_STRING, {.string = ip_copy}};
+}
+
+Value builtin_jackal_sleep(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_NUMBER)
+        return (Value){VAL_NIL, {0}};
+    
+    long ms = (long)args[0].as.number;
+    usleep(ms * 1000); 
     return (Value){VAL_NIL, {0}};
 }
 
@@ -247,6 +623,7 @@ Value builtin_file_open(int argCount, Value *args)
 
     return (Value){VAL_FILE, {.file = f}};
 }
+
 
 /**
  * @brief Built-in function 'len' to get the length of a string or array.
@@ -473,12 +850,40 @@ int main(int argc, char **argv)
     REGISTER("__math_sqrt", builtin_math_sqrt);
     REGISTER("__math_pow", builtin_math_pow);
     set_var(env, "__math_PI", (Value){VAL_NUMBER, {.number = 3.1415926535}}, true);
+    set_var(env, "nil", (Value){VAL_NIL, {0}}, true);
+    REGISTER("fmod", builtin_math_fmod);
 
     REGISTER("__io_open", builtin_io_open);
     REGISTER("__io_readAll", builtin_io_readAll);
     REGISTER("__io_write", builtin_io_write);
     REGISTER("__io_close", builtin_io_close);
-    
+
+    /**
+     * Network Built In API
+     * e.g., Socket, Inet
+     */
+    REGISTER("__net_listen", builtin_net_listen);
+    REGISTER("__net_accept", builtin_net_accept);
+    REGISTER("__net_send", builtin_net_send);
+    REGISTER("__net_close", builtin_net_close);
+    REGISTER("__net_resolve_ip", builtin_net_resolve_ip);
+    REGISTER("__net_htons", builtin_net_htons);
+    REGISTER("__net_aton", builtin_net_aton);
+
+
+    /**
+     * HTTP Request Client
+     */
+
+    REGISTER("__http_request", builtin_http_request);
+
+
+    /**
+     * Json Parser
+     */
+    REGISTER("__json_encode", builtin_json_encode);
+    REGISTER("__jackal_sleep", builtin_jackal_sleep);
+
 
     DEFINE_NATIVE("len", builtin_len);
     DEFINE_NATIVE("push", builtin_push);
@@ -622,7 +1027,6 @@ int main(int argc, char **argv)
     }
     else
     {
-        Env *env = env_new(NULL);
 
         runFile(filename, env);
         env_free(env);

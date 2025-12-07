@@ -1,0 +1,55 @@
+
+interface http_method{
+    function get(); 
+    function post();
+    function put();
+    function delete();
+ }
+
+class Request implements http_method{
+
+    function init(url_to_get : String, url_to_post : String){
+        this.url_to_get = url_to_get;
+        this.url_to_post = url_to_post;
+        this.header_val = "application/json";
+        
+    }
+
+    function json_encode(data){
+        return __json_encode(data);
+    }
+
+    @override
+    function get(){
+        return __http_request("GET",this.url_to_get,nil,this.header_val);
+    }
+
+    @override
+    function post(data : String){
+        let _json = json_encode(data);
+        return __http_request("POST",this.url_to_post,_json,this.header_val);
+    }
+
+    @override 
+    function put(data : String){
+        let _json = json_encode(data);
+        return __http_request("PUT",this.url_to_post,this.header_val);
+    }
+
+    @override
+    function delete(data : String){
+        let result = __http_request("DELETE",url_to_post.this.header_val);
+        if (result != nil){ 
+            return 0;
+        }
+        return 1;
+    }
+
+
+
+
+
+    
+
+
+}

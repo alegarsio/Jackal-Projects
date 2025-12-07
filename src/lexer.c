@@ -119,7 +119,9 @@ Token lexer_next(Lexer* L) {
         else if (strcmp(tk.text, "function") == 0) tk.kind = TOKEN_FUNCTION;
         else if (strcmp(tk.text, "return") == 0) tk.kind = TOKEN_RETURN;
         else if (strcmp(tk.text, "while") == 0) tk.kind = TOKEN_WHILE;
-        
+        else if (strcmp(tk.text, "record") == 0) tk.kind = TOKEN_RECORD; // BARU
+        else if (strcmp(tk.text, "every") == 0) tk.kind = TOKEN_EVERY;
+        else if (strcmp(tk.text, "until") == 0) tk.kind = TOKEN_UNTIL;
         else if (strcmp(tk.text, "true") == 0) tk.kind = TOKEN_TRUE;
         else if (strcmp(tk.text, "false") == 0) tk.kind = TOKEN_FALSE;
 
