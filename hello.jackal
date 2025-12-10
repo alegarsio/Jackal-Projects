@@ -1,14 +1,8 @@
-class User{
-    init(name : String , age : Number){
-        this.name = name;
-        this.age = age;
-    }
-}
-class Person extends User{
-    function getAll() : String{
-        return "Name : " + this.name + " age " + this.age.toString();
+object User(nama){
+    function getName() {
+        return this.nama;
     }
 }
 
-let user = Person("ale",19);
-print(user.getAll());
+User.nama = "ale";
+print(User.getName());

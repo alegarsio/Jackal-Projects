@@ -86,9 +86,9 @@ static const char *get_value_type_name(Value val)
     case VAL_NATIVE:
         return "Function";
     case VAL_CLASS:
-        return val.as.class_obj->name; // Nama Class
+        return val.as.class_obj->name; 
     case VAL_INSTANCE:
-        return val.as.instance->class_val->as.class_obj->name; // Nama Class
+        return val.as.instance->class_val->as.class_obj->name; 
     case VAL_INTERFACE:
         return val.as.interface_obj->name;
     case VAL_ENUM:
@@ -1004,6 +1004,7 @@ Value eval_node(Env *env, Node *n)
             class_obj->superclass = super_var->value.as.class_obj;
         }
 
+
         if (strlen(n->interface_name) > 0)
         {
             Var *iface_var = find_var(env, n->interface_name);
@@ -1015,6 +1016,33 @@ Value eval_node(Env *env, Node *n)
                 return (Value){.type = VAL_NIL, .as = {0}};
             }
             class_obj->interface = iface_var->value.as.interface_obj;
+        }
+
+        if (n->is_singleton) {
+            Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
+            
+            Instance *inst = malloc(sizeof(Instance));
+            inst->class_val = malloc(sizeof(Value));
+            *inst->class_val = class_val; 
+            inst->fields = env_new(NULL); 
+
+            Node *method = n->left;
+            while (method) {
+                Value method_val = eval_node(class_obj->methods, method);
+                free_value(method_val);
+                method = method->next;
+            }
+
+            Node *param_node = n->right; 
+            while (param_node) {
+                set_var(inst->fields, param_node->name, (Value){VAL_STRING, {.string = strdup("")}}, false);
+                param_node = param_node->next;
+            }
+            
+            Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
+            set_var(env, n->name, instance_val, true); 
+            
+            return (Value){.type = VAL_NIL, .as = {0}}; 
         }
 
         Node *method = n->left;

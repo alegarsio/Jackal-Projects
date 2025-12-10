@@ -126,6 +126,8 @@ Token lexer_next(Lexer* L) {
         else if (strcmp(tk.text, "false") == 0) tk.kind = TOKEN_FALSE;
         else if (strcmp(tk.text, "observe") == 0) tk.kind = TOKEN_OBSERVE;
         else if (strcmp(tk.text, "on") == 0) tk.kind = TOKEN_ON;
+        else if (strcmp(tk.text, "object") == 0) tk.kind = TOKEN_OBJECT;
+      
         else if (strcmp(tk.text, "break") == 0) tk.kind = TOKEN_BREAK;
         else if (strcmp(tk.text, "continue") == 0) tk.kind = TOKEN_CONTINUE;
         else if (strcmp(tk.text, "when") == 0) tk.kind = TOKEN_WHEN;
@@ -225,7 +227,7 @@ Token lexer_next(Lexer* L) {
             break;
         case '|':
             if (match(L, '|')) tk.kind = TOKEN_PIPE_PIPE;
-            else tk.kind = TOKEN_INVALID; // (Kita tidak mendukung bitwise OR)
+            else tk.kind = TOKEN_INVALID; 
             break;
         case '&':
             if (match(L, '&')) tk.kind = TOKEN_AND_AND;

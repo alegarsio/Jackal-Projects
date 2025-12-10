@@ -818,10 +818,9 @@ static Node *parse_class_def(Parser *P)
 {
     Node *n = new_node(NODE_CLASS_DEF);
     
-    if (P->current.kind == TOKEN_RECORD) { 
-        n->is_record = true;
-    } else {
-        n->is_record = false;
+    if (P->current.kind == TOKEN_OBJECT) {
+        n->is_singleton = true;
+        n->is_record = false; 
     }
     next(P); 
 
@@ -845,6 +844,9 @@ static Node *parse_class_def(Parser *P)
 
     if (P->current.kind == TOKEN_LPAREN) {
         next(P); 
+
+
+       
         
         if (P->current.kind != TOKEN_RPAREN) {
             do {
@@ -873,7 +875,7 @@ static Node *parse_class_def(Parser *P)
                     fields_current->next = field_node;
                     fields_current = field_node;
                 }
-            } while (P->current.kind == TOKEN_COMMA && (next(P), 1)); // FIX: Menghindari error tipe
+            } while (P->current.kind == TOKEN_COMMA && (next(P), 1)); 
         }
         
         if (P->current.kind != TOKEN_RPAREN)
@@ -900,7 +902,15 @@ static Node *parse_class_def(Parser *P)
         return n;
     }
 
-    // Loop ini akan menangani EXTENDS dan IMPLEMENTS secara bersamaan
+    if (n->is_singleton) {
+        if (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS) {
+            print_error("Object cannot extend or implement other types.");
+        }
+        n->super_name[0] = '\0';
+        n->interface_name[0] = '\0';
+        
+    }
+
     while (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS) 
     {
         if (P->current.kind == TOKEN_EXTENDS) 
@@ -922,9 +932,8 @@ static Node *parse_class_def(Parser *P)
             }
             next(P); 
             
-            // --- LOGIKA IMPLEMENTS GANDA (MULTIPLE INTERFACE) ---
             if (P->current.kind == TOKEN_LPAREN) {
-                next(P); // Konsumsi '('
+                next(P); 
 
                 Node *current_list = NULL;
                 
@@ -940,7 +949,7 @@ static Node *parse_class_def(Parser *P)
 
                     next(P); 
 
-                } while (P->current.kind == TOKEN_COMMA && (next(P), 1)); // FIX: Menghindari error tipe
+                } while (P->current.kind == TOKEN_COMMA && (next(P), 1)); 
 
                 if (P->current.kind != TOKEN_RPAREN)
                     print_error("Expected ')' after multiple interface list.");
@@ -949,14 +958,11 @@ static Node *parse_class_def(Parser *P)
                 interface_list_head = current_list;
                 
             } else {
-                // Logika Implementasi Tunggal (sesuai kode asli Anda)
                 if (P->current.kind != TOKEN_IDENT)
                     print_error("Expected interface name after 'implements'.");
 
-                // Simpan di n->interface_name (single name)
                 strcpy(n->interface_name, P->current.text); 
                 
-                // Simpan juga di linked list sebagai node tunggal
                 Node *interface_node = new_node(NODE_IDENT);
                 strcpy(interface_node->name, P->current.text);
                 interface_list_head = interface_node; 
@@ -991,12 +997,22 @@ static Node *parse_class_def(Parser *P)
         if (P->current.kind == TOKEN_IDENT && strcmp(P->current.text, "init") == 0) {
             is_constructor = true; 
         }
+
+
+        if (n->is_singleton && is_constructor) {
+             print_error("Object cannot define 'init()', use initialization parameters (or remove the parameters).");
+             Node *temp_method = parse_func_def(P);
+             free_node(temp_method);
+             continue;
+        }
+
         if (P->current.kind != TOKEN_FUNCTION && !is_constructor)
         {
             print_error("Expected 'function' keyword or constructor 'init' declaration.");
             next(P); 
             continue;
         }
+
 
         
 
