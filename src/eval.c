@@ -1088,6 +1088,7 @@ Value eval_node(Env *env, Node *n)
         func->body_head = n->right;
         func->env = env;
         func->arity = n->arity;
+        func->is_private = n->is_private;
 
         func->is_deprecated = n->is_deprecated;
 
@@ -1344,6 +1345,14 @@ Value eval_node(Env *env, Node *n)
 
                 Func *func = method_var->value.as.function;
 
+                if (func->is_private) 
+            {
+                if (get_node->left->kind != NODE_THIS)
+                {
+                    print_error("Cannot access private method '%s' outside of class context.", get_node->name);
+                    return (Value){VAL_NIL, .as = {0}};
+                }
+            }
                 if (func->is_deprecated)
                 {
                     printf("Warning: Method '%s' is deprecated.\n", get_node->name);

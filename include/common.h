@@ -92,7 +92,8 @@ typedef enum {
     TOKEN_OBSERVE, 
     TOKEN_ON,
 
-    TOKEN_PRIVATE
+    TOKEN_PRIVATE,
+    TOKEN_OBJECT
 } TokenKind;
 
 struct Node;
@@ -164,6 +165,8 @@ typedef struct Func {
     struct Env* env;
     int arity;
     bool is_deprecated;
+    bool is_private;
+    
     char return_type[64];
 } Func;
 

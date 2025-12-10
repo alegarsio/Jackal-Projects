@@ -833,12 +833,16 @@ static Node *parse_class_def(Parser *P)
     n->super_name[0] = '\0';
     n->interface_name[0] = '\0';
     
-    // VARIABEL BARU UNTUK MENAMPUNG DAFTAR INTERFACE GANDA
+    
+       
     Node *interface_list_head = NULL; 
 
     Node *fields_head = NULL;
     Node *fields_current = NULL;
-    
+
+
+ 
+
     if (P->current.kind == TOKEN_LPAREN) {
         next(P); 
         
@@ -959,12 +963,10 @@ static Node *parse_class_def(Parser *P)
                 
                 next(P); 
             }
-            // --- AKHIR LOGIKA IMPLEMENTS GANDA/TUNGGAL ---
+            
         }
     }
     
-    // Karena n->left dan n->right digunakan untuk fields/methods, 
-    // kita gunakan n->next untuk menyimpan linked list interface.
     n->next = interface_list_head; 
 
     if (P->current.kind != TOKEN_LBRACE)
@@ -978,18 +980,34 @@ static Node *parse_class_def(Parser *P)
     {
         Node meta_node = {0};
         parse_annotations(P, &meta_node);
+        bool is_private = false;
 
-        if (P->current.kind != TOKEN_FUNCTION)
+        if (P->current.kind == TOKEN_PRIVATE) 
         {
-            print_error("Expected 'function' keyword for method.");
-            
+            is_private = true;
+            next(P); 
+        }
+        bool is_constructor = false;
+        if (P->current.kind == TOKEN_IDENT && strcmp(P->current.text, "init") == 0) {
+            is_constructor = true; 
+        }
+        if (P->current.kind != TOKEN_FUNCTION && !is_constructor)
+        {
+            print_error("Expected 'function' keyword or constructor 'init' declaration.");
             next(P); 
             continue;
         }
-        next(P); 
+
+        
+
+        
+        if (!is_constructor) {
+            next(P); 
+        }
 
         Node *method = parse_func_def(P);
 
+        method->is_private = is_private;
         method->is_override = meta_node.is_override;
         method->is_deprecated = meta_node.is_deprecated;
 
@@ -1228,7 +1246,7 @@ Node *parse_stmt(Parser *P)
         return parse_import_stmt(P);
     }
 
-    if (P->current.kind == TOKEN_CLASS || P->current.kind == TOKEN_RECORD)
+    if (P->current.kind == TOKEN_CLASS || P->current.kind == TOKEN_RECORD || P->current.kind == TOKEN_OBJECT)
     {
         return parse_class_def(P);
     }

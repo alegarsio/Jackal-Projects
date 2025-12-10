@@ -78,6 +78,8 @@ typedef struct Node {
     struct Node* right;
     
     struct Node* next; 
+    bool is_private;
+    bool is_singleton;
 
     bool is_override;
     bool is_deprecated;
