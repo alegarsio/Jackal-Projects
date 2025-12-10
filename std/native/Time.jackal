@@ -1,0 +1,11 @@
+class Time{
+    function init(ms : Number){
+        this.ms = ms;
+    }   
+    function sleep(){
+        return __jackal_sleep(this.ms);
+    }
+    function now(){
+        return __time_now();
+    }
+}

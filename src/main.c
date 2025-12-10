@@ -6,6 +6,7 @@
 #include <errno.h>
 #include<curl/curl.h>
 #include <cjson/cJSON.h>
+#include<time.h>
 
 /**
  * @include socket built in
@@ -50,7 +51,6 @@
 
 Value builtin_vm_memory(int argCount, Value* args) {
     (void)argCount; (void)args; 
-    
     return (Value){VAL_NUMBER, {.number = (double)bytesAllocated}};
 }
 
@@ -364,6 +364,35 @@ Value builtin_json_encode(int argCount, Value *args) {
     Value result = (Value){VAL_STRING, {.string = json_string}};
     
     return result;
+}
+
+Value builtin_time_sleep(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_NUMBER)
+        return (Value){VAL_NIL, {0}};
+    
+    long ms = (long)args[0].as.number;
+    usleep(ms * 1000); 
+    return (Value){VAL_NIL, {0}};
+}
+
+Value builtin_time_now(int argCount, Value *args) {
+    if (argCount != 0)
+        return (Value){VAL_NIL, {0}};
+    
+    time_t current_time = time(NULL);
+    return (Value){VAL_NUMBER, {.number = (double)current_time}};
+}
+Value builtin_time_get_local_hour(int argCount, Value *args) {
+    if (argCount != 0)
+        return (Value){VAL_NIL, {0}};
+    
+    time_t rawtime;
+    struct tm *info;
+    
+    time(&rawtime);
+    info = localtime(&rawtime);
+    
+    return (Value){VAL_NUMBER, {.number = (double)info->tm_hour}};
 }
 /**
  * this method is part of std.io library
@@ -768,6 +797,8 @@ void execute_source(const char *source, Env *env)
     }
 }
 
+
+
 /**
  * REPL initial
  */
@@ -869,6 +900,8 @@ int main(int argc, char **argv)
     REGISTER("__net_resolve_ip", builtin_net_resolve_ip);
     REGISTER("__net_htons", builtin_net_htons);
     REGISTER("__net_aton", builtin_net_aton);
+    REGISTER("__time_now",builtin_time_now);
+    REGISTER("__get_local_hour",builtin_time_get_local_hour);
 
 
     /**

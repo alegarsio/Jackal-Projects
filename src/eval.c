@@ -1684,7 +1684,7 @@ Value eval_node(Env *env, Node *n)
         env_free(for_env);
         return (Value){.type = VAL_NIL, .as = {0}};
     }
-case NODE_EVERY_LOOP:
+    case NODE_EVERY_LOOP:
     {
         Env *every_env = env_new(env);
         
@@ -1740,6 +1740,41 @@ case NODE_EVERY_LOOP:
         
         free_value(sleep_time_ms);
         env_free(every_env);
+        return (Value){.type = VAL_NIL, .as = {0}};
+    }
+
+    case NODE_OBSERVE_STMT:
+    {
+        Node *case_node = n->right; 
+        
+        while (1) 
+        {
+            
+            for (Node *current_case = case_node; current_case; current_case = current_case->next) {
+                
+                Value condition_result = eval_node(env, current_case->left);
+
+                if (is_value_truthy(condition_result)) {
+                    
+                    Value action_result = eval_node(env, current_case->right);
+                    
+                    if (action_result.type == VAL_BREAK || action_result.type == VAL_RETURN) {
+                        free_value(action_result);
+                        free_value(condition_result);
+                        return action_result; 
+                    }
+                    free_value(action_result);
+                }
+                free_value(condition_result);
+            }
+            Var *sleep_var = find_var(env, "__jackal_sleep");
+            if (sleep_var && sleep_var->value.type == VAL_NATIVE) {
+                Value args[1] = { (Value){VAL_NUMBER, {.number = 1.0}} }; 
+                Value sleep_res = sleep_var->value.as.native(1, args);
+                free_value(sleep_res);
+            }
+        }
+        
         return (Value){.type = VAL_NIL, .as = {0}};
     }
 

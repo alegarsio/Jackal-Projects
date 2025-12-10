@@ -1,6 +1,1 @@
-let counter = 0;
-
-every(1000){
-    counter = counter + 1;
-    print(counter);
-} until (counter >= 10){}
+import std.network.http.Request;

@@ -383,5 +383,41 @@
 			]
 		}
 	},
+	"observe-expression": {
+  "patterns": [
+    {
+      "name": "meta.observe.expression.jackal",
+      "begin": "\\b(observe)\\s+([a-zA-Z_][a-zA-Z0-9_]*)?\\s*\\{",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.observe.jackal" },
+        "2": { "name": "variable.other.observable.jackal" }
+      },
+      "end": "\\}",
+      "patterns": [
+        {
+          "name": "meta.observe.on.jackal",
+          "begin": "\\b(on)\\s*\\(",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.on.jackal" }
+          },
+          "end": "\\)",
+          "patterns": [
+            { "include": "$self" }
+          ]
+        },
+        {
+          "name": "keyword.operator.arrow.jackal",
+          "match": "(->|=>)"
+        },
+        {
+          "name": "keyword.control.loop.temporal.jackal",
+          "match": "\\b(every|until)\\b"
+        },
+        { "include": "$self" }
+      ]
+    }
+  ]
+},
+
 	"scopeName": "source.jackal"
 }

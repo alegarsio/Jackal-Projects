@@ -3,8 +3,15 @@
 #include <string.h>
 
 
+static Node *parse_extract_stmt(Parser *P);
 
-
+/**
+ * 
+ */
+static Node *parse_observe_stmt(Parser *P);
+/**
+ * 
+ */
 static Node *parse_every_loop(Parser *P);
 /**
  * @brief parse when expresssion
@@ -825,6 +832,9 @@ static Node *parse_class_def(Parser *P)
     next(P); 
     n->super_name[0] = '\0';
     n->interface_name[0] = '\0';
+    
+    // VARIABEL BARU UNTUK MENAMPUNG DAFTAR INTERFACE GANDA
+    Node *interface_list_head = NULL; 
 
     Node *fields_head = NULL;
     Node *fields_current = NULL;
@@ -859,7 +869,7 @@ static Node *parse_class_def(Parser *P)
                     fields_current->next = field_node;
                     fields_current = field_node;
                 }
-            } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
+            } while (P->current.kind == TOKEN_COMMA && (next(P), 1)); // FIX: Menghindari error tipe
         }
         
         if (P->current.kind != TOKEN_RPAREN)
@@ -886,10 +896,14 @@ static Node *parse_class_def(Parser *P)
         return n;
     }
 
+    // Loop ini akan menangani EXTENDS dan IMPLEMENTS secara bersamaan
     while (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS) 
     {
         if (P->current.kind == TOKEN_EXTENDS) 
         {
+            if (n->super_name[0] != '\0') {
+                print_error("Class can only extend one superclass.");
+            }
             next(P); 
             if (P->current.kind != TOKEN_IDENT) {
                 print_error("Expected superclass name after 'extends'.");
@@ -899,14 +913,59 @@ static Node *parse_class_def(Parser *P)
         } 
         else if (P->current.kind == TOKEN_IMPLEMENTS) 
         {
-            next(P); 
-            if (P->current.kind != TOKEN_IDENT) {
-                print_error("Expected interface name after 'implements'.");
+            if (interface_list_head != NULL) {
+                print_error("Interface implementation already defined.");
             }
-            strcpy(n->interface_name, P->current.text);
             next(P); 
+            
+            // --- LOGIKA IMPLEMENTS GANDA (MULTIPLE INTERFACE) ---
+            if (P->current.kind == TOKEN_LPAREN) {
+                next(P); // Konsumsi '('
+
+                Node *current_list = NULL;
+                
+                do {
+                    if (P->current.kind != TOKEN_IDENT)
+                        print_error("Expected interface name after 'implements (' or comma.");
+                    
+                    Node *interface_node = new_node(NODE_IDENT);
+                    strcpy(interface_node->name, P->current.text);
+                    
+                    interface_node->next = current_list;
+                    current_list = interface_node;
+
+                    next(P); 
+
+                } while (P->current.kind == TOKEN_COMMA && (next(P), 1)); // FIX: Menghindari error tipe
+
+                if (P->current.kind != TOKEN_RPAREN)
+                    print_error("Expected ')' after multiple interface list.");
+                next(P);
+                
+                interface_list_head = current_list;
+                
+            } else {
+                // Logika Implementasi Tunggal (sesuai kode asli Anda)
+                if (P->current.kind != TOKEN_IDENT)
+                    print_error("Expected interface name after 'implements'.");
+
+                // Simpan di n->interface_name (single name)
+                strcpy(n->interface_name, P->current.text); 
+                
+                // Simpan juga di linked list sebagai node tunggal
+                Node *interface_node = new_node(NODE_IDENT);
+                strcpy(interface_node->name, P->current.text);
+                interface_list_head = interface_node; 
+                
+                next(P); 
+            }
+            // --- AKHIR LOGIKA IMPLEMENTS GANDA/TUNGGAL ---
         }
     }
+    
+    // Karena n->left dan n->right digunakan untuk fields/methods, 
+    // kita gunakan n->next untuk menyimpan linked list interface.
+    n->next = interface_list_head; 
 
     if (P->current.kind != TOKEN_LBRACE)
         print_error("Expected '{' before class body.");
@@ -1050,6 +1109,60 @@ static Node *parse_for_stmt(Parser *P)
 
     return n;
 }
+static Node *parse_observe_stmt(Parser *P)
+{
+    Node *n = new_node(NODE_OBSERVE_STMT);
+    next(P);
+
+    if (P->current.kind != TOKEN_IDENT)
+        print_error("Expected identifier to observe.");
+    strcpy(n->name, P->current.text);
+    next(P);
+
+    if (P->current.kind != TOKEN_LBRACE)
+        print_error("Expected '{' after observe identifier.");
+    next(P);
+
+    Node *cases_head = NULL;
+    Node *cases_current = NULL;
+
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
+    {
+        if (P->current.kind != TOKEN_ON)
+            print_error("Expected 'on' keyword inside observe block.");
+        next(P);
+
+        Node *case_node = new_node(NODE_OBSERVE_CASE);
+
+        if (P->current.kind != TOKEN_LPAREN)
+            print_error("Expected '(' after 'on'.");
+        next(P);
+        case_node->left = parse_expr(P);
+        if (P->current.kind != TOKEN_RPAREN)
+            print_error("Expected ')' after observation condition.");
+        next(P);
+
+        case_node->right = parse_block(P);
+
+        if (cases_head == NULL)
+        {
+            cases_head = case_node;
+            cases_current = case_node;
+        }
+        else
+        {
+            cases_current->next = case_node;
+            cases_current = case_node;
+        }
+    }
+
+    if (P->current.kind != TOKEN_RBRACE)
+        print_error("Expected '}' to end observe block.");
+    next(P);
+
+    n->right = cases_head;
+    return n;
+}
 
 /**
  * @brief Parses a statement.
@@ -1070,13 +1183,16 @@ Node *parse_stmt(Parser *P)
     {
         return parse_if_stmt(P);
     }
-
     if (P->current.kind == TOKEN_EVERY)
     {
         return parse_every_loop(P);
     }
-    
+    if (P->current.kind == TOKEN_OBSERVE)
+    {
+        return parse_observe_stmt(P);
+    }
 
+    
     if (P->current.kind == TOKEN_MATCH)
     {
         return parse_match_stmt(P);

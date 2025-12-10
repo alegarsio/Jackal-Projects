@@ -87,7 +87,12 @@ typedef enum {
     TOKEN_RECORD,
 
     TOKEN_EVERY,
-    TOKEN_UNTIL
+    TOKEN_UNTIL,
+    
+    TOKEN_OBSERVE, 
+    TOKEN_ON,
+
+    TOKEN_PRIVATE
 } TokenKind;
 
 struct Node;
@@ -257,6 +262,7 @@ typedef struct Value {
         LinkedList* list;
         Enum* enum_obj;
         FILE* file;
+        
 
         
     } as;

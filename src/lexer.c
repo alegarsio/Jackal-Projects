@@ -124,7 +124,8 @@ Token lexer_next(Lexer* L) {
         else if (strcmp(tk.text, "until") == 0) tk.kind = TOKEN_UNTIL;
         else if (strcmp(tk.text, "true") == 0) tk.kind = TOKEN_TRUE;
         else if (strcmp(tk.text, "false") == 0) tk.kind = TOKEN_FALSE;
-
+        else if (strcmp(tk.text, "observe") == 0) tk.kind = TOKEN_OBSERVE;
+        else if (strcmp(tk.text, "on") == 0) tk.kind = TOKEN_ON;
         else if (strcmp(tk.text, "break") == 0) tk.kind = TOKEN_BREAK;
         else if (strcmp(tk.text, "continue") == 0) tk.kind = TOKEN_CONTINUE;
         else if (strcmp(tk.text, "when") == 0) tk.kind = TOKEN_WHEN;
