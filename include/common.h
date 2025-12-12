@@ -93,7 +93,8 @@ typedef enum {
     TOKEN_ON,
 
     TOKEN_PRIVATE,
-    TOKEN_OBJECT
+    TOKEN_OBJECT,
+    TOKEN_OF
 } TokenKind;
 
 struct Node;

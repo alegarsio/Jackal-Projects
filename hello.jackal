@@ -1,8 +1,0 @@
-object User(nama){
-    function getName() {
-        return this.nama;
-    }
-}
-
-User.nama = "ale";
-print(User.getName());

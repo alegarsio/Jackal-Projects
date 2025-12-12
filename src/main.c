@@ -7,21 +7,17 @@
 #include<curl/curl.h>
 #include <cjson/cJSON.h>
 #include<time.h>
-
 /**
  * @include socket built in
  * represents the usage
  */
 #include<sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
+#include<netinet/in.h>
+#include<arpa/inet.h>
 /**
  * @incude network DB
  */
 #include <netdb.h>
-
-
 /**
  * Main entry point for the Jackal interpreter.
  * @include necessary headers

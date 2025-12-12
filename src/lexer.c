@@ -127,6 +127,7 @@ Token lexer_next(Lexer* L) {
         else if (strcmp(tk.text, "observe") == 0) tk.kind = TOKEN_OBSERVE;
         else if (strcmp(tk.text, "on") == 0) tk.kind = TOKEN_ON;
         else if (strcmp(tk.text, "object") == 0) tk.kind = TOKEN_OBJECT;
+        else if (strcmp(tk.text, "of") == 0) tk.kind = TOKEN_OF;
       
         else if (strcmp(tk.text, "break") == 0) tk.kind = TOKEN_BREAK;
         else if (strcmp(tk.text, "continue") == 0) tk.kind = TOKEN_CONTINUE;

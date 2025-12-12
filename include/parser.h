@@ -84,6 +84,8 @@ typedef struct Node {
     bool is_override;
     bool is_deprecated;
     bool is_record;
+
+    struct Node* template_types;
     
     int arity;
     char return_type[64];

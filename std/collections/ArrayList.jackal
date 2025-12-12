@@ -1,18 +1,18 @@
-class ArrayList {
+class ArrayList of [T]{
     
     function init() {
         this.data = [];
     }
 
-    function add(element) {
+    function add(element : T) {
         this.data.push(element);
     }
 
-    function get(index) {
+    function get(index : T) {
         return this.data[index];
     }
 
-    function set(index, value) {
+    function set(index , value : T) {
         this.data[index] = value;
     }
 
