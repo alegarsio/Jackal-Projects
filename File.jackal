@@ -1,0 +1,29 @@
+
+import std.collections.Map;
+
+let _jsonMap = Map[String,String]();
+
+object FileApi(id :Number, name :String  ,size :Number){
+
+        function getId(){
+            return this.id.toString();
+        }
+
+        function getName(){
+            return this.name;
+        }
+
+        function getSize(){
+            return this.size.toString();
+        }
+}
+
+FileApi.id = 1;
+FileApi.name = "test.c";
+FileApi.size = 1000;
+
+_jsonMap.set("id",FileApi.getId());
+_jsonMap.set("name",FileApi.getName());
+_jsonMap.set("size",FileApi.getSize());
+
+print(_jsonMap.get("id"));

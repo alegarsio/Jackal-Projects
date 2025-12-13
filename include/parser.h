@@ -85,6 +85,7 @@ typedef struct Node {
     bool is_deprecated;
     bool is_record;
 
+    struct Node* super_template_types;
     struct Node* template_types;
     
     int arity;

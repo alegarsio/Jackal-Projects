@@ -312,6 +312,7 @@ static Node *parse_array_literal(Parser *P)
  */
 static Node *parse_primary(Parser *P)
 {
+
     if (P->current.kind == TOKEN_NUMBER)
     {
         Node *n = new_node(NODE_NUMBER);
@@ -398,16 +399,12 @@ static Node *parse_primary(Parser *P)
     return NULL;
 }
 
-
 static Node *parse_template_declaration(Parser *P)
 {
-    if (P->current.kind != TOKEN_OF)
-        return NULL;
-    next(P);
-
     if (P->current.kind != TOKEN_LBRACKET)
-        print_error("Expected '[' after 'of' keyword for template types.");
-    next(P);
+        return NULL;
+
+    next(P); // Lewati '['
 
     Node *head = NULL;
     Node *current = NULL;
@@ -443,7 +440,6 @@ static Node *parse_template_declaration(Parser *P)
     return head;
 }
 
-
 /**
  * @brief Parses a postfix expression.
  * @param P Pointer to the Parser.
@@ -455,6 +451,19 @@ static Node *parse_postfix(Parser *P)
 
     while (1)
     {
+
+        if (node != NULL && node->kind == NODE_IDENT && P->current.kind == TOKEN_LBRACKET)
+        {
+            Node *template_args = parse_template_declaration(P);
+
+            if (template_args != NULL)
+            {
+                node->template_types = template_args;
+
+                continue;
+            }
+        }
+
         if (P->current.kind == TOKEN_LPAREN)
         {
             next(P);
@@ -463,7 +472,7 @@ static Node *parse_postfix(Parser *P)
 
         if (P->current.kind == TOKEN_OF && node->kind == NODE_IDENT)
         {
-            Node *template_args = parse_template_declaration(P); 
+            Node *template_args = parse_template_declaration(P);
             node->template_types = template_args;
         }
         else if (P->current.kind == TOKEN_LBRACKET)
@@ -869,6 +878,7 @@ static Node *parse_func_def(Parser *P)
 static Node *parse_class_def(Parser *P)
 {
     Node *n = new_node(NODE_CLASS_DEF);
+    Node *template_check = parse_template_declaration(P);
 
     if (P->current.kind == TOKEN_OBJECT)
     {
@@ -964,12 +974,25 @@ static Node *parse_class_def(Parser *P)
 
     if (n->is_singleton)
     {
+        if (template_check != NULL)
+        {
+            print_error("Error: Object (Singleton) cannot have template type parameters.");
+
+            free_node(template_check);
+            return NULL;
+        }
+
         if (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS)
         {
-            print_error("Object cannot extend or implement other types.");
+            print_error("Error: Object cannot extend or implement other types.");
         }
         n->super_name[0] = '\0';
         n->interface_name[0] = '\0';
+    }
+
+    else
+    {
+        n->template_types = template_check;
     }
 
     while (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS)
@@ -987,6 +1010,12 @@ static Node *parse_class_def(Parser *P)
             }
             strcpy(n->super_name, P->current.text);
             next(P);
+
+            Node *super_template_args = parse_template_declaration(P);
+            if (super_template_args != NULL)
+            {
+                n->super_template_types = super_template_args;
+            }
         }
         else if (P->current.kind == TOKEN_IMPLEMENTS)
         {

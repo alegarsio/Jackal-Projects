@@ -1,3 +1,8 @@
+
+/**
+ * (c) Alegrarsio gifta Lesmana
+ */
+
 #ifndef COMMON_H
 #define COMMON_H
 

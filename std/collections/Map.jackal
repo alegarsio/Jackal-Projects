@@ -1,0 +1,26 @@
+import std.collections.Abstract.Pair;
+
+/** 
+ * @author Alegrarsio Gifta Lesmana
+ * Map[@param K @param V] 
+ * Map is Wrapper class for Jackal Dictionary object, privides a higher level 
+ * abstraction for dictionary operation, implementing the Pair interface 
+ 
+**/
+class Map [K,V] implements Pair {
+    
+    init(){
+        this.data = {}; 
+    }
+
+    @override
+    function set(key: K, val: V) {
+        this.data[key.toString()] = val;
+    }
+
+    @override
+    function get(key: K): V {
+        return this.data[key.toString()];
+    }
+
+}

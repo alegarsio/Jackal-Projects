@@ -1,0 +1,40 @@
+/**
+ * (c) Alegrarsio gifta lesmana
+ * @author Alegrarsio Gifta Lesman
+ * @interface List
+**/
+interface List {
+
+    /**
+     * List Size()
+     * @return int value of counted elements in the array
+     * @return nil when array is empty
+    **/
+    function size();
+
+
+    /**
+     * List Add()
+     * add the value to the list object
+     * this method dont have return type (void)
+     * @param elements of template T
+    **/
+    function add();
+
+    /**
+     * List set()
+     * set the value to the list object
+     * @param index is for index of the item in the list
+     * @param value[T] is for value[T] of the item in the list
+     **/
+
+    function set();
+    
+
+    /**
+     * List Get()
+     * @return [T] item on the list 
+     * @return nil if item is not on the list
+    **/
+    function get();
+}

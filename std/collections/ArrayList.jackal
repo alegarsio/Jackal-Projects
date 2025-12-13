@@ -1,30 +1,66 @@
-class ArrayList of [T]{
-    
-    function init() {
+import std.collections.Abstract.List;
+/**
+ * @author Alegrarsio Gifta Lesmana 
+ * https://github.com/alegarsio
+ * ArrayList is an dynamic and resizable-array
+ * This library is part of std/collections library
+ * @param [T] for generic implementation
+**/
+class ArrayList [T] implements List{
+
+    init() {
         this.data = [];
     }
-
+    /**
+     * function add();
+     * implements add function of interface List
+     * @param element [T] 
+    **/
+    @override
     function add(element : T) {
         this.data.push(element);
     }
 
+    /**
+     * function get();
+     * implements get function of interface List
+     * @param index [T]
+     * @return item in the list if is found
+     * @return nil if the item not found in the list
+    **/
+    @override
     function get(index : T) {
         return this.data[index];
     }
 
+    /**
+     * function set();
+     * implements set function of interface List
+     * @param index : Number
+     * @param value [T]
+    **/
+    @override
     function set(index , value : T) {
         this.data[index] = value;
     }
-
+    /**
+     * function removeAt();
+     * implements remove method of ArrayList Object
+     * this method is part of std/collections/ArrayList library 
+     * @param index : Number
+    **/
     function removeAt(index) {
         this.data.remove(index);
     }
 
+    /**
+     * function size();
+     * implements size function of interface List
+     * @return Number of the length or counted item in the ArrayList
+    **/
+    @override
     function size() {
         return this.data.length();
     }
 
-    function printList() {
-        print this.data;
-    }
 }
