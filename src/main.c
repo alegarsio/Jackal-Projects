@@ -146,7 +146,32 @@ Value builtin_net_close(int argCount, Value *args) {
     return (Value){VAL_NUMBER, {.number = (double)res}};
 }
 
+Value builtin_writeline(int argCount, Value* args) {
+    if (argCount != 1) {
+        print_error("Error: 'println' requires exactly one argument.");
+        return (Value){.type = VAL_NIL, .as = {0}};
+    }
+    
+    print_value(args[0]);
+    
+    printf("\n");
+    fflush(stdout); 
 
+    return (Value){.type = VAL_NIL, .as = {0}};
+}
+
+Value builtin_write(int argCount, Value* args) {
+    if (argCount != 1) {
+        print_error("Error: 'println' requires exactly one argument.");
+        return (Value){.type = VAL_NIL, .as = {0}};
+    }
+    
+    print_value(args[0]);
+    
+    fflush(stdout); 
+
+    return (Value){.type = VAL_NIL, .as = {0}};
+}
 Value builtin_net_resolve_ip(int argCount, Value *args) {
     if (argCount != 1 || args[0].type != VAL_STRING) {
         print_error("resolve_ip() requires one string argument (hostname).");
@@ -898,6 +923,8 @@ int main(int argc, char **argv)
     REGISTER("__net_aton", builtin_net_aton);
     REGISTER("__time_now",builtin_time_now);
     REGISTER("__get_local_hour",builtin_time_get_local_hour);
+    REGISTER("println",builtin_writeline);
+    REGISTER("print",builtin_write);
 
 
     /**

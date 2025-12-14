@@ -40,7 +40,7 @@ class Pairs {
         this.value;
     }
 
-    function getKey(key ){
+    function getKey(key) : V{
         return this.key.toString();
     }
     

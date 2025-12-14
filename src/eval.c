@@ -931,14 +931,15 @@ Value eval_node(Env *env, Node *n)
         return (Value){.type = VAL_NIL, .as = {0}};
     }
 
-    case NODE_PRINT:
-    {
-        Value val = eval_node(env, n->right);
-        print_value(val);
-        printf("\n");
-        free_value(val);
-        return (Value){.type = VAL_NIL, .as = {0}};
-    }
+    // case NODE_PRINT:
+    // {
+    //     Value val = eval_node(env, n->right);
+    //     print_value(val);
+    
+    //     fflush(stdout);
+    //     free_value(val);
+    //     return (Value){.type = VAL_NIL, .as = {0}};
+    // }
 
     case NODE_IF_STMT:
     {

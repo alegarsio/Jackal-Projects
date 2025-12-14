@@ -1,0 +1,7 @@
+object std(){
+    function outln(value){
+        println(value);
+    }
+
+   
+}

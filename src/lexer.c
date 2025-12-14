@@ -113,7 +113,7 @@ Token lexer_next(Lexer* L) {
 
         if (strcmp(tk.text, "let") == 0) tk.kind = TOKEN_LET;
         else if (strcmp(tk.text, "const") == 0) tk.kind = TOKEN_CONST;
-        else if (strcmp(tk.text, "print") == 0) tk.kind = TOKEN_PRINT;
+        // else if (strcmp(tk.text, "print") == 0) tk.kind = TOKEN_PRINT;
         else if (strcmp(tk.text, "if") == 0) tk.kind = TOKEN_IF;
         else if (strcmp(tk.text, "else") == 0) tk.kind = TOKEN_ELSE;
         else if (strcmp(tk.text, "function") == 0) tk.kind = TOKEN_FUNCTION;

@@ -99,7 +99,8 @@ typedef enum {
 
     TOKEN_PRIVATE,
     TOKEN_OBJECT,
-    TOKEN_OF
+    TOKEN_OF,
+    TOKEN_ARROWS
 } TokenKind;
 
 struct Node;
