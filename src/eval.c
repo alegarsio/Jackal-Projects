@@ -64,6 +64,16 @@ static char *read_file(const char *filename)
     return source;
 }
 
+static bool is_integer_value(Value val)
+{
+    if (val.type != VAL_NUMBER)
+        return false;
+    return val.as.number == floor(val.as.number);
+}
+
+
+
+
 /**
  * @brief get value for return type
  */
@@ -74,7 +84,11 @@ static const char *get_value_type_name(Value val)
     case VAL_NIL:
         return "nil";
     case VAL_NUMBER:
-        return "Number";
+        if (is_integer_value(val)) {
+            return "Int";
+        } else {
+            return "Float";
+        }
     case VAL_STRING:
         return "String";
     case VAL_ARRAY:
@@ -86,9 +100,9 @@ static const char *get_value_type_name(Value val)
     case VAL_NATIVE:
         return "Function";
     case VAL_CLASS:
-        return val.as.class_obj->name; 
+        return val.as.class_obj->name;
     case VAL_INSTANCE:
-        return val.as.instance->class_val->as.class_obj->name; 
+        return val.as.instance->class_val->as.class_obj->name;
     case VAL_INTERFACE:
         return val.as.interface_obj->name;
     case VAL_ENUM:
@@ -98,6 +112,28 @@ static const char *get_value_type_name(Value val)
     default:
         return "unknown";
     }
+}
+
+
+static bool is_type_alias_match(const char* expected_type, Value actual_val) {
+    if (actual_val.type == VAL_NUMBER) {
+        if (strcmp(expected_type, "Int") == 0) {
+            return is_integer_value(actual_val);
+        }
+        if (strcmp(expected_type, "Float") == 0) {
+            return !is_integer_value(actual_val);
+        }
+        if (strcmp(expected_type, "Number") == 0) {
+            return true;
+        }
+    }
+    
+    const char *actual_type_name = get_value_type_name(actual_val);
+    if (strcmp(expected_type, actual_type_name) == 0) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -666,29 +702,30 @@ Value eval_node(Env *env, Node *n)
     }
 
     case NODE_SET:
-{
-    Value obj = eval_node(env, n->left->left);
-    if (obj.type != VAL_INSTANCE)
     {
-        print_error("Only instances have fields.");
-        free_value(obj);
+        Value obj = eval_node(env, n->left->left);
+        if (obj.type != VAL_INSTANCE)
+        {
+            print_error("Only instances have fields.");
+            free_value(obj);
+            return (Value){.type = VAL_NIL, .as = {0}};
+        }
+
+        if (obj.as.instance->class_val->as.class_obj->is_record)
+        {
+            print_error("Cannot modify field of immutable record instance.");
+            free_value(obj);
+            return (Value){.type = VAL_NIL, .as = {0}};
+        }
+
+        Value val = eval_node(env, n->right);
+
+        set_var(obj.as.instance->fields, n->left->name, val, false);
+
+        free_value(val);
+
         return (Value){.type = VAL_NIL, .as = {0}};
     }
-
-    if (obj.as.instance->class_val->as.class_obj->is_record) {
-        print_error("Cannot modify field of immutable record instance.");
-        free_value(obj);
-        return (Value){.type = VAL_NIL, .as = {0}};
-    }
-
-    Value val = eval_node(env, n->right);
-    
-    set_var(obj.as.instance->fields, n->left->name, val, false);
-    
-    free_value(val); 
-
-    return (Value){.type = VAL_NIL, .as = {0}};
-}
 
     case NODE_POST_INC:
     {
@@ -931,15 +968,15 @@ Value eval_node(Env *env, Node *n)
         return (Value){.type = VAL_NIL, .as = {0}};
     }
 
-    // case NODE_PRINT:
-    // {
-    //     Value val = eval_node(env, n->right);
-    //     print_value(val);
-    
-    //     fflush(stdout);
-    //     free_value(val);
-    //     return (Value){.type = VAL_NIL, .as = {0}};
-    // }
+        // case NODE_PRINT:
+        // {
+        //     Value val = eval_node(env, n->right);
+        //     print_value(val);
+
+        //     fflush(stdout);
+        //     free_value(val);
+        //     return (Value){.type = VAL_NIL, .as = {0}};
+        // }
 
     case NODE_IF_STMT:
     {
@@ -1005,7 +1042,6 @@ Value eval_node(Env *env, Node *n)
             class_obj->superclass = super_var->value.as.class_obj;
         }
 
-
         if (strlen(n->interface_name) > 0)
         {
             Var *iface_var = find_var(env, n->interface_name);
@@ -1019,31 +1055,34 @@ Value eval_node(Env *env, Node *n)
             class_obj->interface = iface_var->value.as.interface_obj;
         }
 
-        if (n->is_singleton) {
+        if (n->is_singleton)
+        {
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
-            
+
             Instance *inst = malloc(sizeof(Instance));
             inst->class_val = malloc(sizeof(Value));
-            *inst->class_val = class_val; 
-            inst->fields = env_new(NULL); 
+            *inst->class_val = class_val;
+            inst->fields = env_new(NULL);
 
             Node *method = n->left;
-            while (method) {
+            while (method)
+            {
                 Value method_val = eval_node(class_obj->methods, method);
                 free_value(method_val);
                 method = method->next;
             }
 
-            Node *param_node = n->right; 
-            while (param_node) {
+            Node *param_node = n->right;
+            while (param_node)
+            {
                 set_var(inst->fields, param_node->name, (Value){VAL_STRING, {.string = strdup("")}}, false);
                 param_node = param_node->next;
             }
-            
+
             Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
-            set_var(env, n->name, instance_val, true); 
-            
-            return (Value){.type = VAL_NIL, .as = {0}}; 
+            set_var(env, n->name, instance_val, true);
+
+            return (Value){.type = VAL_NIL, .as = {0}};
         }
 
         Node *method = n->left;
@@ -1374,14 +1413,14 @@ Value eval_node(Env *env, Node *n)
 
                 Func *func = method_var->value.as.function;
 
-                if (func->is_private) 
-            {
-                if (get_node->left->kind != NODE_THIS)
+                if (func->is_private)
                 {
-                    print_error("Cannot access private method '%s' outside of class context.", get_node->name);
-                    return (Value){VAL_NIL, .as = {0}};
+                    if (get_node->left->kind != NODE_THIS)
+                    {
+                        print_error("Cannot access private method '%s' outside of class context.", get_node->name);
+                        return (Value){VAL_NIL, .as = {0}};
+                    }
                 }
-            }
                 if (func->is_deprecated)
                 {
                     printf("Warning: Method '%s' is deprecated.\n", get_node->name);
@@ -1725,29 +1764,31 @@ Value eval_node(Env *env, Node *n)
     case NODE_EVERY_LOOP:
     {
         Env *every_env = env_new(env);
-        
-        Value time_val = eval_node(every_env, n->left); 
-        if (time_val.type != VAL_NUMBER || time_val.as.number < 0) {
+
+        Value time_val = eval_node(every_env, n->left);
+        if (time_val.type != VAL_NUMBER || time_val.as.number < 0)
+        {
             print_error("Every loop time must be a non-negative number (milliseconds).");
             free_value(time_val);
             env_free(every_env);
             return (Value){.type = VAL_NIL, .as = {0}};
         }
-        
-        Value sleep_time_ms = time_val; 
+
+        Value sleep_time_ms = time_val;
 
         Var *sleep_var = find_var(every_env, "__jackal_sleep");
-        if (!sleep_var || sleep_var->value.type != VAL_NATIVE) {
-             print_error("Internal error: __jackal_sleep native function not found.");
-             free_value(sleep_time_ms);
-             env_free(every_env);
-             return (Value){.type = VAL_NIL, .as = {0}};
+        if (!sleep_var || sleep_var->value.type != VAL_NATIVE)
+        {
+            print_error("Internal error: __jackal_sleep native function not found.");
+            free_value(sleep_time_ms);
+            env_free(every_env);
+            return (Value){.type = VAL_NIL, .as = {0}};
         }
         NativeFn sleep_fn = sleep_var->value.as.native;
 
         Node *body = n->right->left;
         Node *until_condition = n->right->right;
-        
+
         while (1)
         {
             Value until_cond_res = eval_node(every_env, until_condition);
@@ -1759,23 +1800,22 @@ Value eval_node(Env *env, Node *n)
             free_value(until_cond_res);
 
             Value sleep_res = sleep_fn(1, &sleep_time_ms);
-            free_value(sleep_res); 
+            free_value(sleep_res);
 
             Value body_res = eval_node(every_env, body);
-            
+
             if (body_res.type == VAL_RETURN || body_res.type == VAL_BREAK || body_res.type == VAL_CONTINUE)
             {
                 free_value(body_res);
-                if (body_res.type == VAL_RETURN || body_res.type == VAL_BREAK) {
+                if (body_res.type == VAL_RETURN || body_res.type == VAL_BREAK)
+                {
                     break;
                 }
-                
             }
 
             free_value(body_res);
-
         }
-        
+
         free_value(sleep_time_ms);
         env_free(every_env);
         return (Value){.type = VAL_NIL, .as = {0}};
@@ -1783,36 +1823,40 @@ Value eval_node(Env *env, Node *n)
 
     case NODE_OBSERVE_STMT:
     {
-        Node *case_node = n->right; 
-        
-        while (1) 
+        Node *case_node = n->right;
+
+        while (1)
         {
-            
-            for (Node *current_case = case_node; current_case; current_case = current_case->next) {
-                
+
+            for (Node *current_case = case_node; current_case; current_case = current_case->next)
+            {
+
                 Value condition_result = eval_node(env, current_case->left);
 
-                if (is_value_truthy(condition_result)) {
-                    
+                if (is_value_truthy(condition_result))
+                {
+
                     Value action_result = eval_node(env, current_case->right);
-                    
-                    if (action_result.type == VAL_BREAK || action_result.type == VAL_RETURN) {
+
+                    if (action_result.type == VAL_BREAK || action_result.type == VAL_RETURN)
+                    {
                         free_value(action_result);
                         free_value(condition_result);
-                        return action_result; 
+                        return action_result;
                     }
                     free_value(action_result);
                 }
                 free_value(condition_result);
             }
             Var *sleep_var = find_var(env, "__jackal_sleep");
-            if (sleep_var && sleep_var->value.type == VAL_NATIVE) {
-                Value args[1] = { (Value){VAL_NUMBER, {.number = 1.0}} }; 
+            if (sleep_var && sleep_var->value.type == VAL_NATIVE)
+            {
+                Value args[1] = {(Value){VAL_NUMBER, {.number = 1.0}}};
                 Value sleep_res = sleep_var->value.as.native(1, args);
                 free_value(sleep_res);
             }
         }
-        
+
         return (Value){.type = VAL_NIL, .as = {0}};
     }
 

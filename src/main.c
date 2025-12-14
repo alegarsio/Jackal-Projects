@@ -675,6 +675,34 @@ Value builtin_file_open(int argCount, Value *args)
 }
 
 
+void load_jackal_file(const char *path, Env *env)
+{
+    char *source = read_file_content(path);
+    if (!source)
+    {
+        printf("Warning: Standard library file '%s' not found or empty.\n", path);
+        return;
+    }
+
+    Lexer L;
+    Parser P;
+
+    lexer_init(&L, source);
+    parser_init(&P, &L);
+
+    while (P.current.kind != TOKEN_END)
+    {
+        Node *stmt = parse_stmt(&P);
+        if (stmt)
+        {
+            Value result = eval_node(env, stmt);
+            free_value(result);
+            free_node(stmt);
+        }
+    }
+    free(source);
+}
+
 /**
  * @brief Built-in function 'len' to get the length of a string or array.
  * @param argCount The number of arguments passed to the function.
@@ -934,6 +962,7 @@ int main(int argc, char **argv)
     REGISTER("__http_request", builtin_http_request);
 
 
+
     /**
      * Json Parser
      */
@@ -946,6 +975,8 @@ int main(int argc, char **argv)
     DEFINE_NATIVE("pop", builtin_pop);
     DEFINE_NATIVE("remove", builtin_remove);
     DEFINE_NATIVE("File", builtin_file_open);
+
+    load_jackal_file("std/io.jackal",env);
 
     if (argc == 1)
     {

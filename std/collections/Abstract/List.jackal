@@ -10,7 +10,7 @@ interface List {
      * @return int value of counted elements in the array
      * @return nil when array is empty
     **/
-    function size();
+    func size();
 
 
     /**
@@ -19,7 +19,7 @@ interface List {
      * this method dont have return type (void)
      * @param elements of template T
     **/
-    function add();
+    func add();
 
     /**
      * List set()
@@ -28,7 +28,7 @@ interface List {
      * @param value[T] is for value[T] of the item in the list
      **/
 
-    function set();
+    func set();
     
 
     /**
@@ -36,5 +36,5 @@ interface List {
      * @return [T] item on the list 
      * @return nil if item is not on the list
     **/
-    function get();
+    func get();
 }

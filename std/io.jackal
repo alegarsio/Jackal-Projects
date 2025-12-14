@@ -1,0 +1,9 @@
+object io{
+    func writeln(value) {
+        println(value);
+    }
+
+    func write(value){
+        print(value);
+    }
+}

@@ -14,12 +14,12 @@ class Map [K,V] implements Pair {
     }
 
     @override
-    function set(key: K, val: V) {
+    func set(key: K, val: V) {
         this.data[key.toString()] = val;
     }
 
     @override
-    function get(key: K): V {
+    func get(key: K) -> V {
         return this.data[key.toString()];
     }
 

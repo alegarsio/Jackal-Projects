@@ -17,7 +17,7 @@ class ArrayList [T] implements List{
      * @param element [T] 
     **/
     @override
-    function add(element : T) {
+    func add(element : T) {
         this.data.push(element);
     }
 
@@ -29,7 +29,7 @@ class ArrayList [T] implements List{
      * @return nil if the item not found in the list
     **/
     @override
-    function get(index : T) {
+    func get(index : T) {
         return this.data[index];
     }
 
@@ -40,7 +40,7 @@ class ArrayList [T] implements List{
      * @param value [T]
     **/
     @override
-    function set(index , value : T) {
+    func set(index , value : T) {
         this.data[index] = value;
     }
     /**
@@ -49,7 +49,7 @@ class ArrayList [T] implements List{
      * this method is part of std/collections/ArrayList library 
      * @param index : Number
     **/
-    function removeAt(index) {
+    func removeAt(index) {
         this.data.remove(index);
     }
 
@@ -59,7 +59,7 @@ class ArrayList [T] implements List{
      * @return Number of the length or counted item in the ArrayList
     **/
     @override
-    function size() {
+    func size() -> Int {
         return this.data.length();
     }
 

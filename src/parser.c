@@ -846,12 +846,12 @@ static Node *parse_func_def(Parser *P)
         print_error("Expected ')' after parameters.");
     next(P);
 
-    if (P->current.kind == TOKEN_COLON)
+    if (P->current.kind == TOKEN_ARROW_TO_RETURN)
     {
         next(P);
         if (P->current.kind != TOKEN_IDENT)
         {
-            print_error("Expected type name after ':'.");
+            print_error("Expected type name after '->'.");
             n->return_type[0] = '\0';
         }
         else
