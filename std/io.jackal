@@ -5,16 +5,7 @@
  * this library is part of std/io lib the std/io/out ara deprecated
 **/
 
-object io(){
-    
-
-    func writeln(value) {
-        println(value);
-    }
-
-    func write(value){
-        print(value);
-    }
+object input(){
 
     func readln() -> String{
        return __io_read_line();
@@ -24,6 +15,22 @@ object io(){
         return __io_read_array(prompt,delimeter);
     }
 
+}
+
+/**
+ * console() object
+ * console object represents the std out function e.g., flush output
+ * @author Alegrarsio Gifta Lesmana
+**/
+object console(){
+
+    func writeln(value) {
+        println(value);
+    }
+    
+    func write(value){
+        print(value);
+    }
 }
 
 

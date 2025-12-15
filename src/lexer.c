@@ -297,6 +297,10 @@ Token lexer_next(Lexer *L)
         tk.kind = TOKEN_LPAREN;
         strcpy(tk.text, "(");
         break;
+    case '?':
+        tk.kind = TOKEN_INVALID;
+        strcpy(tk.text, "?");
+        break;
     case ')':
         tk.kind = TOKEN_RPAREN;
         strcpy(tk.text, ")");
