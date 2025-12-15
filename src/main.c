@@ -45,6 +45,9 @@
 #define BUFFER_SIZE 4096
 
 
+
+
+
 Value builtin_vm_memory(int argCount, Value* args) {
     (void)argCount; (void)args; 
     return (Value){VAL_NUMBER, {.number = (double)bytesAllocated}};
@@ -937,6 +940,7 @@ int main(int argc, char **argv)
     REGISTER("__io_readAll", builtin_io_readAll);
     REGISTER("__io_write", builtin_io_write);
     REGISTER("__io_close", builtin_io_close);
+   
 
     /**
      * Network Built In API
@@ -951,8 +955,15 @@ int main(int argc, char **argv)
     REGISTER("__net_aton", builtin_net_aton);
     REGISTER("__time_now",builtin_time_now);
     REGISTER("__get_local_hour",builtin_time_get_local_hour);
+
+
+    /**
+     * represents the io std/io global
+     */
     REGISTER("println",builtin_writeline);
     REGISTER("print",builtin_write);
+    REGISTER("__io_read_line",builtin_read_line);
+    REGISTER("__io_read_array",builtin_read_array);
 
 
     /**

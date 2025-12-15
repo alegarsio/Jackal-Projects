@@ -1,4 +1,13 @@
-object io{
+/**
+ * std/io.jackal
+ * @author Alegrarsio Gifta Lesmana
+ * Io object represents the standard input and output library 
+ * this library is part of std/io lib the std/io/out ara deprecated
+**/
+
+object io(){
+    
+
     func writeln(value) {
         println(value);
     }
@@ -6,4 +15,15 @@ object io{
     func write(value){
         print(value);
     }
+
+    func readln() -> String{
+       return __io_read_line();
+    }
+
+    func readarr(prompt:String, delimeter:String) -> Array{
+        return __io_read_array(prompt,delimeter);
+    }
+
 }
+
+

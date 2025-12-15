@@ -154,6 +154,7 @@ void free_value(Value value) {
     }
 }
 
+
 /**
  * Creates a copy of a Value.
  * @param value The Value to be copied.
@@ -272,6 +273,11 @@ Value builtin_read(int arity, Value* args) {
     }
     return (Value){VAL_NIL, .as = {0}};
 }
+
+
+
+
+
 
 /**
  * Deletes a Value at a specific index from a ValueArray.
@@ -420,4 +426,87 @@ void map_set(HashMap* map, const char* key, Value val) {
         entry->key = strdup(key);
     }
     entry->value = copy_value(val); 
+}
+
+
+Value builtin_read_line(int arity, Value* args) {
+    if (arity != 0) {
+        print_error("Error: '__io_read' expects zero arguments.");
+       
+        return (Value){VAL_NIL, .as = {0}}; 
+    }
+    
+    char buffer[1024];
+    
+    if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+        return (Value){VAL_NIL, .as = {0}};
+    }
+    
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0';
+    }
+    
+    char* str_copy = malloc(strlen(buffer) + 1);
+    
+    if (str_copy == NULL) {
+        return (Value){VAL_NIL, .as = {0}};
+    }
+    
+    strcpy(str_copy, buffer);
+    
+    return (Value){VAL_STRING, {.string = str_copy}};
+}
+
+
+Value builtin_read_array(int arity, Value* args) {
+    if (arity != 1) {
+        print_error("Error: '__io_read_array' expects one argument (delimiter).");
+        return (Value){VAL_NIL, .as = {0}};
+    }
+    
+    if (args[0].type != VAL_STRING) {
+        print_error("Error: Delimiter must be a String.");
+        return (Value){VAL_NIL, .as = {0}};
+    }
+    
+    const char *delimiter = args[0].as.string;
+
+    char buffer[1024];
+    if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+        return (Value){VAL_ARRAY, .as.array = array_new()};
+    }
+    
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0';
+    }
+
+    char *input_copy = strdup(buffer);
+    if (input_copy == NULL) {
+        return (Value){VAL_ARRAY, .as.array = array_new()};
+    }
+
+    ValueArray *result_array = array_new(); 
+    
+    char *token = strtok(input_copy, delimiter);
+    while (token != NULL) {
+        
+        while (*token == ' ') {
+            token++;
+        }
+        
+        char* token_copy = malloc(strlen(token) + 1);
+        if (token_copy != NULL) {
+             strcpy(token_copy, token);
+             Value token_val = (Value){VAL_STRING, {.string = token_copy}};
+             
+             array_append(result_array, token_val); 
+        }
+
+        token = strtok(NULL, delimiter);
+    }
+
+    free(input_copy);
+    return (Value){VAL_ARRAY, .as.array = result_array}; 
 }

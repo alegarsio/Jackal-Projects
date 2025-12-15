@@ -1518,11 +1518,10 @@ Value eval_node(Env *env, Node *n)
 
             const char *expected_type = NULL;
             const char *actual_type = NULL;
-            Value v = (Value){VAL_NIL, {0}}; // PINDAHKAN DEKLARASI v KE SINI
+            Value v = (Value){VAL_NIL, {0}}; 
 
             for (int i = 0; i < n->arity; i++)
             {
-                // HAPUS DEKLARASI Value v = eval_node(env, arg);
                 v = eval_node(env, arg);
 
                 if (param->type_name[0] != '\0')

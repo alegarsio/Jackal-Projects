@@ -6,7 +6,7 @@ import std.collections.Abstract.List;
  * This library is part of std/collections library
  * @param [T] for generic implementation
 **/
-class ArrayList [T] implements List{
+class ArrayList <T> implements List{
 
     init() {
         this.data = [];

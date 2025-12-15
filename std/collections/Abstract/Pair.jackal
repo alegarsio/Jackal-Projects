@@ -14,7 +14,7 @@ interface Pair{
      * @param K is for Key of the map {key <- : value}
      * @param V is for Value {key : -> value} of the map @param K is like primary key for accessing the @param V 
     **/
-    function set();
+    func set();
 
 
     /**
@@ -22,27 +22,5 @@ interface Pair{
      * @return V [@param V] of the item in Map
      * @param K is for the key access
     **/
-    function get();
-}
-
-class Pairs {
-    
-    init(){
-        this.data = {};
-        this.key = nil;
-        this.value = nil;
-    }
-    function setKey(key){
-        this.key = key.toString();;
-    }
-
-    function setValue(value){
-        this.value;
-    }
-
-    function getKey(key) : V{
-        return this.key.toString();
-    }
-    
-
+    func get();
 }

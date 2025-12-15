@@ -126,3 +126,14 @@ void map_set(HashMap* map, const char* key, Value val);
  * @param jackal_val
  */
 cJSON *jackal_value_to_cjson(Value jackal_val);
+
+/**
+ * builin_read_line
+ * @brief represents the input function for jackal programming language
+ */
+Value builtin_read_line(int arity, Value* args);
+
+/**
+ * 
+ */
+Value builtin_read_array(int arity, Value* args);

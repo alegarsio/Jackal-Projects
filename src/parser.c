@@ -398,46 +398,57 @@ static Node *parse_primary(Parser *P)
     }
     return NULL;
 }
-
 static Node *parse_template_declaration(Parser *P)
 {
-    if (P->current.kind != TOKEN_LBRACKET)
+    if (P->current.kind != TOKEN_LESS)
         return NULL;
 
-    next(P); // Lewati '['
+    // Simpan posisi Parser/Lexer sebelum konsumsi
+    size_t saved_pos = P->lexer->pos;
+    Token saved_token = P->current;
+    
+    next(P); // Lewati '<'
 
     Node *head = NULL;
     Node *current = NULL;
 
-    if (P->current.kind != TOKEN_RBRACKET)
+    // Template harus berisi TIPE (Identifier) dan KOMA, bukan ekspresi
+    if (P->current.kind != TOKEN_GREATER)
     {
         do
         {
-            if (P->current.kind != TOKEN_IDENT)
-                print_error("Expected template parameter name or type.");
+            // Periksa token pertama: HARUS Identifier
+            if (P->current.kind != TOKEN_IDENT) {
+                free_node(head);
+                goto fail;
+            }
 
             Node *type_param = new_node(NODE_IDENT);
             strcpy(type_param->name, P->current.text);
             next(P);
 
-            if (head == NULL)
-            {
+            if (head == NULL) {
                 head = type_param;
                 current = type_param;
-            }
-            else
-            {
+            } else {
                 current->next = type_param;
                 current = type_param;
             }
         } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
     }
 
-    if (P->current.kind != TOKEN_RBRACKET)
-        print_error("Expected ']' to close template types.");
-    next(P); // Lewati ']'
-
+    if (P->current.kind != TOKEN_GREATER) {
+        free_node(head);
+        goto fail;
+    }
+    
+    next(P);
     return head;
+
+fail:
+    P->lexer->pos = saved_pos;
+    P->current = saved_token; 
+    return NULL;
 }
 
 /**
@@ -452,7 +463,7 @@ static Node *parse_postfix(Parser *P)
     while (1)
     {
 
-        if (node != NULL && node->kind == NODE_IDENT && P->current.kind == TOKEN_LBRACKET)
+        if (node != NULL && node->kind == NODE_IDENT && P->current.kind == TOKEN_LESS)
         {
             Node *template_args = parse_template_declaration(P);
 
@@ -464,17 +475,6 @@ static Node *parse_postfix(Parser *P)
             }
         }
 
-        if (P->current.kind == TOKEN_LPAREN)
-        {
-            next(P);
-            node = parse_func_call(P, node);
-        }
-
-        if (P->current.kind == TOKEN_OF && node->kind == NODE_IDENT)
-        {
-            Node *template_args = parse_template_declaration(P);
-            node->template_types = template_args;
-        }
         else if (P->current.kind == TOKEN_LBRACKET)
         {
             next(P);
@@ -486,6 +486,14 @@ static Node *parse_postfix(Parser *P)
             next(P);
             node = access_node;
         }
+
+        if (P->current.kind == TOKEN_LPAREN)
+        {
+            next(P);
+            node = parse_func_call(P, node);
+        }
+
+
         else if (P->current.kind == TOKEN_DOT)
         {
             next(P);
@@ -517,6 +525,8 @@ static Node *parse_postfix(Parser *P)
         }
     }
     return node;
+
+    
 }
 
 /**
@@ -1945,6 +1955,8 @@ static Node *parse_unary(Parser *P)
     }
 
     return parse_postfix(P);
+
+
 }
 
 static void parse_annotations(Parser *P, Node *n)

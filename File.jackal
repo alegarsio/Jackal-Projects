@@ -1,19 +1,19 @@
 
 import std.collections.Map;
 
-let _jsonMap = Map[String,String]();
+let _jsonMap = Map<String,String>();
 
 object FileApi(id :Number, name :String  ,size :Number){
 
-        function getId(){
+        func getId(){
             return this.id.toString();
         }
 
-        function getName(){
+        func getName(){
             return this.name;
         }
 
-        function getSize(){
+        func getSize(){
             return this.size.toString();
         }
 }
