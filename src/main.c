@@ -342,27 +342,7 @@ Value builtin_http_request(int argCount, Value *args) {
 }
 
 
-cJSON *jackal_value_to_cjson(Value jackal_val) {
-    if (jackal_val.type == VAL_NIL) {
-        return cJSON_CreateNull();
-    }
-    if (jackal_val.type == VAL_NUMBER) {
-        return cJSON_CreateNumber(jackal_val.as.number);
-    }
-    if (jackal_val.type == VAL_STRING) {
-        return cJSON_CreateString(jackal_val.as.string);
-    }
-    
-    if (jackal_val.type == VAL_MAP) {
-        return cJSON_CreateObject();
-    }
-    
-    if (jackal_val.type == VAL_ARRAY) {
-        return cJSON_CreateArray();
-    }
 
-    return NULL;
-}
 
 Value builtin_json_encode(int argCount, Value *args) {
     if (argCount != 1) {
@@ -954,16 +934,23 @@ int main(int argc, char **argv)
     REGISTER("__net_htons", builtin_net_htons);
     REGISTER("__net_aton", builtin_net_aton);
     REGISTER("__time_now",builtin_time_now);
+   
     REGISTER("__get_local_hour",builtin_time_get_local_hour);
 
 
     /**
-     * represents the io std/io global
+     * represents the io std/io
+     * console (writeln,write)
      */
     REGISTER("println",builtin_writeline);
     REGISTER("print",builtin_write);
+    REGISTER("__io_table_stream",builtin_print_table);
+    REGISTER("__io_json",builtin_print_json);
+
+
     REGISTER("__io_read_line",builtin_read_line);
     REGISTER("__io_read_array",builtin_read_array);
+    REGISTER("__mapstream_stream",builtin_map_forEach);
 
 
     /**
@@ -988,6 +975,8 @@ int main(int argc, char **argv)
     DEFINE_NATIVE("File", builtin_file_open);
 
     load_jackal_file("std/io.jackal",env);
+
+    
 
     if (argc == 1)
     {

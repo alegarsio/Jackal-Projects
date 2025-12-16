@@ -59,6 +59,8 @@ typedef enum {
     NODE_EVERY_LOOP,
     NODE_OBSERVE_STMT,
     NODE_OBSERVE_CASE, 
+    NODE_FOR_IN,
+    NODE_FOR_EACH
 } NodeKind;
 
 /**

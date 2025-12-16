@@ -133,7 +133,10 @@ cJSON *jackal_value_to_cjson(Value jackal_val);
  */
 Value builtin_read_line(int arity, Value* args);
 
-/**
- * 
- */
 Value builtin_read_array(int arity, Value* args);
+
+Value builtin_print_table(int argCount, Value* args);
+
+Value builtin_print_json(int argCount, Value *args);
+
+Value builtin_map_forEach(int argCount, Value* args);

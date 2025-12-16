@@ -849,6 +849,8 @@ Value eval_node(Env *env, Node *n)
             return eval_node(env, n->right);
         }
 
+        
+
         Value left = eval_node(env, n->left);
         Value right = eval_node(env, n->right);
 
@@ -1760,6 +1762,115 @@ Value eval_node(Env *env, Node *n)
         env_free(for_env);
         return (Value){.type = VAL_NIL, .as = {0}};
     }
+
+    case NODE_FOR_EACH:
+{
+    Node *item_var = n->left;
+    Node *collection_expr = n->right;
+    Node *body = n->super_template_types;
+    
+    Value collection_val = eval_node(env, collection_expr);
+    Env *loop_env = env_new(env); 
+    
+    if (collection_val.type != VAL_ARRAY) {
+        print_error("for-each loop currently supports only Array.");
+        env_free(loop_env);
+        free_value(collection_val);
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    ValueArray *arr = collection_val.as.array;
+    
+    for (int i = 0; i < arr->count; i++) {
+        
+        Value item_copy = copy_value(arr->values[i]);
+        
+        set_var(loop_env, item_var->name, item_copy, true);
+        free_value(item_copy);
+        
+        Value result = eval_node(loop_env, body);
+
+        if (result.type == VAL_RETURN) { 
+            env_free(loop_env); 
+            return result; 
+        }
+        
+        if (result.type == VAL_BREAK) { 
+            free_value(result); 
+            break; 
+        }
+        
+        free_value(result);
+    }
+    
+    env_free(loop_env);
+    free_value(collection_val);
+    return (Value){VAL_NIL, {0}};
+}
+
+    case NODE_FOR_IN:
+{
+    Node *key_var = n->left;
+    Node *value_var = n->right;
+    Node *iteree_expr = n->next;
+    Node *body = n->super_template_types;
+    
+    Value map_val = eval_node(env, iteree_expr);
+    
+    if (map_val.type != VAL_MAP) {
+        print_error("for-in loop expression must evaluate to a Map.");
+        free_value(map_val);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    HashMap *map = map_val.as.map;
+    Env *loop_env = env_new(env); 
+    
+    for (int i = 0; i < map->capacity; i++) {
+        Entry *entry = &map->entries[i];
+
+        if (entry->key != NULL) {
+            
+            Value key_copy;
+            key_copy.type = VAL_STRING;
+            
+            size_t len = strlen(entry->key);
+            key_copy.as.string = malloc(len + 1);
+            if (key_copy.as.string == NULL) {
+                env_free(loop_env);
+                free_value(map_val);
+                print_error("Memory allocation failed for string key.");
+                return (Value){VAL_NIL, {0}};
+            }
+            strcpy(key_copy.as.string, entry->key);
+
+            set_var(loop_env, key_var->name, key_copy, true);
+            free_value(key_copy);
+
+            Value value_copy = copy_value(entry->value);
+            set_var(loop_env, value_var->name, value_copy, true);
+            free_value(value_copy);
+
+            Value result = eval_node(loop_env, body); 
+            
+            if (result.type == VAL_BREAK) {
+                free_value(result);
+                break;
+            }
+            if (result.type == VAL_CONTINUE) {
+                free_value(result);
+                continue;
+            }
+            free_value(result); 
+        }
+    }
+
+    env_free(loop_env);
+    free_value(map_val);
+    return (Value){VAL_NIL, {0}};
+}
+
+    
     case NODE_EVERY_LOOP:
     {
         Env *every_env = env_new(env);

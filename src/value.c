@@ -510,3 +510,215 @@ Value builtin_read_array(int arity, Value* args) {
     free(input_copy);
     return (Value){VAL_ARRAY, .as.array = result_array}; 
 }
+
+
+Value builtin_print_table(int argCount, Value* args) {
+    if (argCount != 1) {
+        print_error("print_table() requires exactly one argument (Array).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    Value arg = args[0];
+
+    if (arg.type != VAL_ARRAY) {
+        print_error("print_table() only supports Array type.");
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    ValueArray* arr = arg.as.array;
+    
+    printf("\n+-------+-----------------------------+\n");
+    printf("| Index | Value                       |\n");
+    printf("+-------+-----------------------------+\n");
+
+    for (int i = 0; i < arr->count; i++) {
+        Value val = arr->values[i];
+        
+
+
+        printf("| %-5d | ", i);
+        
+        print_value(val);
+        
+       
+        printf("\n"); 
+        
+        if (i < arr->count - 1) {
+            printf("|-------|-----------------------------|\n");
+        }
+    }
+
+    printf("+-------+-----------------------------+\n");
+    fflush(stdout); 
+
+    return (Value){VAL_NIL, {0}};
+}
+
+cJSON *jackal_value_to_cjson(Value jackal_val) {
+    if (jackal_val.type == VAL_NIL) {
+        return cJSON_CreateNull();
+    }
+    if (jackal_val.type == VAL_NUMBER) {
+        return cJSON_CreateNumber(jackal_val.as.number);
+    }
+    if (jackal_val.type == VAL_STRING) {
+        return cJSON_CreateString(jackal_val.as.string);
+    }
+    
+    if (jackal_val.type == VAL_MAP) {
+        cJSON *root = cJSON_CreateObject();
+        HashMap *map = jackal_val.as.map;
+        
+        for (int i = 0; i < map->capacity; i++) {
+            Entry *entry = &map->entries[i];
+            if (entry->key != NULL) {
+                cJSON *val = jackal_value_to_cjson(entry->value);
+                cJSON_AddItemToObject(root, entry->key, val);
+            }
+        }
+        return root;
+    }
+    
+    if (jackal_val.type == VAL_ARRAY) {
+        cJSON *root = cJSON_CreateArray();
+        ValueArray *arr = jackal_val.as.array;
+        
+        for (int i = 0; i < arr->count; i++) {
+            cJSON *val = jackal_value_to_cjson(arr->values[i]);
+            cJSON_AddItemToArray(root, val);
+        }
+        return root;
+    }
+
+    if (jackal_val.type == VAL_INSTANCE) {
+        cJSON *root = cJSON_CreateObject();
+        Instance *inst = jackal_val.as.instance;
+        Var *v = inst->fields->vars;
+        
+        while (v) {
+            cJSON *val = jackal_value_to_cjson(v->value);
+            cJSON_AddItemToObject(root, v->name, val);
+            v = v->next;
+        }
+        return root;
+    }
+    
+    if (jackal_val.type == VAL_FUNCTION || jackal_val.type == VAL_NATIVE) {
+        return cJSON_CreateString("<Function>");
+    }
+    if (jackal_val.type == VAL_CLASS) {
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer), "<Class %s>", jackal_val.as.class_obj->name);
+        return cJSON_CreateString(buffer);
+    }
+
+    return cJSON_CreateString("<Unsupported Type>");
+}
+
+
+Value builtin_print_json(int argCount, Value *args) {
+    if (argCount != 1) {
+        print_error("print_json() requires exactly one argument.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    cJSON *json_root = jackal_value_to_cjson(args[0]);
+
+    if (json_root == NULL) {
+        print_error("print_json() failed to serialize object.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    char *json_string = cJSON_Print(json_root); 
+
+    if (json_string == NULL) {
+        print_error("cJSON_Print failed.");
+        cJSON_Delete(json_root);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    printf("\n%s\n", json_string);
+    fflush(stdout);
+
+    cJSON_Delete(json_root); 
+    free(json_string);      
+
+    return (Value){VAL_NIL, {0}};
+}
+
+
+/**
+ * @brief Built-in method MapStream.forEach(map, callback)
+ * Executes a callback function for each key-value pair in the map,
+ * manually handling the function call stack.
+ * The callback signature must be: function(key, value)
+ * @param argCount Should be 2 (Map, Function).
+ * @param args Array of arguments.
+ * @return VAL_NIL.
+ */
+Value builtin_map_forEach(int argCount, Value* args) {
+    if (argCount != 2) {
+        print_error("MapStream.forEach() requires 2 arguments: map and callback.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    Value map_val = args[0];
+    Value callback_val = args[1];
+
+    if (map_val.type != VAL_MAP) {
+        print_error("First argument to MapStream.forEach() must be a Map.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    if (callback_val.type != VAL_FUNCTION) {
+        print_error("Second argument to MapStream.forEach() must be a Function.");
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    Func* func = callback_val.as.function;
+    
+    if (func->arity != 2) {
+        print_error("Callback in MapStream.forEach() must accept 2 arguments (key, value).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    HashMap* map = map_val.as.map;
+    
+    for (int i = 0; i < map->capacity; i++) {
+        Entry* entry = &map->entries[i];
+
+        if (entry->key != NULL) {
+            
+            Env* call_env = env_new(func->env);
+            
+            char* key_copy = strdup(entry->key);
+            Value key_val = (Value){VAL_STRING, {.string = key_copy}};
+
+            Value value_copy = copy_value(entry->value); 
+
+            Node* param_k = func->params_head;
+            Node* param_v = param_k->next;
+            
+            set_var(call_env, param_k->name, key_val, false);
+           
+            set_var(call_env, param_v->name, value_copy, false);
+
+            free_value(key_val);
+            free_value(value_copy);
+            
+            Value result = eval_node(call_env, func->body_head);
+            
+            env_free(call_env);
+            
+            if (result.type == VAL_RETURN || result.type == VAL_BREAK || result.type == VAL_CONTINUE) {
+                free_value(result);
+            } else {
+                free_value(result);
+            }
+        }
+    }
+    
+    return (Value){VAL_NIL, {0}};
+}
+
+

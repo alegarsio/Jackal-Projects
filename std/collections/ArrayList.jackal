@@ -11,6 +11,11 @@ class ArrayList <T> implements List{
     init() {
         this.data = [];
     }
+
+    func iterator() -> Array{
+        return data;
+    }
+    
     /**
      * function add();
      * implements add function of interface List

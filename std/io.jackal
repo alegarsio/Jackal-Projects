@@ -31,6 +31,14 @@ object console(){
     func write(value){
         print(value);
     }
+
+    func table(value){
+        __io_table_stream(value);
+    }
+
+    func json(value){
+        __io_json(value);
+    }
 }
 
 

@@ -1,0 +1,5 @@
+object Stream(){
+    func MapEach(target,callback) -> Map{
+        __mapstream_stream(target,callback);
+    }
+}

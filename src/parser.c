@@ -1199,6 +1199,34 @@ static Node *parse_while_stmt(Parser *P)
 
     return n;
 }
+
+
+static Node *parse_for_each_clauses(Parser *P)
+{
+    
+    Node *n = new_node(NODE_FOR_EACH);
+
+    if (P->current.kind != TOKEN_IDENT) {
+        return NULL; 
+    }
+    Node *item_var = new_node(NODE_IDENT);
+    strcpy(item_var->name, P->current.text);
+    next(P);
+
+    if (P->current.kind != TOKEN_IN) {
+        free_node(item_var);
+        return NULL; 
+    }
+    next(P);
+
+    Node *collection_expr = parse_expr(P);
+    
+    n->left = item_var;
+    n->right = collection_expr;
+    
+  
+    return n;
+}
 /**
  * @brief Parses a for statement.
  * @param P Pointer to the Parser.
@@ -1206,12 +1234,33 @@ static Node *parse_while_stmt(Parser *P)
  */
 static Node *parse_for_stmt(Parser *P)
 {
-    Node *n = new_node(NODE_FOR_STMT);
-
     next(P);
+
     if (P->current.kind != TOKEN_LPAREN)
         print_error("Expected '(' after 'for'.");
     next(P);
+    
+    // --- DISPATCH FOR-EACH ---
+    if (P->current.kind == TOKEN_IDENT)
+    {
+        Parser saved_P = *P; 
+        
+        Node *iteration_node = parse_for_each_clauses(P);
+
+        if (iteration_node != NULL) {
+            if (P->current.kind != TOKEN_RPAREN)
+                print_error("Expected ')' after for-each clauses.");
+            next(P);
+            
+            iteration_node->super_template_types = parse_block(P); 
+            return iteration_node;
+        }
+
+        *P = saved_P; 
+    }
+
+    // --- SINTAKS LAMA (C-style) ---
+    Node *n = new_node(NODE_FOR_STMT);
 
     if (P->current.kind == TOKEN_LET)
     {
@@ -1246,6 +1295,59 @@ static Node *parse_for_stmt(Parser *P)
 
     return n;
 }
+
+
+static Node *parse_for_in_stmt(Parser *P)
+{
+    Node *n = new_node(NODE_FOR_IN);
+
+    if (P->current.kind != TOKEN_IDENT) {
+        return NULL;
+    }
+    
+    Node *key_var = new_node(NODE_IDENT);
+    strcpy(key_var->name, P->current.text);
+    next(P);
+
+    if (P->current.kind != TOKEN_COMMA) {
+        free_node(key_var);
+        return NULL; 
+    }
+    next(P);
+
+    if (P->current.kind != TOKEN_IDENT) {
+        print_error("Expected identifier for 'value' in for-in loop.");
+        free_node(key_var);
+        return NULL;
+    }
+    
+    Node *value_var = new_node(NODE_IDENT);
+    strcpy(value_var->name, P->current.text);
+    next(P);
+
+    n->left = key_var; 
+    n->right = value_var; 
+
+    if (P->current.kind != TOKEN_IN) {
+        print_error("Expected 'in' in for-in loop.");
+        free_node(key_var);
+        free_node(value_var);
+        return NULL;
+    }
+    next(P);
+
+    Node *iteree = parse_expr(P);
+    n->next = iteree; 
+
+    if (P->current.kind != TOKEN_LBRACE)
+        print_error("Expected '{' for for-in loop body.");
+    
+    Node *body_node = parse_block(P);
+    n->super_template_types = body_node;
+    
+    return n;
+}
+
 static Node *parse_observe_stmt(Parser *P)
 {
     Node *n = new_node(NODE_OBSERVE_STMT);

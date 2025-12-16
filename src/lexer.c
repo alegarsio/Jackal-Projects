@@ -198,6 +198,8 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_CATCH;
         else if (strcmp(tk.text, "throw") == 0)
             tk.kind = TOKEN_THROW;
+        else if (strcmp(tk.text, "in") == 0)
+            tk.kind = TOKEN_IN;
         else if (strcmp(tk.text, "implements") == 0)
             tk.kind = TOKEN_IMPLEMENTS;
         else
@@ -297,10 +299,7 @@ Token lexer_next(Lexer *L)
         tk.kind = TOKEN_LPAREN;
         strcpy(tk.text, "(");
         break;
-    case '?':
-        tk.kind = TOKEN_INVALID;
-        strcpy(tk.text, "?");
-        break;
+    
     case ')':
         tk.kind = TOKEN_RPAREN;
         strcpy(tk.text, ")");
