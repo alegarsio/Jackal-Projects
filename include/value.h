@@ -140,3 +140,21 @@ Value builtin_print_table(int argCount, Value* args);
 Value builtin_print_json(int argCount, Value *args);
 
 Value builtin_map_forEach(int argCount, Value* args);
+
+Value builtin_map_keys(int argCount, Value* args);
+
+Value builtin_map_values(int argCount, Value* args);
+
+Value builtin_array_distinct(int argCount, Value* args);
+
+Value builtin_array_anyMatch(int argCount, Value* args);
+
+Value builtin_array_map(int argCount, Value* args);
+
+Value builtin_array_filter(int argCount, Value* args);
+
+Value builtin_array_reduce(int argCount, Value* args);
+
+Value builtin_array_sort(int argCount, Value* args);
+
+Value builtin_array_limit(int argCount, Value* args);

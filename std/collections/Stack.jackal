@@ -1,13 +1,13 @@
 class Stack {
-    function init() {
+    init() {
         this.items = [];
     }
 
-    function push(item) {
+    func push(item) {
         this.items.push(item);
     }
 
-    function pop() {
+    func pop() {
         if (this.isEmpty()) {
             print "Error: Stack Is Empty!";
             return nil;
@@ -15,7 +15,7 @@ class Stack {
         return this.items.pop();
     }
 
-    function peek() {
+    func peek() {
         let count = this.items.length();
         if (count == 0) {
             return nil;
@@ -23,11 +23,11 @@ class Stack {
         return this.items[count - 1];
     }
     
-    function size() {
+    func size() {
         return this.items.length();
     }
     
-    function isEmpty() {
+    func isEmpty() {
         return this.items.length() == 0;
     }
 }

@@ -1252,80 +1252,86 @@ Value eval_node(Env *env, Node *n)
                     callback = eval_node(env, n->right);
                 }
 
-                if (strcmp(get_node->name, "map") == 0)
-                {
-                    ValueArray *old_arr = obj.as.array;
-                    ValueArray *new_arr = array_new();
-                    Value args[1];
+                /**
+                 * @deprecated 
+                 * this array implementation is now on value.c 
+                 * RESITER as built in global function
+                 */
 
-                    for (int i = 0; i < old_arr->count; i++)
-                    {
-                        args[0] = old_arr->values[i];
-                        Value new_val = call_jackal_function(env, callback, 1, args);
-                        array_append(new_arr, new_val);
-                    }
-                    free_value(callback);
-                    return (Value){VAL_ARRAY, {.array = new_arr}};
-                }
+                // if (strcmp(get_node->name, "map") == 0)
+                // {
+                //     ValueArray *old_arr = obj.as.array;
+                //     ValueArray *new_arr = array_new();
+                //     Value args[1];
 
-                if (strcmp(get_node->name, "filter") == 0)
-                {
-                    ValueArray *old_arr = obj.as.array;
-                    ValueArray *new_arr = array_new();
-                    Value args[1];
+                //     for (int i = 0; i < old_arr->count; i++)
+                //     {
+                //         args[0] = old_arr->values[i];
+                //         Value new_val = call_jackal_function(env, callback, 1, args);
+                //         array_append(new_arr, new_val);
+                //     }
+                //     free_value(callback);
+                //     return (Value){VAL_ARRAY, {.array = new_arr}};
+                // }
 
-                    for (int i = 0; i < old_arr->count; i++)
-                    {
-                        args[0] = old_arr->values[i];
-                        Value result = call_jackal_function(env, callback, 1, args);
-                        if (is_value_truthy(result))
-                        {
-                            array_append(new_arr, copy_value(args[0])); // Salin nilai asli
-                        }
-                        free_value(result);
-                    }
-                    free_value(callback);
-                    return (Value){VAL_ARRAY, {.array = new_arr}};
-                }
+                // if (strcmp(get_node->name, "filter") == 0)
+                // {
+                //     ValueArray *old_arr = obj.as.array;
+                //     ValueArray *new_arr = array_new();
+                //     Value args[1];
 
-                if (strcmp(get_node->name, "reduce") == 0)
-                {
-                    ValueArray *arr = obj.as.array;
-                    Value accumulator;
-                    int start_index = 0;
+                //     for (int i = 0; i < old_arr->count; i++)
+                //     {
+                //         args[0] = old_arr->values[i];
+                //         Value result = call_jackal_function(env, callback, 1, args);
+                //         if (is_value_truthy(result))
+                //         {
+                //             array_append(new_arr, copy_value(args[0])); // Salin nilai asli
+                //         }
+                //         free_value(result);
+                //     }
+                //     free_value(callback);
+                //     return (Value){VAL_ARRAY, {.array = new_arr}};
+                // }
 
-                    if (n->arity == 2)
-                    {
-                        accumulator = eval_node(env, n->right->next);
-                    }
-                    else if (n->arity == 1)
-                    {
-                        if (arr->count == 0)
-                            return (Value){VAL_NIL, {0}};
-                        accumulator = copy_value(arr->values[0]);
-                        start_index = 1;
-                    }
-                    else
-                    {
-                        print_error("Error: .reduce() takes 1 or 2 arguments.");
-                        return (Value){VAL_NIL, {0}};
-                    }
+                // if (strcmp(get_node->name, "reduce") == 0)
+                // {
+                //     ValueArray *arr = obj.as.array;
+                //     Value accumulator;
+                //     int start_index = 0;
 
-                    Value args[2];
-                    for (int i = start_index; i < arr->count; i++)
-                    {
-                        args[0] = accumulator;
-                        args[1] = arr->values[i];
+                //     if (n->arity == 2)
+                //     {
+                //         accumulator = eval_node(env, n->right->next);
+                //     }
+                //     else if (n->arity == 1)
+                //     {
+                //         if (arr->count == 0)
+                //             return (Value){VAL_NIL, {0}};
+                //         accumulator = copy_value(arr->values[0]);
+                //         start_index = 1;
+                //     }
+                //     else
+                //     {
+                //         print_error("Error: .reduce() takes 1 or 2 arguments.");
+                //         return (Value){VAL_NIL, {0}};
+                //     }
 
-                        Value new_acc = call_jackal_function(env, callback, 2, args);
+                //     Value args[2];
+                //     for (int i = start_index; i < arr->count; i++)
+                //     {
+                //         args[0] = accumulator;
+                //         args[1] = arr->values[i];
 
-                        free_value(accumulator);
-                        accumulator = new_acc;
-                    }
+                //         Value new_acc = call_jackal_function(env, callback, 2, args);
 
-                    free_value(callback);
-                    return accumulator;
-                }
+                //         free_value(accumulator);
+                //         accumulator = new_acc;
+                //     }
+
+                //     free_value(callback);
+                //     return accumulator;
+                // }
 
                 if (strcmp(get_node->name, "length") == 0)
                 {

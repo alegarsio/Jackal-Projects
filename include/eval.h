@@ -31,3 +31,5 @@ Value eval_node(Env* env, struct Node* n);
  * @param env The environment to be freed.
  */
 void env_free(Env* env);
+
+Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args);

@@ -24,3 +24,8 @@ test.jackal
 *.jlo
 /.jackal
 
+# VM and Compiler Source/Headers
+include/vm/
+include/compiler/
+src/vm/
+src/compiler/

@@ -15,6 +15,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#define DEBUG_TRACE_EXECUTION 1
 
 /**
  * @typedef @enum TOKENKIND

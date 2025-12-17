@@ -37,4 +37,6 @@ interface List {
      * @return nil if item is not on the list
     **/
     func get();
+
+    func stream() ;
 }

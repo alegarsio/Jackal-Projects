@@ -60,7 +60,9 @@ typedef enum {
      * OP For Not
      */
 
-    OP_NOT
+    OP_NOT,
+    OP_NEGATE,
+    OP_DEF_GLOBAL
          
 } OpCode;
 

@@ -1,4 +1,6 @@
 import std.collections.Abstract.List;
+import std.collections.Abstract.Array;
+import std.stream;
 /**
  * @author Alegrarsio Gifta Lesmana 
  * https://github.com/alegarsio
@@ -67,5 +69,12 @@ class ArrayList <T> implements List{
     func size() -> Int {
         return this.data.length();
     }
+
+    @override
+    func stream(){
+        return ArrayStream(this.data);
+    }
+
+    
 
 }

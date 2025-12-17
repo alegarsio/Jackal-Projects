@@ -1,0 +1,63 @@
+
+class ArrayStream{
+
+    init(data) {
+        this.data = data;
+    }
+
+    func distinct(){
+        this.data =  __array_distinct(this.data);
+        return this;
+    }
+
+    func Match(callback){
+        return __array_anyMatch(this.data,callback);
+    }
+
+    func map(callback){
+        this.data = __array_map(this.data,callback);
+        return this;
+    }
+
+    func filter(callback){
+        this.data = __array_filter(this.data,callback);
+        return this;
+    }
+
+    func reduce(callback, initial) {
+        return __array_reduce(this.data, callback, initial);
+    }
+
+    func collect() {
+        return this.data;
+    }
+
+    func limit(n) {
+    
+        this.data = __array_limit(this.data, n);
+        return this; 
+    }
+
+    func skip(n) {
+        let result = [];
+        let len = this.data.length();
+        if (n >= len) { 
+            this.data = [];
+            return this;
+        }
+        
+        for (let i = n; i < len; i = i + 1) {
+            result.push(this.data[i]);
+        }
+        this.data = result;
+        return this;
+    }
+
+    func sorted(callback) {
+        this.data = __array_sort(this.data, callback);
+        return this;
+    }
+}
+
+
+

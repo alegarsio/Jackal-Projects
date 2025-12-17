@@ -1,640 +1,375 @@
+#include "vm/vm.h"
+#include "vm/opcode.h"
+#include "common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
-#include "../../include/vm/vm.h"
-#include "../../include/vm/opcode.h"
-#include "../../include/value.h"
-#include "../../include/env.h"
+static void runtimeError(VM *vm, const char *format, ...);
+// --- Stack Management Macros ---
 
-#include "../../include/env.h"
+// Membaca 1 byte (Opcode atau 1st operand) dan memajukan IP
+#define READ_BYTE() (*vm->ip++)
 
-#define STACK_MAX 256
-#define FRAMES_MAX 64
+// Membaca 2 byte operand (index/offset)
+#define READ_SHORT() \
+    (vm->ip += 2, (uint16_t)((vm->ip[-2] << 8) | vm->ip[-1]))
 
-typedef struct
+// Mengambil konstanta dari Constant Pool
+#define READ_CONSTANT() (vm->chunk->constants.values[READ_SHORT()])
+
+// Macro untuk mengulang loop eksekusi binary (Pop 2, Lakukan Op, Push 1)
+#define BINARY_OP(op_token, op)                                                \
+    do                                                                         \
+    {                                                                          \
+        Value b = pop(vm);                                                     \
+        Value a = pop(vm);                                                     \
+        if (a.type != VAL_NUMBER || b.type != VAL_NUMBER)                      \
+        {                                                                      \
+            runtimeError(vm, "Operands for '" #op_token "' must be numbers."); \
+            return INTERPRET_RUNTIME_ERROR;                                    \
+        }                                                                      \
+        push(vm, (Value){VAL_NUMBER, {.number = a.as.number op b.as.number}}); \
+    } while (0)
+
+// Macro untuk mengulang loop eksekusi perbandingan (Pop 2, Lakukan Comp, Push Boolean)
+#define COMPARE_OP(op)                                                                       \
+    do                                                                                       \
+    {                                                                                        \
+        Value b = pop(vm);                                                                   \
+        Value a = pop(vm);                                                                   \
+        if (a.type != VAL_NUMBER || b.type != VAL_NUMBER)                                    \
+        {                                                                                    \
+            runtimeError(vm, "Comparison operands must be numbers.");                        \
+            return INTERPRET_RUNTIME_ERROR;                                                  \
+        }                                                                                    \
+        push(vm, (Value){VAL_NUMBER, {.number = (a.as.number op b.as.number) ? 1.0 : 0.0}}); \
+    } while (0)
+
+// --- Fungsi Utilitas VM ---
+
+static void push(VM *vm, Value value)
 {
-    uint8_t *return_ip;
-    Env *env_snap;
-} CallFrame;
-
-static Value stack[STACK_MAX];
-static Value *sp = stack;
-static Env *current_env;
-
-static CallFrame frames[FRAMES_MAX];
-static int frame_count = 0;
-
-static uint8_t *code;
-static uint8_t *ip;
-
-static void push(Value v) { *sp++ = v; }
-static Value pop() { return *--sp; }
-static uint8_t read_byte() { return *ip++; }
-
-
-
-
-static double read_double()
-{
-    double val;
-    memcpy(&val, ip, sizeof(double));
-    ip += sizeof(double);
-    return val;
-}
-
-static Value peek(int distance)
-{
-    return sp[-1 - distance];
-}
-
-
-
-static int is_falsey(Value v)
-{
-    if (v.type == VAL_NIL)
-        return 1;
-
-    if (v.type == VAL_NUMBER)
-        return v.as.number == 0.0;
-
-    return 0;
-}
-
-static int values_equal(Value a, Value b)
-{
-    if (a.type != b.type)
-        return 0;
-    switch (a.type)
+    if (vm->stackTop - vm->stack >= STACK_MAX)
     {
-    case VAL_NIL:
-        return 1;
-    case VAL_NUMBER:
-        return a.as.number == b.as.number;
-    case VAL_STRING:
-        return strcmp(a.as.string, b.as.string) == 0;
-    default:
-        return 0;
-    }
-}
-
-static uint16_t read_short()
-{
-    uint8_t high = read_byte();
-    uint8_t low = read_byte();
-    return (high << 8) | low;
-}
-
-static char *read_string()
-{
-    int len;
-    memcpy(&len, ip, sizeof(int));
-    ip += sizeof(int);
-
-    char* str = jackal_malloc(len + 1);
-    memcpy(str, ip, len);
-    str[len] = '\0';
-    ip += len;
-    return str;
-}
-
-long get_func_addr(const char *name)
-{
-    Var *v = find_var(current_env, name);
-    if (v && v->value.type == VAL_NUMBER)
-    {
-        return (long)v->value.as.number;
-    }
-    return -1;
-}
-
-void run_binary(const char *filename)
-{
-    FILE *f = fopen(filename, "rb");
-    if (!f)
-        return;
-
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    code = malloc(fsize);
-    fread(code, 1, fsize, f);
-    fclose(f);
-
-    ip = code;
-    if (code[0] != 'J' || code[1] != 'L')
-    {
-        printf("Invalid .jlo file\n");
+        runtimeError(vm, "Stack overflow.");
         return;
     }
-    ip += 3;
+    *vm->stackTop = value;
+    vm->stackTop++;
+}
 
-    current_env = env_new(NULL);
-    sp = stack;
+static Value pop(VM *vm)
+{
+    vm->stackTop--;
+    return *vm->stackTop;
+}
 
-    frame_count = 0;
+static void runtimeError(VM *vm, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, "Runtime Error: ", args);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    fprintf(stderr, "\n");
 
-    
-    while (ip < code + fsize)
+    // Tunjukkan di mana error terjadi (offset)
+    size_t instruction = vm->ip - vm->chunk->code - 1;
+    fprintf(stderr, "[Bytecode offset %zu]\n", instruction);
+}
+
+// --- Implementasi VM ---
+
+void initVM(VM *vm)
+{
+    vm->chunk = NULL;
+    vm->ip = NULL;
+    vm->stackTop = vm->stack;
+    vm->globalEnv = env_new(NULL); // Inisialisasi Environment Global
+}
+
+void freeVM(VM *vm)
+{
+    env_free(vm->globalEnv);
+}
+
+InterpretResult interpret(VM *vm, Chunk *chunk)
+{
+    vm->chunk = chunk;
+    vm->ip = chunk->code;
+
+    // --- Dispatch Loop (Mesin Eksekusi Utama) ---
+    for (;;)
     {
-        uint8_t opcode = read_byte();
+        uint8_t instruction = READ_BYTE();
 
-        switch (opcode)
+        switch (instruction)
         {
+
         case OP_HALT:
-            goto end_vm;
+            return INTERPRET_OK;
 
-        case OP_JUMP:
+        case OP_CONST_NUM:
         {
-            uint8_t high = read_byte();
-            uint8_t low = read_byte();
-            uint16_t offset = (high << 8) | low;
-            ip += offset;
+            Value constant = READ_CONSTANT(); // Membaca 2-byte index
+            push(vm, constant);
+            break;
+        }
+        case OP_CONST_STR:
+        {
+            Value constant = READ_CONSTANT(); // Membaca 2-byte index
+            push(vm, constant);
+            break;
+        }
+
+        case OP_NIL:
+            push(vm, (Value){VAL_NIL, {0}});
+            break;
+
+        case OP_POP:
+        {
+            pop(vm);
             break;
         }
         case OP_DUP:
         {
-
-            push(peek(0));
+            Value value = pop(vm);
+            push(vm, copy_value(value)); // Duplikasi
+            push(vm, value);
             break;
         }
+
+        case OP_ADD:
+            BINARY_OP(+, +);
+            break;
+        case OP_SUB:
+            BINARY_OP(-, -);
+            break;
+        case OP_MUL:
+            BINARY_OP(*, *);
+            break;
+        case OP_DIV:
+        {
+            Value b = pop(vm);
+            Value a = pop(vm);
+            if (a.type != VAL_NUMBER || b.type != VAL_NUMBER)
+            {
+                runtimeError(vm, "Operands for '/' must be numbers.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            if (b.as.number == 0)
+            {
+                runtimeError(vm, "Division by zero.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(vm, (Value){VAL_NUMBER, {.number = a.as.number / b.as.number}});
+            break;
+        }
+
+        case OP_NEGATE:
+        {
+            Value val = pop(vm);
+            if (val.type != VAL_NUMBER)
+            {
+                runtimeError(vm, "Operand for negate must be a number.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(vm, (Value){VAL_NUMBER, {.number = -val.as.number}});
+            break;
+        }
+
+        case OP_GREATER:
+            COMPARE_OP(>);
+            break;
+        case OP_LESS:
+            COMPARE_OP(<);
+            break;
 
         case OP_EQUAL:
         {
-            Value b = pop();
-            Value a = pop();
-
-            int res = 0;
-            if (a.type == b.type)
-            {
-                if (a.type == VAL_NUMBER)
-                    res = (a.as.number == b.as.number);
-                else if (a.type == VAL_NIL)
-                    res = 1;
-                else if (a.type == VAL_STRING)
-                    res = (strcmp(a.as.string, b.as.string) == 0);
-            }
-            push((Value){VAL_NUMBER, {.number = (double)res}});
+            Value b = pop(vm);
+            Value a = pop(vm);
+            Value result = eval_equals(a, b);
+            push(vm, result);
+            break;
+        }
+        case OP_NOT:
+        {
+            Value val = pop(vm);
+            bool is_truthy = is_value_truthy(val);
+            push(vm, (Value){VAL_NUMBER, {.number = is_truthy ? 0.0 : 1.0}});
             break;
         }
 
-        case OP_NOT:
+        case OP_PRINT:
         {
-            Value v = pop();
+            Value val_to_print = pop(vm);
 
-            push((Value){VAL_NUMBER, {.number = (double)is_falsey(v)}});
+            print_value(val_to_print);
+
+            printf("\n");
+            fflush(stdout);
+
+            break;
+        }
+
+        case OP_JUMP:
+        {
+            uint16_t offset = READ_SHORT();
+            vm->ip += offset;
             break;
         }
 
         case OP_JUMP_IF_FALSE:
         {
-            uint16_t offset = read_short();
-
-            if (sp == stack)
+            uint16_t offset = READ_SHORT();
+            Value condition = pop(vm);
+            if (!is_value_truthy(condition))
             {
-                printf("Runtime Error: Stack Underflow in Condition Check!\n");
-                goto end_vm;
-            }
-
-            Value condition = *(sp - 1);
-
-            if (is_falsey(condition))
-            {
-                ip += offset;
+                vm->ip += offset;
             }
             break;
         }
 
-        case OP_POP:
-        {
-            pop();
-            break;
-        }
-
-        case OP_CLASS:
-        {
-            char *name = read_string();
-
-            Class *klass = malloc(sizeof(Class));
-            strcpy(klass->name, name);
-            klass->methods = env_new(NULL);
-
-            Value val = (Value){VAL_CLASS, {.class_obj = klass}};
-
-            set_var(current_env, name, val, false);
-
-            push(val);
-
-            free(name);
-            break;
-        }
-
-        case OP_METHOD:
-        {
-            char *methodName = read_string();
-
-            read_byte();
-            double addr = read_double();
-
-            Value classVal = *(sp - 1);
-
-            if (classVal.type != VAL_CLASS)
-            {
-                printf("Error: OP_METHOD called without class on stack.\n");
-                goto end_vm;
-            }
-
-            Value methodVal = (Value){VAL_FUNCTION, {0}};
-
-            methodVal.type = VAL_NUMBER;
-            methodVal.as.number = addr;
-
-            set_var(classVal.as.class_obj->methods, methodName, methodVal, false);
-
-            free(methodName);
-            break;
-        }
-
-        case OP_INVOKE:
-        {
-            char *methodName = read_string();
-            uint8_t arg_count = read_byte();
-
-            Value instanceVal = *(sp - 1 - arg_count);
-
-            if (instanceVal.type != VAL_INSTANCE)
-            {
-                printf("Error: Only instances have methods. Got type %d\n", instanceVal.type);
-                goto end_vm;
-            }
-
-            Instance *inst = instanceVal.as.instance;
-            Class *klass = inst->class_val->as.class_obj;
-
-            Var *method = find_var(klass->methods, methodName);
-            if (!method)
-            {
-                printf("Error: Method '%s' not found in class '%s'.\n", methodName, klass->name);
-                goto end_vm;
-            }
-
-            if (frame_count == FRAMES_MAX)
-            {
-                printf("Stack Overflow\n");
-                goto end_vm;
-            }
-
-            frames[frame_count].return_ip = ip;
-            frames[frame_count].env_snap = current_env;
-            frame_count++;
-
-            current_env = env_new(current_env);
-
-            set_var(current_env, "this", instanceVal, false);
-
-            long addr = (long)method->value.as.number;
-            ip = code + addr;
-
-            free(methodName);
-            break;
-        }
-
-        case OP_GREATER:
-        {
-            Value b = pop();
-            Value a = pop();
-
-            if (a.type == VAL_NUMBER && b.type == VAL_NUMBER)
-            {
-                push((Value){VAL_NUMBER, {.number = (a.as.number > b.as.number)}});
-            }
-            else
-            {
-                push((Value){VAL_NUMBER, {.number = 0}});
-            }
-            break;
-        }
-        case OP_LESS:
-        {
-            Value b = pop();
-            Value a = pop();
-            if (a.type == VAL_NUMBER && b.type == VAL_NUMBER)
-            {
-                push((Value){VAL_NUMBER, {.number = (a.as.number < b.as.number)}});
-            }
-            else
-            {
-                push((Value){VAL_NUMBER, {.number = 0}});
-            }
-            break;
-        }
-
-        case OP_DEF_FUNC:
-        {
-            char *name = read_string();
-            read_byte();
-            double addr = read_double();
-            set_var(current_env, name, (Value){VAL_NUMBER, {.number = addr}}, false);
-            free(name);
-            break;
-        }
-
-        case OP_LOOP:
-        {
-            uint16_t offset = read_short();
-            ip -= offset;
-            break;
-        }
-
-        case OP_CALL:
-        {
-            char *name = read_string();
-            uint8_t arg_count = read_byte();
-
-            Var *v = find_var(current_env, name);
-
-            if (v && v->value.type == VAL_CLASS)
-            {
-                Class *klass = v->value.as.class_obj;
-
-                Instance *inst = malloc(sizeof(Instance));
-                inst->class_val = malloc(sizeof(Value));
-                *inst->class_val = v->value;
-                inst->fields = env_new(NULL);
-
-                Value instVal = (Value){VAL_INSTANCE, {.instance = inst}};
-
-                Var *initMethod = find_var(klass->methods, "init");
-
-                if (initMethod)
-                {
-                    if (frame_count == FRAMES_MAX)
-                    {
-                        printf("Stack Overflow\n");
-                        goto end_vm;
-                    }
-                    frames[frame_count].return_ip = ip;
-                    frames[frame_count].env_snap = current_env;
-                    frame_count++;
-
-                    current_env = env_new(current_env);
-
-                    set_var(current_env, "this", instVal, false);
-
-                    long addr = (long)initMethod->value.as.number;
-                    ip = code + addr;
-                }
-                else
-                {
-                    push(instVal);
-                }
-
-                free(name);
-                break;
-            }
-
-            long addr = get_func_addr(name);
-
-            if (addr == -1)
-            {
-                printf("Runtime Error: Function or Class '%s' not found.\n", name);
-                goto end_vm;
-            }
-
-            if (frame_count == FRAMES_MAX)
-            {
-                printf("Stack Overflow\n");
-                goto end_vm;
-            }
-            frames[frame_count].return_ip = ip;
-            frames[frame_count].env_snap = current_env;
-            frame_count++;
-
-            current_env = env_new(current_env);
-
-            // 3. Lompat
-            ip = code + addr;
-
-            free(name);
-            break;
-        }
-
-        case OP_GET_PROP:
-        {
-            char *propName = read_string();
-            Value obj = pop();
-
-            if (obj.type == VAL_INSTANCE)
-            {
-                Var *field = find_var(obj.as.instance->fields, propName);
-                if (field)
-                {
-                    push(field->value);
-                }
-
-                else
-                {
-                    printf("Error: Property/Method '%s' not found.\n", propName);
-                    goto end_vm;
-                }
-            }
-            else
-            {
-                printf("Error: Not an instance.\n");
-                goto end_vm;
-            }
-            free(propName);
-            break;
-        }
-
-        case OP_SUB:
-        {
-            Value b = pop();
-            Value a = pop();
-
-            if (a.type == VAL_NUMBER && b.type == VAL_NUMBER)
-            {
-                push((Value){VAL_NUMBER, {.number = a.as.number - b.as.number}});
-            }
-            else
-            {
-                printf("Runtime Error: Operands for - must be numbers.\n");
-                goto end_vm;
-            }
-            break;
-        }
-
-        case OP_SET_PROP:
-        {
-            char *propName = read_string();
-            Value val = pop();
-            Value obj = pop();
-
-            if (obj.type == VAL_INSTANCE)
-            {
-
-                set_var(obj.as.instance->fields, propName, val, false);
-                push(val);
-            }
-            else
-            {
-                printf("Error: Only instances have fields.\n");
-                goto end_vm;
-            }
-            free(propName);
-            break;
-        }
-
-        case OP_RETURN:
-        {
-            Value retVal = pop();
-            if (frame_count == 0)
-                goto end_vm;
-
-            frame_count--;
-            ip = frames[frame_count].return_ip;
-
-            current_env = frames[frame_count].env_snap;
-
-            push(retVal);
-            break;
-        }
-
-        case OP_CONST_NUM:
-            push((Value){VAL_NUMBER, {.number = read_double()}});
-            break;
-        case OP_CONST_STR:
-        {
-            char *s = read_string();
-            push((Value){VAL_STRING, {.string = s}});
-            break;
-        }
-
-        case OP_MUL:
-        {
-            Value b = pop();
-            Value a = pop();
-            if (a.type == VAL_NUMBER && b.type == VAL_NUMBER)
-            {
-                push((Value){VAL_NUMBER, {.number = a.as.number * b.as.number}});
-            }
-            else
-            {
-                printf("Runtime Error: Operands for * must be numbers.\n");
-                goto end_vm;
-            }
-            break;
-        }
-        case OP_ADD:
-        {
-            Value b = pop();
-            Value a = pop();
-
-            if (a.type == VAL_NUMBER && b.type == VAL_NUMBER)
-            {
-                push((Value){VAL_NUMBER, {.number = a.as.number + b.as.number}});
-            }
-            else if (a.type == VAL_STRING && b.type == VAL_STRING)
-            {
-
-                int lenA = strlen(a.as.string);
-                int lenB = strlen(b.as.string);
-
-                char *result = malloc(lenA + lenB + 1);
-
-                strcpy(result, a.as.string);
-                strcat(result, b.as.string);
-
-                push((Value){VAL_STRING, {.string = result}});
-            }
-            else if (a.type == VAL_STRING && b.type == VAL_NUMBER)
-            {
-                char numStr[32];
-                snprintf(numStr, 32, "%g", b.as.number);
-
-                int lenA = strlen(a.as.string);
-                int lenB = strlen(numStr);
-                char *result = malloc(lenA + lenB + 1);
-
-                strcpy(result, a.as.string);
-                strcat(result, numStr);
-
-                push((Value){VAL_STRING, {.string = result}});
-            }
-            else
-            {
-                printf("Runtime Error: Invalid operand types for +\n");
-                goto end_vm;
-            }
-            break;
-        }
-
-        case OP_DIV:
-        {
-            Value b = pop();
-            Value a = pop();
-            if (a.type == VAL_NUMBER && b.type == VAL_NUMBER)
-            {
-                if (b.as.number == 0)
-                {
-                    printf("Runtime Error: Division by zero.\n");
-                    goto end_vm;
-                }
-                push((Value){VAL_NUMBER, {.number = a.as.number / b.as.number}});
-            }
-            else
-            {
-                printf("Runtime Error: Operands for / must be numbers.\n");
-                goto end_vm;
-            }
-            break;
-        }
-        case OP_PRINT:
-        {
-            print_value(pop());
-            printf("\n");
-            break;
-        }
-        case OP_SET_VAR:
-        {
-            char *name = read_string();
-            Value val = pop();
-
-            if (assign_var(current_env, name, val))
-            {
-            }
-            else
-            {
-                set_var(current_env, name, val, false);
-            }
-
-            push(val);
-
-            free(name);
-            break;
-        }
-        case OP_GET_VAR:
-        {
-            char *name = read_string();
-            Var *v = find_var(current_env, name);
-
-            if (v)
-            {
-                push(v->value);
-            }
-            else
-            {
-                printf("Runtime Error: Undefined variable '%s'\n", name);
-                goto end_vm;
-            }
-            free(name);
-            break;
-        }
+            // ... Implementasi OpCode lainnya (OP_GET_VAR, OP_CALL, OP_CLASS, dll) di sini
+
+        default:
+            runtimeError(vm, "Unknown opcode: %d", instruction);
+            return INTERPRET_RUNTIME_ERROR;
         }
     }
+}
 
-end_vm:
-    free(code);
-    env_free(current_env);
+static Value read_constant_from_binary(FILE *f)
+{
+    uint8_t type_byte;
+    if (fread(&type_byte, sizeof(uint8_t), 1, f) != 1)
+    {
+        fprintf(stderr, "Error reading constant type.\n");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueType type = (ValueType)type_byte;
+
+    switch (type)
+    {
+    case VAL_NUMBER:
+    {
+        double num;
+        if (fread(&num, sizeof(double), 1, f) != 1)
+        {
+            fprintf(stderr, "Error reading number constant.\n");
+            return (Value){VAL_NIL, {0}};
+        }
+        return (Value){VAL_NUMBER, {.number = num}};
+    }
+    case VAL_STRING:
+    {
+        int len;
+        if (fread(&len, sizeof(int), 1, f) != 1)
+        {
+            fprintf(stderr, "Error reading string length.\n");
+            return (Value){VAL_NIL, {0}};
+        }
+        char *str = malloc(len + 1);
+        if (!str)
+        {
+            fprintf(stderr, "Out of memory for string constant.\n");
+            return (Value){VAL_NIL, {0}};
+        }
+        if (fread(str, 1, len, f) != (size_t)len)
+        {
+            fprintf(stderr, "Error reading string content.\n");
+            free(str);
+            return (Value){VAL_NIL, {0}};
+        }
+        str[len] = '\0';
+        return (Value){VAL_STRING, {.string = str}};
+    }
+    default:
+        fprintf(stderr, "Unknown value type in binary file: %d\n", type);
+        return (Value){VAL_NIL, {0}};
+    }
+}
+
+void run_binary(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f)
+    {
+        perror("Failed to open compiled file");
+        return;
+    }
+
+    Chunk chunk;
+    initChunk(&chunk);
+    bool success = false;
+
+    // --- 1. Deserialize Code Array ---
+    int code_size;
+    if (fread(&code_size, sizeof(int), 1, f) != 1)
+    {
+        fprintf(stderr, "Error reading code size from binary file.\n");
+        goto cleanup;
+    }
+
+    if (code_size > 0)
+    {
+        chunk.code = malloc(code_size);
+        if (!chunk.code)
+        {
+            fprintf(stderr, "Out of memory for bytecode.\n");
+            goto cleanup;
+        }
+        if (fread(chunk.code, sizeof(uint8_t), code_size, f) != (size_t)code_size)
+        {
+            fprintf(stderr, "Error reading bytecode from binary file.\n");
+            free(chunk.code);
+            goto cleanup;
+        }
+        chunk.count = code_size;
+        chunk.capacity = code_size;
+    }
+
+    // --- 2. Deserialize Constant Pool ---
+    int constant_count;
+    if (fread(&constant_count, sizeof(int), 1, f) != 1)
+    {
+        fprintf(stderr, "Error reading constant count from binary file.\n");
+        goto cleanup;
+    }
+
+    for (int i = 0; i < constant_count; i++)
+    {
+        Value constant = read_constant_from_binary(f);
+        if (constant.type == VAL_NIL && i < constant_count)
+        {
+            // Asumsi VAL_NIL hanya dikembalikan saat error membaca
+            goto cleanup;
+        }
+        addConstant(&chunk, constant); // Tambahkan ke Chunk
+        free_value(constant);          // addConstant sudah menyalin nilainya, jadi bebaskan yang sementara
+    }
+
+    // --- 3. Execute VM ---
+    VM vm;
+    initVM(&vm);
+
+    InterpretResult result = interpret(&vm, &chunk);
+
+    if (result != INTERPRET_OK)
+    {
+        fprintf(stderr, "Jackal VM exited with an error during binary execution.\n");
+    }
+    else
+    {
+        success = true;
+    }
+
+cleanup:
+    freeChunk(&chunk);
+    fclose(f);
+    // Note: freeVM tidak dipanggil di sini karena globalEnv dikelola di main
 }

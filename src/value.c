@@ -666,7 +666,7 @@ Value builtin_map_forEach(int argCount, Value* args) {
     Value callback_val = args[1];
 
     if (map_val.type != VAL_MAP) {
-        print_error("First argument to MapStream.forEach() must be a Map.");
+        print_error("First argument to MapStream::Flush must be a Map.");
         return (Value){VAL_NIL, {0}};
     }
 
@@ -722,3 +722,234 @@ Value builtin_map_forEach(int argCount, Value* args) {
 }
 
 
+Value builtin_map_keys(int argCount, Value* args) {
+    if (argCount != 1) {
+        print_error("MapStream.keys() requires exactly one argument (Map).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    Value map_val = args[0];
+
+    if (map_val.type != VAL_MAP) {
+        print_error("Argument to MapStream.keys() must be a Map.");
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    HashMap* map = map_val.as.map;
+    ValueArray* keys_array = array_new();
+    
+    for (int i = 0; i < map->capacity; i++) {
+        Entry* entry = &map->entries[i];
+
+        if (entry->key != NULL) {
+            char* key_copy = strdup(entry->key);
+            Value key_val = (Value){VAL_STRING, {.string = key_copy}};
+            
+            array_append(keys_array, key_val);
+        }
+    }
+
+    return (Value){VAL_ARRAY, {.array = keys_array}};
+}
+
+Value builtin_map_values(int argCount, Value* args) {
+    if (argCount != 1) {
+        print_error("MapStream.values() requires exactly one argument (Map).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    Value map_val = args[0];
+
+    if (map_val.type != VAL_MAP) {
+        print_error("Argument to MapStream.values() must be a Map.");
+        return (Value){VAL_NIL, {0}};
+    }
+    
+    HashMap* map = map_val.as.map;
+    ValueArray* values_array = array_new();
+    
+    for (int i = 0; i < map->capacity; i++) {
+        Entry* entry = &map->entries[i];
+
+        if (entry->key != NULL) {
+            Value value_copy = copy_value(entry->value);
+            
+            array_append(values_array, value_copy);
+        }
+    }
+
+    return (Value){VAL_ARRAY, {.array = values_array}};
+}
+
+
+
+Value builtin_array_distinct(int argCount, Value* args) {
+    if (argCount != 1 || args[0].type != VAL_ARRAY) {
+        print_error("distinct() requires an Array.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray* old_arr = args[0].as.array;
+    ValueArray* new_arr = array_new();
+
+    for (int i = 0; i < old_arr->count; i++) {
+        bool is_dup = false;
+        for (int j = 0; j < new_arr->count; j++) {
+            Value eq = eval_equals(old_arr->values[i], new_arr->values[j]);
+            if (eq.as.number == 1.0) {
+                is_dup = true;
+                break;
+            }
+        }
+        if (!is_dup) {
+            array_append(new_arr, copy_value(old_arr->values[i]));
+        }
+    }
+    return (Value){VAL_ARRAY, {.array = new_arr}};
+}
+
+Value builtin_array_anyMatch(int argCount, Value* args) {
+    if (argCount != 2 || args[0].type != VAL_ARRAY) {
+        print_error("anyMatch() requires 2 arguments: (Array, Callback).");
+        return (Value){VAL_NUMBER, {.number = 0.0}};
+    }
+
+    ValueArray* arr = args[0].as.array;
+    Value callback = args[1];
+
+    for (int i = 0; i < arr->count; i++) {
+        Value current_val = arr->values[i];
+        
+        Value res = call_jackal_function(NULL, callback, 1, &current_val);
+        
+        if (is_value_truthy(res)) {
+            free_value(res);
+            return (Value){VAL_NUMBER, {.number = 1.0}};
+        }
+        free_value(res);
+    }
+    return (Value){VAL_NUMBER, {.number = 0.0}};
+}
+
+Value builtin_array_map(int argCount, Value* args) {
+    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION) {
+        print_error("map() expects (Array, Callback).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *old_arr = args[0].as.array;
+    Value callback = args[1];
+    ValueArray *new_arr = array_new();
+
+    for (int i = 0; i < old_arr->count; i++) {
+        Value arg = old_arr->values[i];
+        Value new_val = call_jackal_function(NULL, callback, 1, &arg);
+        array_append(new_arr, new_val);
+    }
+
+    return (Value){VAL_ARRAY, {.array = new_arr}};
+}
+
+Value builtin_array_filter(int argCount, Value* args) {
+    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION) {
+        print_error("filter() expects (Array, Callback).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *old_arr = args[0].as.array;
+    Value callback = args[1];
+    ValueArray *new_arr = array_new();
+
+    for (int i = 0; i < old_arr->count; i++) {
+        Value arg = old_arr->values[i];
+        Value result = call_jackal_function(NULL, callback, 1, &arg);
+        if (is_value_truthy(result)) {
+            array_append(new_arr, copy_value(arg));
+        }
+        free_value(result);
+    }
+
+    return (Value){VAL_ARRAY, {.array = new_arr}};
+}
+
+Value builtin_array_reduce(int argCount, Value* args) {
+    if (argCount < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION) {
+        print_error("reduce() expects at least (Array, Callback).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *arr = args[0].as.array;
+    Value callback = args[1];
+    Value accumulator;
+    int start_index = 0;
+
+    if (argCount == 3) {
+        accumulator = copy_value(args[2]);
+        start_index = 0;
+    } else {
+        if (arr->count == 0) return (Value){VAL_NIL, {0}};
+        accumulator = copy_value(arr->values[0]);
+        start_index = 1;
+    }
+
+    for (int i = start_index; i < arr->count; i++) {
+        Value cb_args[2] = {accumulator, arr->values[i]};
+        Value next_acc = call_jackal_function(NULL, callback, 2, cb_args);
+        free_value(accumulator);
+        accumulator = next_acc;
+    }
+
+    return accumulator;
+}
+
+Value builtin_array_sort(int argCount, Value* args) {
+    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION) {
+        print_error("sorted() expects (Array, Callback).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray* old_arr = args[0].as.array;
+    ValueArray* new_arr = array_new();
+    for (int i = 0; i < old_arr->count; i++) {
+        array_append(new_arr, copy_value(old_arr->values[i]));
+    }
+
+    for (int i = 0; i < new_arr->count - 1; i++) {
+        for (int j = 0; j < new_arr->count - i - 1; j++) {
+            Value cb_args[2] = {new_arr->values[j], new_arr->values[j + 1]};
+            
+            Value result = call_jackal_function(NULL, args[1], 2, cb_args);
+            
+            if (result.type == VAL_NUMBER && result.as.number > 0) {
+                Value temp = new_arr->values[j];
+                new_arr->values[j] = new_arr->values[j + 1];
+                new_arr->values[j + 1] = temp;
+            }
+            free_value(result);
+        }
+    }
+
+    return (Value){VAL_ARRAY, {.array = new_arr}};
+}
+
+Value builtin_array_limit(int argCount, Value* args) {
+ 
+    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_NUMBER) {
+        print_error("limit() requires (Array, Number).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray* old_arr = args[0].as.array;
+    int limit = (int)args[1].as.number;
+    
+    if (limit < 0) limit = 0;
+    
+    int count_to_copy = (limit < old_arr->count) ? limit : old_arr->count;
+
+    ValueArray* new_arr = array_new();
+    for (int i = 0; i < count_to_copy; i++) {
+        array_append(new_arr, copy_value(old_arr->values[i]));
+    }
+
+    return (Value){VAL_ARRAY, {.array = new_arr}};
+}

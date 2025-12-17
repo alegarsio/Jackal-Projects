@@ -1,14 +1,14 @@
 
 class Queue {
-    function init() {
+     init() {
         this.items = [];
     }
 
-    function enqueue(item) {
+    func enqueue(item) {
         this.items.push(item);
     }
 
-    function dequeue() {
+    func dequeue() {
         if (this.isEmpty()) {
             print ("Error: Queue is isEmpty!");
             return nil;
@@ -19,18 +19,18 @@ class Queue {
         return firstItem;
     }
 
-    function front() {
+    func front() {
         if (this.isEmpty()) {
             return nil;
         }
         return this.items[0];
     }
     
-    function size() {
+    func size() {
         return this.items.length();
     }
     
-    function isEmpty() {
+    func isEmpty() {
         return this.items.length() == 0;
     }
 }

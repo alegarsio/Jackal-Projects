@@ -1,8 +1,11 @@
-#ifndef COMPILER_H
-#define COMPILER_H
+#ifndef JACKAL_COMPILER_H
+#define JACKAL_COMPILER_H
 
-#include "../parser.h"
+#include "parser.h"
+#include "vm/chunk.h"
+#include <stdbool.h>
 
-void compile_to_binary(Node* ast, const char* filename);
+bool compile(Node* program_ast, Chunk* chunk);
+void compile_to_binary(Node* root, const char* path); // Fungsi dari main.c
 
 #endif

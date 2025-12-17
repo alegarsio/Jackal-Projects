@@ -1,5 +1,22 @@
-object Stream(){
-    func MapEach(target,callback) -> Map{
+
+
+object Map(){
+    func Stream(target,callback) -> Map {
         __mapstream_stream(target,callback);
+    }
+    func key(data) -> Array{
+        return  __mapstream_keys(data);
+    }
+    func value(data){
+         __mapstream_values(data);
+    }
+}
+
+object Array(){
+    func Distinct(arr){
+        return __array_distinct(arr);
+    }
+    func Match(arr,callback){
+        return __array_anyMatch(arr, callback);
     }
 }

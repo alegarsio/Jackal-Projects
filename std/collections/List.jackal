@@ -1,26 +1,26 @@
 class Node {
-    function init(value) {
+    init(value) {
         this.value = value;
         this.next = nil;
     }
 }
 
 class List {
-    function init() {
+     init() {
         this.head = nil;
         this.tail = nil;
         this.count = 0;
     }
 
-    function isEmpty() {
+    func isEmpty() {
         return this.head == nil;
     }
 
-    function size() {
+    func size() {
         return this.count;
     }
 
-    function append(value) {
+    func append(value) {
         let node = Node(value);
         if (this.head == nil) {
             this.head = node;
@@ -32,7 +32,7 @@ class List {
         this.count++;
     }
 
-    function prepend(value) {
+    func prepend(value) {
         let node = Node(value);
         if (this.head == nil) {
             this.head = node;
@@ -44,7 +44,7 @@ class List {
         this.count++;
     }
 
-    function removeFirst() {
+    func removeFirst() {
         if (this.head == nil) {
             return nil;
         }
@@ -57,7 +57,7 @@ class List {
         return val;
     }
 
-    function printList() {
+    func printList() {
         let current = this.head;
       
         while (current != nil) {

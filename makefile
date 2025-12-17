@@ -24,6 +24,7 @@ SRC = src/common.c \
       src/vm/debug.c \
       src/compiler/compiler.c \
       src/vm/vm.c \
+      src/vm/chunk.c \
       src/main.c
 
 OBJ = $(patsubst src/%.c, $(OBJDIR)/%.o, $(SRC))
