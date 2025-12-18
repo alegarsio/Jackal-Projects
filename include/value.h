@@ -158,3 +158,11 @@ Value builtin_array_reduce(int argCount, Value* args);
 Value builtin_array_sort(int argCount, Value* args);
 
 Value builtin_array_limit(int argCount, Value* args);
+
+Value builtin_array_statistics(int argCount, Value *args);
+
+Value builtin_map_get(int argCount, Value *args);
+
+Value builtin_array_mean(int argCount, Value *args);
+
+Value builtin_array_max(int argCount, Value *args);

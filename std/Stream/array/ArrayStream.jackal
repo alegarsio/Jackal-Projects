@@ -10,9 +10,81 @@ class ArrayStream implements Streamable {
      * ArrayStream object use the array type constructor
      * @return an array for the result
     **/
-    init(data : Array) {
+    init(data) {
         this.data = data;
     }
+
+    func sorted(callback) {
+        this.data = __array_sort(this.data, callback);
+        return this;
+    }
+
+    func mean() {
+        return __array_mean(this.data);
+    }
+
+    func partition(callback) {
+        let result = {"true": [], "false": []};
+        for (i in this.data) {
+            if (callback(i)) {
+                result["true"].push(i);
+            } else {
+                result["false"].push(i);
+            }
+        }
+        return result;
+    }
+
+    func groupBy(callback) {
+        let groups = {}; 
+        
+        for (i in this.data) {
+            let key = callback(i);
+            
+            if (groups[key] == nil) {
+                groups[key] = [];
+            }
+            
+            groups[key].push(i);
+        }
+        
+        return groups;
+    }
+
+    func max() {
+        if (this.data.length() == 0) {
+            return nil;
+        }
+
+        let maxValue = this.data[0];
+
+        for (i in this.data) {
+            if (i > maxValue) {
+                maxValue = i;
+            }
+        }
+
+        return maxValue;
+    }
+
+    func mean() {
+        if (this.data.length() == 0) {
+            return 0;
+        }
+
+        let total = 0;
+        let count = 0;
+
+        for (i in this.data) {
+            total = total + i;
+            count = count + 1;
+        }
+
+        return total / count;
+    }
+
+   
+
     /**
      * distinct() is the part of stream API reusable function 
      * distinct use to remove duplication in the array elements
@@ -77,10 +149,7 @@ class ArrayStream implements Streamable {
         return this;
     }
 
-    func sorted(callback) {
-        this.data = __array_sort(this.data, callback);
-        return this;
-    }
+    
 }
 
 

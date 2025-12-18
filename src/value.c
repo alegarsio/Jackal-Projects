@@ -1137,3 +1137,120 @@ Value builtin_os_platform(int argCount, Value *args)
     return (Value){VAL_STRING, {.string = "linux"}};
 #endif
 }
+
+
+Value builtin_array_statistics(int argCount, Value *args)
+{
+    ValueArray *arr = args[-1].as.array;
+    
+    if (arr->count == 0) return (Value){VAL_NIL, {0}};
+
+    double sum = 0;
+    double min = arr->values[0].as.number;
+    double max = arr->values[0].as.number;
+
+    for (int i = 0; i < arr->count; i++)
+    {
+        if (arr->values[i].type != VAL_NUMBER) continue;
+
+        double val = arr->values[i].as.number;
+        sum += val;
+        if (val < min) min = val;
+        if (val > max) max = val;
+    }
+
+    HashMap *statsMap = map_new();
+    
+    map_set(statsMap, "sum", (Value){VAL_NUMBER, {.number = sum}});
+    map_set(statsMap, "min", (Value){VAL_NUMBER, {.number = min}});
+    map_set(statsMap, "max", (Value){VAL_NUMBER, {.number = max}});
+    map_set(statsMap, "count", (Value){VAL_NUMBER, {.number = (double)arr->count}});
+    map_set(statsMap, "mean", (Value){VAL_NUMBER, {.number = sum / arr->count}});
+
+    return (Value){VAL_MAP, {.map = statsMap}};
+}
+
+Value builtin_map_get(int argCount, Value *args)
+{
+    if (argCount != 1 || args[0].type != VAL_STRING)
+    {
+        print_error("get() expects 1 string argument.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    HashMap *map = args[-1].as.map;
+    char *key = args[0].as.string;
+
+    for (int i = 0; i < map->capacity; i++)
+    {
+        Entry *entry = &map->entries[i];
+        if (entry->key != NULL && strcmp(entry->key, key) == 0)
+        {
+            return copy_value(entry->value);
+        }
+    }
+
+    return (Value){VAL_NIL, {0}};
+}
+Value builtin_array_mean(int argCount, Value *args) {
+    if (args == NULL) return (Value){VAL_NIL, {0}};
+
+    Value receiver = args[-1]; 
+    if (receiver.type != VAL_ARRAY) return (Value){VAL_NIL, {0}};
+
+    ValueArray *arr = receiver.as.array;
+    if (arr == NULL || arr->values == NULL) return (Value){VAL_NIL, {0}};
+
+    double sum = 0;
+    int count = 0;
+    for (int i = 0; i < arr->count; i++) {
+        if (arr->values[i].type == VAL_NUMBER) {
+            sum += arr->values[i].as.number;
+            count++;
+        }
+    }
+
+    double result = (count > 0) ? (sum / count) : 0;
+
+    // SESUAIKAN DI SINI:
+    // Balikkan sebagai Array agar .collect() tidak crash
+    ValueArray *resArr = array_new();
+    array_append(resArr, (Value){VAL_NUMBER, {.number = result}});
+
+    return (Value){VAL_ARRAY, {.array = resArr}};
+}
+
+Value builtin_array_max(int argCount, Value *args)
+{
+    if (args == NULL) return (Value){VAL_NIL, {0}};
+
+    Value receiver = args[-1];
+    if (receiver.type != VAL_ARRAY) return (Value){VAL_NIL, {0}};
+
+    ValueArray *arr = receiver.as.array;
+    if (arr == NULL || arr->values == NULL || arr->count == 0)
+        return (Value){VAL_NIL, {0}};
+
+    double maxVal = -1.7976931348623158e+308;
+    int found = 0;
+
+    for (int i = 0; i < arr->count; i++)
+    {
+        if (arr->values[i].type == VAL_NUMBER)
+        {
+            double current = arr->values[i].as.number;
+            if (!found || current > maxVal)
+            {
+                maxVal = current;
+                found = 1;
+            }
+        }
+    }
+
+    if (!found) return (Value){VAL_NIL, {0}};
+
+    ValueArray *resArr = array_new();
+    array_append(resArr, (Value){VAL_NUMBER, {.number = maxVal}});
+
+    return (Value){VAL_ARRAY, {.array = resArr}};
+}

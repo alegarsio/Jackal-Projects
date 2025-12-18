@@ -997,6 +997,9 @@ int main(int argc, char **argv)
     REGISTER("__array_filter", builtin_array_filter);
     REGISTER("__array_reduce", builtin_array_reduce);
     REGISTER("__array_sort", builtin_array_sort);
+    REGISTER("__array_statistics", builtin_array_statistics);
+    REGISTER("__array_mean", builtin_array_mean);
+    REGISTER("__array_max", builtin_array_max);
 
     REGISTER("__array_limit", builtin_array_limit);
 
@@ -1006,6 +1009,7 @@ int main(int argc, char **argv)
     REGISTER("__mapstream_stream", builtin_map_forEach);
     REGISTER("__mapstream_keys", builtin_map_keys);
     REGISTER("__mapstream_values", builtin_map_values);
+    REGISTER("__map_get", builtin_map_get);
 
     /**
      * HTTP Request Client
