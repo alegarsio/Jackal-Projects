@@ -1,24 +1,33 @@
-import std.collections.Abstract.Stream;
+import std.Stream.Abstract.Streamable;
+
 /**
  * @author Alegrarsio gifta lesmana
  * @class ArrayStream represents the array stream API 
  * this library is the part of std/collections/Abstract
 **/
-class ArrayStream implements Stream{
+class ArrayStream implements Streamable {
     /**
      * ArrayStream object use the array type constructor
      * @return an array for the result
     **/
-    init(data) {
+    init(data : Array) {
         this.data = data;
     }
-
+    /**
+     * distinct() is the part of stream API reusable function 
+     * distinct use to remove duplication in the array elements
+     * @return none
+    **/
     @override
     func distinct(){
         this.data =  __array_distinct(this.data);
         return this;
     }
 
+    /**
+     * @deprecated
+     * for now Match 
+    **/
     @deprecated
     func Match(callback){
         return __array_anyMatch(this.data,callback);

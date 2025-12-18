@@ -1,5 +1,4 @@
 import std.collections.Abstract.List;
-import std.collections.Abstract.Array;
 import std.stream;
 /**
  * @author Alegrarsio Gifta Lesmana 
@@ -72,7 +71,7 @@ class ArrayList <T> implements List{
 
     @override
     func stream(){
-        return ArrayStream(this.data);
+        return Array(this.data);
     }
 
     func each() -> Array{

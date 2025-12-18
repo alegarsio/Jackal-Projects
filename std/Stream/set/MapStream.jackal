@@ -1,4 +1,4 @@
-import std.collections.Abstract.Array;
+import std.Stream.array.ArrayStream;
 
 class MapStream {
     

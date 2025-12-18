@@ -1,5 +1,0 @@
-class Serializable{
-
-    func sorted(){}
-
-}

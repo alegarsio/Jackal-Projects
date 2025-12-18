@@ -2,7 +2,7 @@
  * @author Alegrarsio gifta lesmana
  * Stream object provides a reusable function through interface 
 **/
-interface Stream{
+interface Streamable{
     /**
      * distinct() 
      * remove duplicate data in the array

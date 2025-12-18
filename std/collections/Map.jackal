@@ -1,5 +1,6 @@
-import std.collections.Abstract.Pair;
-import std.collections.Abstract.Map;
+import std.collections.Abstract.Set;
+import std.stream;
+
 /** 
  * @author Alegrarsio Gifta Lesmana
  * Map[@param K @param V] 
@@ -7,7 +8,7 @@ import std.collections.Abstract.Map;
  * abstraction for dictionary operation, implementing 
  
 **/
-class Map <K,V> implements Pair {
+class Map <K,V> implements Sets{
     
     init(){
         this.data = {}; 
