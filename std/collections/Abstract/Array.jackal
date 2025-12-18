@@ -1,37 +1,52 @@
-
-class ArrayStream{
-
+import std.collections.Abstract.Stream;
+/**
+ * @author Alegrarsio gifta lesmana
+ * @class ArrayStream represents the array stream API 
+ * this library is the part of std/collections/Abstract
+**/
+class ArrayStream implements Stream{
+    /**
+     * ArrayStream object use the array type constructor
+     * @return an array for the result
+    **/
     init(data) {
         this.data = data;
     }
 
+    @override
     func distinct(){
         this.data =  __array_distinct(this.data);
         return this;
     }
 
+    @deprecated
     func Match(callback){
         return __array_anyMatch(this.data,callback);
     }
 
+    @override
     func map(callback){
         this.data = __array_map(this.data,callback);
         return this;
     }
 
+    @override
     func filter(callback){
         this.data = __array_filter(this.data,callback);
         return this;
     }
 
+    @override
     func reduce(callback, initial) {
         return __array_reduce(this.data, callback, initial);
     }
 
+    @override
     func collect() {
         return this.data;
     }
 
+    @override
     func limit(n) {
     
         this.data = __array_limit(this.data, n);

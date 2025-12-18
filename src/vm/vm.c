@@ -7,9 +7,7 @@
 #include <math.h>
 
 static void runtimeError(VM *vm, const char *format, ...);
-// --- Stack Management Macros ---
 
-// Membaca 1 byte (Opcode atau 1st operand) dan memajukan IP
 #define READ_BYTE() (*vm->ip++)
 
 // Membaca 2 byte operand (index/offset)
@@ -233,7 +231,6 @@ InterpretResult interpret(VM *vm, Chunk *chunk)
             break;
         }
 
-            // ... Implementasi OpCode lainnya (OP_GET_VAR, OP_CALL, OP_CLASS, dll) di sini
 
         default:
             runtimeError(vm, "Unknown opcode: %d", instruction);

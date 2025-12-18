@@ -1,5 +1,5 @@
 import std.collections.Abstract.Pair;
-
+import std.collections.Abstract.Map;
 /** 
  * @author Alegrarsio Gifta Lesmana
  * Map[@param K @param V] 
@@ -16,7 +16,7 @@ class Map <K,V> implements Pair {
     @override
     func set(key: K, val: V) {
         this.data[key.toString()] = val;
-    }
+    } 
 
     @override
     func get(key: K) -> V {
@@ -26,5 +26,10 @@ class Map <K,V> implements Pair {
     func flush(){
         return this.data;
     }
+
+    func stream() {
+        return MapStream(this.data);
+    }
+    
 
 }

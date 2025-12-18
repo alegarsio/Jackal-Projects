@@ -1,22 +1,7 @@
+import std.collections.Abstract.Map;
+import std.collections.Abstract.Array;
 
 
-object Map(){
-    func Stream(target,callback) -> Map {
-        __mapstream_stream(target,callback);
-    }
-    func key(data) -> Array{
-        return  __mapstream_keys(data);
-    }
-    func value(data){
-         __mapstream_values(data);
-    }
-}
+class Map extends MapStream {}
 
-object Array(){
-    func Distinct(arr){
-        return __array_distinct(arr);
-    }
-    func Match(arr,callback){
-        return __array_anyMatch(arr, callback);
-    }
-}
+class Array extends ArrayStream {} 

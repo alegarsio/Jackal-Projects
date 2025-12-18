@@ -75,6 +75,10 @@ class ArrayList <T> implements List{
         return ArrayStream(this.data);
     }
 
+    func each() -> Array{
+        return this.data ;
+    }
+
     
 
 }

@@ -1,0 +1,47 @@
+/**
+ * @author Alegrarsio gifta lesmana
+ * Stream object provides a reusable function through interface 
+**/
+interface Stream{
+    /**
+     * distinct() 
+     * remove duplicate data in the array
+     * @return none
+    **/
+    func distinct();
+    /**
+     * map()
+     * map is higher order function use manipulate each data in the array 
+     * @return none
+    **/
+    func map();
+    /**
+     * filter()
+     * filter is higher order function use to filter data in the array
+     * @return none
+    **/
+    func filter();
+    /**
+     * reduce() 
+     * reduce is higher order function use to reduce ddata in the array
+     * @return none
+    **/
+    func reduce();
+
+    /**
+     * collect() 
+     * collect is a function to convert back process result to the array
+     * @return Arrays
+    **/
+    func collect();
+
+    /**
+     * limit()
+     * collect is a function to limit the amount of data in ouput
+     * @return none
+    **/
+    func limit();
+
+
+    func Match();
+}

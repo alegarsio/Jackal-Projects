@@ -23,4 +23,6 @@ interface Pair{
      * @param K is for the key access
     **/
     func get();
+
+    func stream();
 }

@@ -1,0 +1,42 @@
+import std.collections.Abstract.Array;
+
+class MapStream {
+    
+    init(targetMap) {
+        this.target = targetMap;
+    }
+
+   
+    func forEach(callback) {
+        __mapstream_stream(this.target, callback);
+    }
+
+ 
+    func keys() {
+        let k = __mapstream_keys(this.target);
+        return ArrayStream(k);
+    }
+
+  
+    func values() {
+        let v = __mapstream_values(this.target);
+        return ArrayStream(v);
+    }
+
+   
+    func entries() {
+        let kArr = __mapstream_keys(this.target);
+        let result = [];
+        
+        for (let i = 0; i < kArr.length(); i = i + 1) {
+            let k = kArr[i];
+            let entry = {
+                "key": k,
+                "value": this.target[k]
+            };
+            result.push(entry);
+        }
+        
+        return ArrayStream(result);
+    }
+}
