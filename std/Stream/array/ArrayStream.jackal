@@ -9,20 +9,39 @@ class ArrayStream implements Streamable {
     /**
      * ArrayStream object use the array type constructor
      * @return an array for the result
+     * @param data -> Array
     **/
+
     init(data) {
         this.data = data;
     }
 
+    /**
+     * sorted is a higher order function to sort the elements in the array
+     * @return Array
+     * @param callback 
+    **/
     func sorted(callback) {
         this.data = __array_sort(this.data, callback);
         return this;
     }
 
+
+     /**
+     * sorted is a higher order function to sort the elements in the array
+     * @return Number 
+     * @param callback 
+    **/
+    
     func mean() {
         return __array_mean(this.data);
     }
 
+     /**
+     * sorted is a higher order function to sort the elements in the array
+     * @return Map
+     * @param callback 
+    **/
     func partition(callback) {
         let result = {"true": [], "false": []};
         for (i in this.data) {
@@ -34,6 +53,19 @@ class ArrayStream implements Streamable {
         }
         return result;
     }
+    func countFrequency() {
+        let freq = {};
+        
+        for (i in this.data) {
+            if (freq[i] == nil) {
+                freq[i] = 1;
+            } else {
+                freq[i] = freq[i] + 1;
+            }
+        }
+        
+        return freq;
+    }
 
     func groupBy(callback) {
         let groups = {}; 
@@ -41,15 +73,17 @@ class ArrayStream implements Streamable {
         for (i in this.data) {
             let key = callback(i);
             
-            if (groups[key] == nil) {
-                groups[key] = [];
+            let keyStr = key.toString(); 
+            
+            if (groups[keyStr] == nil) {
+                groups[keyStr] = [];
             }
             
-            groups[key].push(i);
+            groups[keyStr].push(i);
         }
         
         return groups;
-    }
+}
 
     func max() {
         if (this.data.length() == 0) {

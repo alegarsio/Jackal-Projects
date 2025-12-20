@@ -1,0 +1,4 @@
+
+func type(data){
+    return __typeof(data);
+}

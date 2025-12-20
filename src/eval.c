@@ -1,4 +1,5 @@
 
+
 #include "eval.h"
 #include "value.h"
 #include "env.h"
@@ -77,7 +78,7 @@ static bool is_integer_value(Value val)
 /**
  * @brief get value for return type
  */
-static const char *get_value_type_name(Value val)
+const char *get_value_type_name(Value val)
 {
     switch (val.type)
     {

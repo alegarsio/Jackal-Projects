@@ -32,6 +32,10 @@ object console(){
         print(value);
     }
 
+    func plot(value){
+        _io_plot(value);
+    }
+
     func table(value){
         __io_table_stream(value);
     }

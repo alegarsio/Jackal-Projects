@@ -44,6 +44,36 @@
 #define HTTP_DEFAULT_PORT 80
 #define BUFFER_SIZE 4096
 
+char* value_to_string(Value value) {
+    char buffer[128];
+
+    switch (value.type) {
+        case VAL_NUMBER:
+            snprintf(buffer, sizeof(buffer), "%g", value.as.number);
+            return strdup(buffer);
+        
+        case VAL_STRING:
+            return strdup(value.as.string);
+        
+        case TOKEN_TRUE:
+            return strdup("true");
+        
+        case TOKEN_FALSE:
+            return strdup("false");
+        
+        case VAL_NIL:
+            return strdup("nil");
+
+        case VAL_MAP:
+            return strdup("[Map]");
+
+        case VAL_ARRAY:
+            return strdup("[Array]");
+
+        default:
+            return strdup("[Unknown]");
+    }
+}
 Value builtin_vm_memory(int argCount, Value *args)
 {
     (void)argCount;
@@ -262,117 +292,108 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
     return realsize;
 }
 
+
 Value builtin_http_request(int argCount, Value *args)
 {
     if (argCount < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING)
     {
-        print_error("http_request() requires method (string) and url (string).");
+        print_error("Usage: http_request(method, url, [body], [headers_map])");
         return (Value){VAL_NIL, {0}};
     }
 
     const char *method = args[0].as.string;
     const char *url = args[1].as.string;
-    const char *body = (argCount > 2 && args[2].type != VAL_NIL) ? args[2].as.string : NULL;
+    const char *body = (argCount > 2 && args[2].type == VAL_STRING) ? args[2].as.string : NULL;
 
-    const char *custom_header_value = (argCount > 3 && args[3].type == VAL_STRING) ? args[3].as.string : NULL;
-
-    CURL *curl_handle;
-    CURLcode res;
-    struct Memory chunk;
-    chunk.memory = malloc(1);
-    chunk.size = 0;
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl_handle = curl_easy_init();
-
-    if (curl_handle == NULL)
-    {
-        free(chunk.memory);
-        print_error("Failed to initialize cURL handle.");
+    CURL *curl_handle = curl_easy_init();
+    if (!curl_handle)
         return (Value){VAL_NIL, {0}};
-    }
+
+    struct Memory chunk = {.memory = malloc(1), .size = 0};
+    struct curl_slist *headers = NULL;
 
     curl_easy_setopt(curl_handle, CURLOPT_URL, url);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
-    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "Jackal-HTTP-Client/1.0");
+    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 30L);
+    curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
 
-    struct curl_slist *headers = NULL;
-
-    if (strcmp(method, "POST") == 0)
+    if (argCount > 3 && args[3].type == VAL_MAP)
     {
-        curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
-
-        const char *content_type_to_send = custom_header_value;
-        if (!content_type_to_send)
+        HashMap *map = args[3].as.map;
+        for (int i = 0; i < map->capacity; i++)
         {
-            content_type_to_send = "application/x-www-form-urlencoded";
-        }
-
-        char content_type_buffer[512];
-        sprintf(content_type_buffer, "Content-Type: %s", content_type_to_send);
-        headers = curl_slist_append(headers, content_type_buffer);
-
-        headers = curl_slist_append(headers, "Accept: application/json");
-
-        curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
-
-        if (body)
-        {
-            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, body);
-            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, (long)strlen(body));
-        }
-        else
-        {
-            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, 0L);
-        }
-    }
-    else if (strcmp(method, "GET") == 0)
-    {
-        if (custom_header_value)
-        {
-            char accept_buffer[512];
-            sprintf(accept_buffer, "Accept: %s", custom_header_value);
-            headers = curl_slist_append(headers, accept_buffer);
-            curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
+            Entry *entry = &map->entries[i];
+            if (entry->key != NULL)
+            {
+                char header_buffer[1024];
+                snprintf(header_buffer, sizeof(header_buffer), "%s: %s",
+                         entry->key, value_to_string(entry->value));
+                headers = curl_slist_append(headers, header_buffer);
+            }
         }
     }
     else
     {
-        print_error("Unsupported HTTP method: %s", method);
-        curl_easy_cleanup(curl_handle);
-        free(chunk.memory);
-        return (Value){VAL_NIL, {0}};
+        headers = curl_slist_append(headers, "Accept: application/json");
+        if (body)
+        {
+            headers = curl_slist_append(headers, "Content-Type: application/json");
+        }
     }
 
-    res = curl_easy_perform(curl_handle);
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
+
+    if (strcmp(method, "POST") == 0)
+    {
+        curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+        if (body)
+            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, body);
+    }
+    else if (strcmp(method, "PUT") == 0)
+    {
+        curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "PUT");
+        if (body)
+            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, body);
+    }
+    else if (strcmp(method, "DELETE") == 0)
+    {
+        curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "DELETE");
+    }
+    else if (strcmp(method, "PATCH") == 0)
+    {
+        curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "PATCH");
+        if (body)
+            curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, body);
+    }
+
+    CURLcode res = curl_easy_perform(curl_handle);
 
     if (res != CURLE_OK)
     {
-        print_error("cURL request failed: %s", curl_easy_strerror(res));
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl_handle);
-        free(chunk.memory);
-        return (Value){VAL_NIL, {0}};
+        print_error("Network Error: %s", curl_easy_strerror(res));
+        goto cleanup;
     }
 
     long http_code = 0;
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
 
+    if (http_code >= 400)
+    {
+        print_error("HTTP Error %ld", http_code);
+    }
+
+cleanup:
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl_handle);
 
-    if (http_code >= 400)
-    {
-        print_error("HTTP Error: Code %ld", http_code);
-        free(chunk.memory);
-        return (Value){VAL_NIL, {0}};
-    }
+    Value result;
+    result.type = VAL_STRING;
+    result.as.string = strdup(chunk.memory); 
 
-    char *response_body = chunk.memory;
-    return (Value){VAL_STRING, {.string = response_body}};
+    free(chunk.memory);
+    return result;
 }
-
 Value builtin_json_encode(int argCount, Value *args)
 {
     if (argCount != 1)
@@ -977,6 +998,7 @@ int main(int argc, char **argv)
     REGISTER("__time_now", builtin_time_now);
 
     REGISTER("__get_local_hour", builtin_time_get_local_hour);
+    REGISTER("_io_plot",builtin_plot);
 
     /**
      * represents the io std/io
@@ -1002,6 +1024,7 @@ int main(int argc, char **argv)
     REGISTER("__array_max", builtin_array_max);
 
     REGISTER("__array_limit", builtin_array_limit);
+    REGISTER("__json_string",builtin_json_stringify);
 
     REGISTER("__io_read_line", builtin_read_line);
     REGISTER("__io_read_array", builtin_read_array);
@@ -1015,7 +1038,10 @@ int main(int argc, char **argv)
      * HTTP Request Client
      */
 
-    REGISTER("__http_request", builtin_http_request);
+    REGISTER("http_request", builtin_http_request);
+    REGISTER("__json_parse",builtin_json_parse);
+    REGISTER("web_show_internal",builtin_web_show);
+    REGISTER("web_sync_internal",builtin_web_sync);
 
     /**
      * Json Parser
@@ -1023,11 +1049,15 @@ int main(int argc, char **argv)
     REGISTER("__json_encode", builtin_json_encode);
     REGISTER("__jackal_sleep", builtin_jackal_sleep);
 
+
     DEFINE_NATIVE("len", builtin_len);
     DEFINE_NATIVE("push", builtin_push);
     DEFINE_NATIVE("pop", builtin_pop);
     DEFINE_NATIVE("remove", builtin_remove);
     DEFINE_NATIVE("File", builtin_file_open);
+
+    REGISTER("__typeof",builtin_type);
+    REGISTER("systems",builtin_system);
 
     load_jackal_file("std/io.jackal", env);
     load_jackal_file("std/stream.jackal", env);

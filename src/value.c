@@ -7,6 +7,7 @@
 #include "parser.h"
 #include "eval.h"
 #include "env.h"
+#
 
 /**
  * @include collections dsa
@@ -1212,8 +1213,6 @@ Value builtin_array_mean(int argCount, Value *args) {
 
     double result = (count > 0) ? (sum / count) : 0;
 
-    // SESUAIKAN DI SINI:
-    // Balikkan sebagai Array agar .collect() tidak crash
     ValueArray *resArr = array_new();
     array_append(resArr, (Value){VAL_NUMBER, {.number = result}});
 
@@ -1253,4 +1252,269 @@ Value builtin_array_max(int argCount, Value *args)
     array_append(resArr, (Value){VAL_NUMBER, {.number = maxVal}});
 
     return (Value){VAL_ARRAY, {.array = resArr}};
+}
+static Value cjsonToJackal(cJSON *item) {
+    Value val;
+    val.as.number = 0; 
+
+    if (cJSON_IsNumber(item)) {
+        val.type = VAL_NUMBER;
+        val.as.number = item->valuedouble;
+        return val;
+    }
+    
+    if (cJSON_IsString(item)) {
+        val.type = VAL_STRING;
+        val.as.string = strdup(item->valuestring);
+        return val;
+    }
+    
+    if (cJSON_IsBool(item)) {
+        val.type = cJSON_IsTrue(item) ? TOKEN_TRUE : TOKEN_FALSE;
+        return val;
+    }
+    
+    if (cJSON_IsNull(item)) {
+        val.type = VAL_NIL;
+        return val;
+    }
+
+    if (cJSON_IsArray(item)) {
+        ValueArray* arr = array_new();
+        cJSON *element = NULL;
+        for (element = item->child; element != NULL; element = element->next) {
+            array_append(arr, cjsonToJackal(element));
+        }
+        val.type = VAL_ARRAY;
+        val.as.array = arr; 
+        return val;
+    }
+
+    if (cJSON_IsObject(item)) {
+        HashMap* map = map_new();
+        cJSON *child = NULL;
+        for (child = item->child; child != NULL; child = child->next) {
+            map_set(map, child->string, cjsonToJackal(child));
+        }
+        val.type = VAL_MAP;
+        val.as.map = map;
+        return val;
+    }
+
+    val.type = VAL_NIL;
+    return val;
+}
+
+Value builtin_json_parse(int argCount, Value *args) {
+    if (argCount != 1 || args[0].type != VAL_STRING) {
+        print_error("json_parse() requires 1 string argument.");
+        return (Value){VAL_NIL};
+    }
+
+    cJSON *json = cJSON_Parse(args[0].as.string);
+    if (json == NULL) return (Value){VAL_NIL};
+
+    Value result = cjsonToJackal(json);
+    cJSON_Delete(json);
+
+    return result;
+}
+
+static cJSON* jackalToCjson(Value value) {
+    if (value.type == VAL_NUMBER) {
+        return cJSON_CreateNumber(value.as.number);
+    }
+    
+    if (value.type == VAL_STRING) {
+        return cJSON_CreateString(value.as.string);
+    }
+    
+    if (value.type == TOKEN_TRUE) {
+        return cJSON_CreateBool(true);
+    }
+    
+    if (value.type == TOKEN_FALSE) {
+        return cJSON_CreateBool(false);
+    }
+    
+    if (value.type == VAL_NIL) {
+        return cJSON_CreateNull();
+    }
+
+    if (value.type == VAL_ARRAY) {
+        cJSON *jsonArr = cJSON_CreateArray();
+        ValueArray *arr = value.as.array;
+        for (int i = 0; i < arr->count; i++) {
+            cJSON_AddItemToArray(jsonArr, jackalToCjson(arr->values[i]));
+        }
+        return jsonArr;
+    }
+
+    if (value.type == VAL_MAP) {
+        cJSON *jsonObj = cJSON_CreateObject();
+        HashMap *map = value.as.map;
+        for (int i = 0; i < map->capacity; i++) {
+            if (map->entries[i].key != NULL) {
+                cJSON_AddItemToObject(jsonObj, 
+                    map->entries[i].key, 
+                    jackalToCjson(map->entries[i].value));
+            }
+        }
+        return jsonObj;
+    }
+
+    return cJSON_CreateNull();
+}
+
+Value builtin_json_stringify(int argCount, Value *args) {
+    if (argCount < 1) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    cJSON *json = jackalToCjson(args[0]);
+    char *string = NULL;
+
+    if (argCount > 1 && args[1].type == TOKEN_TRUE) {
+        string = cJSON_Print(json);
+    } else {
+        string = cJSON_PrintUnformatted(json);
+    }
+
+    Value result;
+    result.type = VAL_STRING;
+    result.as.string = strdup(string);
+
+    cJSON_free(string);
+    cJSON_Delete(json);
+
+    return result;
+}
+
+Value builtin_type(int argCount, Value *args) {
+    if (argCount != 1) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    Value val;
+    val.type = VAL_STRING;
+
+    switch (args[0].type) {
+        case VAL_NUMBER: val.as.string = strdup("number"); break;
+        case VAL_STRING: val.as.string = strdup("string"); break;
+        case TOKEN_TRUE: 
+        case TOKEN_FALSE: val.as.string = strdup("bool"); break;
+        case VAL_MAP:    val.as.string = strdup("map"); break;
+        case VAL_ARRAY:  val.as.string = strdup("array"); break;
+        case VAL_NIL:    val.as.string = strdup("nil"); break;
+        case VAL_CLASS : val.as.string = strdup("class"); break;
+        
+        default:         val.as.string = strdup("unknown"); break;
+    }
+
+    return val;
+}
+
+Value builtin_plot(int argCount, Value *args) {
+    if (argCount < 1 || args[0].type != VAL_ARRAY) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray* mainArr = args[0].as.array;
+    if (mainArr->count == 0) return (Value){VAL_NIL, {0}};
+
+    printf("\n--- Jackal Multi-Plot ---\n");
+
+    for (int i = 0; i < mainArr->count; i++) {
+        Value item = mainArr->values[i];
+
+        if (item.type == VAL_ARRAY) {
+            ValueArray* subArr = item.as.array;
+            printf("Group %d | ", i + 1);
+            
+            for (int j = 0; j < subArr->count; j++) {
+                if (subArr->values[j].type == VAL_NUMBER) {
+                    int val = (int)subArr->values[j].as.number;
+                    if (val > 20) val = 20; 
+                    
+                    for (int k = 0; k < val; k++) printf("*");
+                    printf(" "); 
+                }
+            }
+            printf("\n");
+        } 
+        else if (item.type == VAL_NUMBER) {
+            printf("Data %d  | ", i + 1);
+            int val = (int)item.as.number;
+            for (int k = 0; k < val; k++) printf("*");
+            printf("\n");
+        }
+    }
+    printf("         +----------------------------------\n\n");
+
+    return (Value){VAL_NIL, {0}};
+}
+
+static char *base64_encode(const char *data, size_t input_length) {
+    const char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    size_t output_length = 4 * ((input_length + 2) / 3);
+    char *encoded_data = malloc(output_length + 1);
+    if (encoded_data == NULL) return NULL;
+
+    for (size_t i = 0, j = 0; i < input_length;) {
+        uint32_t octet_a = i < input_length ? (unsigned char)data[i++] : 0;
+        uint32_t octet_b = i < input_length ? (unsigned char)data[i++] : 0;
+        uint32_t octet_c = i < input_length ? (unsigned char)data[i++] : 0;
+        uint32_t triple = (octet_a << 0x10) + (octet_b << 0x08) + octet_c;
+
+        encoded_data[j++] = table[(triple >> 3 * 6) & 0x3F];
+        encoded_data[j++] = table[(triple >> 2 * 6) & 0x3F];
+        encoded_data[j++] = i > input_length + 1 ? '=' : table[(triple >> 1 * 6) & 0x3F];
+        encoded_data[j++] = i > input_length ? '=' : table[(triple >> 0 * 6) & 0x3F];
+    }
+    encoded_data[output_length] = '\0';
+    return encoded_data;
+}
+Value builtin_web_show(int argCount, Value *args) {
+    if (argCount < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL, {0}};
+
+    char* html_raw = args[0].as.string;
+
+    FILE* f = fopen("/tmp/jackal_web.html", "w");
+    if (f) {
+        fprintf(f, "%s", html_raw);
+        fclose(f);
+        system("open /tmp/jackal_web.html");
+    }
+
+    return (Value){VAL_NIL, {0}};
+}
+
+Value builtin_web_sync(int argCount, Value *args) {
+    if (argCount < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char* path = "/tmp/jackal_live.html";
+    char* html_content = args[0].as.string;
+
+    FILE* file = fopen(path, "w");
+    if (file != NULL) {
+        fputs(html_content, file);
+        fclose(file);
+    }
+
+    return (Value){VAL_NIL, {0}};
+}
+
+
+Value builtin_system(int argCount, Value *args) {
+    if (argCount < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char* command = args[0].as.string;
+
+    int result = system(command);
+
+    return (Value){VAL_NUMBER, {.number = (double)result}};
 }

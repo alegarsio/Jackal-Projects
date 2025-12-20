@@ -1,0 +1,27 @@
+object UI {
+    func Sidebar(title, items) {
+        let list = "<ul>";
+        let i = 0;
+        let n = items.length();
+        
+        while (i < n) {
+            list = list + "<li>" + items[i].toString() + "</li>";
+            i = i + 1;
+        }
+        list = list + "</ul>";
+        
+        return "<div class='sidebar'><h2>" + title + "</h2>" + list + "</div>";
+    }
+
+    func Card(title, body) {
+        return "<div class='card'><h3>" + title + "</h3><div>" + body + "</div></div>";
+    }
+
+    func Layout(left, right) {
+        return left + "<div class='content'>" + right + "</div>";
+    }
+    
+    func Stat(label, value) {
+        return "<p>" + label + ": <code>" + value.toString() + "</code></p>";
+    }
+}

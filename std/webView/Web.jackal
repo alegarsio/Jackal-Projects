@@ -1,0 +1,38 @@
+import std.WebView.Web;
+
+
+object Web {
+    func sync(html) {
+        web_sync_internal(html);
+    }
+
+    func render(component) {
+        let html = "<html><head>";
+        html = html + "<meta charset='UTF-8'>";
+        
+        html = html + "<script>";
+        html = html + "let lastHash = '';";
+        html = html + "setInterval(() => {";
+        html = html + "  fetch(window.location.href, {cache: 'no-store'})";
+        html = html + "  .then(res => res.text())";
+        html = html + "  .then(text => {";
+        html = html + "    if (lastHash && lastHash !== text) window.location.reload();";
+        html = html + "    lastHash = text;";
+        html = html + "  });";
+        html = html + "}, 500);"; 
+        html = html + "</script>";
+
+        html = html + "<style>";
+        html = html + "body { margin: 0; font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; height: 100vh; overflow: hidden; }";
+        html = html + ".sidebar { width: 260px; background: #1e293b; border-right: 1px solid #334155; padding: 24px; }";
+        html = html + ".content { flex: 1; padding: 40px; overflow-y: auto; background: #0f172a; }";
+        html = html + ".card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }";
+        html = html + "ul { list-style: none; padding: 0; }";
+        html = html + "li { padding: 10px; border-bottom: 1px solid #334155; color: #94a3b8; }";
+        html = html + "h1, h2, h3 { color: #38bdf8; margin-top: 0; }";
+        html = html + "code { background: #000; color: #10b981; padding: 2px 6px; border-radius: 4px; font-family: monospace; }";
+        html = html + "</style></head><body>" + component + "</body></html>";
+        
+        this.sync(html);
+    }
+}

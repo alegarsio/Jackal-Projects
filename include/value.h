@@ -166,3 +166,19 @@ Value builtin_map_get(int argCount, Value *args);
 Value builtin_array_mean(int argCount, Value *args);
 
 Value builtin_array_max(int argCount, Value *args);
+
+Value builtin_json_parse(int argCount, Value *args);
+
+Value builtin_json_stringify(int argCount, Value *args);
+
+Value builtin_type(int argCount, Value *args);
+
+Value builtin_json_stringify(int argCount, Value *args) ;
+
+Value builtin_plot(int argCount, Value *args);
+
+Value builtin_web_show(int argCount, Value *args);
+
+Value builtin_web_sync(int argCount, Value *args);
+
+Value builtin_system(int argCount, Value *args) ;

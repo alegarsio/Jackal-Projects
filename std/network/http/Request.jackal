@@ -1,35 +1,53 @@
-/**
- * (c) Alegrarsio gifta Lesmana
- * Request is a set of instruction for comunicate with API
- * Version : Beta (0.0.1)
-**/
-object Request(URL_GET:String, URL_POST:String){
-    
-    function json_encode(data){
-        return __json_encode(data);
+class Request {
+
+    init() {
+        this._headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        };
+        this._auth = nil;
+        this.response = "";
+
     }
 
-    function post(data : String){
-        let _json = json_encode(data);
-        return __http_request("POST",this.url_to_post,_json,this.header_val);
+    func auth(token : String) {
+        this._auth = "Bearer " + token;
+        return this;
     }
 
-    function put(data : String){
-        let _json = json_encode(data);
-        return __http_request("PUT",this.url_to_post,_json,this.header_val);
+    func header(key, value) {
+        this._headers[key] = value;
+        return this;
     }
 
-    function delete(data : String){
-        let result = __http_request("DELETE",url_to_post,_json,this.header_val);
-        if (result != nil){ 
-            return 0;
+    func get(url) {
+        if (this._auth != nil) {
+            this._headers["Authorization"] = this._auth;
         }
-        return 1;
+        this.response = http_request("GET", url, nil, this._headers);
+        return this;
     }
 
+    func post(url, payload) {
+        let t = type(payload);
+        let body = payload;
+        
+        if (t == "map" || t == "array") {
+            body = __json_string(payload);
+        }
+        
+        this.response = http_request("POST", url, body, this._headers);
+        return this;
+    }
 
+    func json() {
+        if (this.response == "") {
+            return ;
+        }
+        return __json_parse(this.response);
+    }
 
-
-
-
+    func text() {
+        return this.response;
+    }
 }
