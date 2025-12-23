@@ -835,9 +835,9 @@ Value builtin_map_forEach(int argCount, Value *args)
             Node *param_k = func->params_head;
             Node *param_v = param_k->next;
 
-            set_var(call_env, param_k->name, key_val, false);
+            set_var(call_env, param_k->name, key_val, false,"");
 
-            set_var(call_env, param_v->name, value_copy, false);
+            set_var(call_env, param_v->name, value_copy, false,"");
 
             free_value(key_val);
             free_value(value_copy);

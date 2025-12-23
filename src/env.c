@@ -37,12 +37,13 @@ Var* find_var(Env* env, const char* name) {
  * @param value The value to assign to the variable.
  * @param is_const Boolean indicating if the variable is constant.
  */
-void set_var(Env* env, const char* name, Value value,bool is_const) {
+void set_var(Env* env, const char* name, Value value, bool is_const, const char* type_name) {
     Var* n = malloc(sizeof(Var));
-    if (!n) return; 
+    if (!n) return;
     strcpy(n->name, name);
-    n->value = copy_value(value); 
+    n->value = copy_value(value);
     n->is_const = is_const;
+    strcpy(n->expected_type, type_name ? type_name : ""); 
     n->next = env->vars;
     env->vars = n;
 }

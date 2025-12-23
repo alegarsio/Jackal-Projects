@@ -42,6 +42,11 @@ interface Streamable{
     **/
     func limit();
 
+
+    /**
+     * @deprecated
+     * use filter instead of match
+    **/
     func Match();
     
 }

@@ -1,29 +1,52 @@
 import std.Stream.array.ArrayStream;
-
+/**
+    * @author Alegrarsio gifta lesmana
+    * @class MapStream represents the Map stream API 
+    * this library is the part of std/collections/Abstract
+**/
 class MapStream {
-    
-    init(targetMap) {
+    /**
+     * MapStream object use the Map type constructor
+     * @return an array for the result
+     * @param targetMap -> Map 
+    **/
+    init(targetMap : Map)  {
         this.target = targetMap;
     }
-
-   
+    /***
+     * forEach()
+     * forEach is a higher order function to iterate each data in the map
+     * @return none
+     * @param callback
+    **/
     func forEach(callback) {
         __mapstream_stream(this.target, callback);
     }
-
- 
+    /***
+      * keys()
+      * get key in map example data["id"] : "jackal" | ["id"] is key
+      * @return ArrayStream 
+    **/
     func keys() {
         let k = __mapstream_keys(this.target);
         return ArrayStream(k);
     }
 
-  
+    /**
+     * values()
+     * values is a higher order function to get all values in the map
+     * @return ArrayStream
+    **/
     func values() {
         let v = __mapstream_values(this.target);
         return ArrayStream(v);
     }
 
-   
+    /****
+     * entries()
+     * entries use to get all entries in the map
+     * @return ArrayStream 
+     **/
     func entries() {
         let kArr = __mapstream_keys(this.target);
         let result = [];

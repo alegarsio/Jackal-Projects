@@ -169,7 +169,7 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
 
     for (int i = 0; i < arg_count; i++)
     {
-        set_var(call_env, param->name, args[i], false);
+        set_var(call_env, param->name, args[i], false, "");
         param = param->next;
     }
 
@@ -251,12 +251,12 @@ Value eval_node(Env *env, Node *n)
         while (entry)
         {
             Value val = (Value){VAL_NUMBER, {.number = entry->value}};
-            set_var(en->values, entry->name, val, true);
+            set_var(en->values, entry->name, val, true, "");
             entry = entry->next;
         }
 
         Value enum_val = (Value){VAL_ENUM, {.enum_obj = en}};
-        set_var(env, n->name, enum_val, true);
+        set_var(env, n->name, enum_val, true, "");
         return (Value){VAL_NIL, {0}};
     }
 
@@ -300,7 +300,7 @@ Value eval_node(Env *env, Node *n)
             global_ex_state.active = was_active;
 
             Env *catch_env = env_new(env);
-            set_var(catch_env, n->name, global_ex_state.error_val, false);
+            set_var(catch_env, n->name, global_ex_state.error_val, false, "");
 
             Value catch_res = eval_node(catch_env, n->right);
 
@@ -647,31 +647,39 @@ Value eval_node(Env *env, Node *n)
     {
         Value val = eval_node(env, n->left);
         Var *v = find_var(env, n->name);
-        if (!v)
+
+        if (v && v->expected_type[0] != '\0')
         {
-            print_error("Undefined variable.");
-            free_value(val);
-            return (Value){.type = VAL_NIL, .as = {0}};
+            const char *actual_type = get_value_type_name(val);
+            if (strcmp(v->expected_type, actual_type) != 0)
+            {
+                print_error("Cannot reassign '%s' to variable of type '%s'", actual_type, v->expected_type);
+                free_value(val);
+                return (Value){VAL_NIL, {0}};
+            }
         }
 
-        if (v->is_const)
+        if (v)
         {
-            char buffer[128];
-            snprintf(buffer, sizeof(buffer), "Cannot reassign to constant '%s'.", n->name);
-            print_error(buffer);
-            free_value(val);
-            return (Value){.type = VAL_NIL, .as = {0}};
+            free_value(v->value);
+            v->value = copy_value(val);
         }
-
-        free_value(v->value);
-        v->value = copy_value(val);
         return val;
     }
 
     case NODE_CONSTDECL:
     {
         Value val = eval_node(env, n->right);
-        set_var(env, n->name, val, true);
+        const char *actual_type = get_value_type_name(val);
+
+        if (n->type_name[0] != '\0' && strcmp(n->type_name, actual_type) != 0)
+        {
+            print_error("Type Mismatch: '%s' expected but got '%s'", n->type_name, actual_type);
+            free_value(val);
+            return (Value){VAL_NIL, {0}};
+        }
+
+        set_var(env, n->name, val, (n->kind == NODE_CONSTDECL), n->type_name);
         free_value(val);
         return (Value){VAL_NIL, {0}};
     }
@@ -756,7 +764,7 @@ Value eval_node(Env *env, Node *n)
 
         Value val = eval_node(env, n->right);
 
-        set_var(obj.as.instance->fields, n->left->name, val, false);
+        set_var(obj.as.instance->fields, n->left->name, val, false, "");
 
         free_value(val);
 
@@ -997,11 +1005,22 @@ Value eval_node(Env *env, Node *n)
     case NODE_VARDECL:
     {
         Value val = eval_node(env, n->right);
+        const char *actual_type = get_value_type_name(val);
 
-        set_var(env, n->name, val, false);
+        if (n->type_name[0] != '\0')
+        {
+            if (strcmp(n->type_name, actual_type) != 0)
+            {
+                print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
+                free_value(val);
+                return (Value){VAL_NIL, {0}};
+            }
+        }
+
+        set_var(env, n->name, val, false, n->type_name);
+
         free_value(val);
-
-        return (Value){.type = VAL_NIL, .as = {0}};
+        return (Value){VAL_NIL, {0}};
     }
 
         // case NODE_PRINT:
@@ -1047,13 +1066,13 @@ Value eval_node(Env *env, Node *n)
         {
 
             Value arity_val = (Value){VAL_NUMBER, {.number = (double)method->arity}};
-            set_var(iface->methods, method->name, arity_val, true);
+            set_var(iface->methods, method->name, arity_val, true, "");
 
             method = method->next;
         }
 
         Value iface_val = (Value){VAL_INTERFACE, {.interface_obj = iface}};
-        set_var(env, n->name, iface_val, true);
+        set_var(env, n->name, iface_val, true, "");
         return (Value){VAL_NIL, {0}};
     }
 
@@ -1111,12 +1130,12 @@ Value eval_node(Env *env, Node *n)
             Node *param_node = n->right;
             while (param_node)
             {
-                set_var(inst->fields, param_node->name, (Value){VAL_STRING, {.string = strdup("")}}, false);
+                set_var(inst->fields, param_node->name, (Value){VAL_STRING, {.string = strdup("")}}, false, "");
                 param_node = param_node->next;
             }
 
             Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
-            set_var(env, n->name, instance_val, true);
+            set_var(env, n->name, instance_val, true, "");
 
             return (Value){.type = VAL_NIL, .as = {0}};
         }
@@ -1180,7 +1199,7 @@ Value eval_node(Env *env, Node *n)
             }
         }
         Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
-        set_var(env, n->name, class_val, true);
+        set_var(env, n->name, class_val, true, "");
         return (Value){.type = VAL_NIL, .as = {0}};
     }
 
@@ -1200,7 +1219,7 @@ Value eval_node(Env *env, Node *n)
         n->right = NULL;
 
         Value func_val = (Value){VAL_FUNCTION, {.function = func}};
-        set_var(env, n->name, func_val, true);
+        set_var(env, n->name, func_val, true, "");
 
         return (Value){.type = VAL_NIL, .as = {0}};
     }
@@ -1480,7 +1499,7 @@ Value eval_node(Env *env, Node *n)
                 for (int i = 0; i < n->arity; i++)
                 {
                     Value v = eval_node(env, arg);
-                    set_var(call_env, param->name, v, false);
+                    set_var(call_env, param->name, v, false, "");
                     free_value(v);
                     arg = arg->next;
                     param = param->next;
@@ -1528,14 +1547,14 @@ Value eval_node(Env *env, Node *n)
                 }
 
                 Env *call_env = env_new(func->env);
-                set_var(call_env, "this", instance_val, true);
+                set_var(call_env, "this", instance_val, true, "");
 
                 Node *arg_node = n->right;
                 Node *param_node = func->params_head;
                 for (int i = 0; i < n->arity; i++)
                 {
                     Value arg_val = eval_node(env, arg_node);
-                    set_var(call_env, param_node->name, arg_val, false);
+                    set_var(call_env, param_node->name, arg_val, false, "");
                     free_value(arg_val);
                     arg_node = arg_node->next;
                     param_node = param_node->next;
@@ -1613,7 +1632,7 @@ Value eval_node(Env *env, Node *n)
                     }
                 }
 
-                set_var(call_env, param->name, v, false);
+                set_var(call_env, param->name, v, false, "");
                 free_value(v);
                 arg = arg->next;
                 param = param->next;
@@ -1822,7 +1841,7 @@ Value eval_node(Env *env, Node *n)
 
         for (int i = 0; i < arr->count; i++)
         {
-            set_var(loop_env, item_var->name, arr->values[i], false);
+            set_var(loop_env, item_var->name, arr->values[i], false, "");
 
             Value result = eval_node(loop_env, body);
 
@@ -1886,11 +1905,11 @@ Value eval_node(Env *env, Node *n)
                 }
                 strcpy(key_copy.as.string, entry->key);
 
-                set_var(loop_env, key_var->name, key_copy, true);
+                set_var(loop_env, key_var->name, key_copy, true, "");
                 free_value(key_copy);
 
                 Value value_copy = copy_value(entry->value);
-                set_var(loop_env, value_var->name, value_copy, true);
+                set_var(loop_env, value_var->name, value_copy, true, "");
                 free_value(value_copy);
 
                 Value result = eval_node(loop_env, body);

@@ -955,8 +955,8 @@ int main(int argc, char **argv)
     /**
      * Set Of Jackal Built In Method Entry
      */
-    set_var(env, "nil", (Value){VAL_NIL, {0}}, true);
-    set_var(env, "typeof", (Value){VAL_NATIVE, {.native = builtin_typeof}}, true);
+    set_var(env, "nil", (Value){VAL_NIL, {0}}, true,"");
+    set_var(env, "typeof", (Value){VAL_NATIVE, {.native = builtin_typeof}}, true,"");
 
 /**
  * Macro for nativce syntax
@@ -965,18 +965,18 @@ int main(int argc, char **argv)
     do                                                         \
     {                                                          \
         Value val = (Value){VAL_NATIVE, {.native = func_ptr}}; \
-        set_var(env, name_str, val, true);                     \
+        set_var(env, name_str, val, true,"");                     \
     } while (0)
 
 /**
  * Register Global function
  */
-#define REGISTER(name, func) set_var(env, name, (Value){VAL_NATIVE, {.native = func}}, true)
+#define REGISTER(name, func) set_var(env, name, (Value){VAL_NATIVE, {.native = func}}, true,"")
 
     REGISTER("__math_sqrt", builtin_math_sqrt);
     REGISTER("__math_pow", builtin_math_pow);
-    set_var(env, "__math_PI", (Value){VAL_NUMBER, {.number = 3.1415926535}}, true);
-    set_var(env, "nil", (Value){VAL_NIL, {0}}, true);
+    set_var(env, "__math_PI", (Value){VAL_NUMBER, {.number = 3.1415926535}}, true,"");
+    set_var(env, "nil", (Value){VAL_NIL, {0}}, true,"");
     REGISTER("fmod", builtin_math_fmod);
 
     REGISTER("__io_open", builtin_io_open);

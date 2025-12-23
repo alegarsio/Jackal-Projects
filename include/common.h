@@ -295,6 +295,7 @@ typedef struct Var {
     Value value;
     bool is_const;
     struct Var* next;
+    char expected_type[64];
 } Var;
 
 /**

@@ -18,10 +18,11 @@ class ArrayStream implements Streamable extends Collections {
         this.data = data;
     }
 
-     /**
-     * sorted is a higher order function to sort the elements in the array
-     * @return Number 
-     * @param callback 
+
+    /**
+     * mean() 
+     * mean is a higher order function to calculate the mean value in the array
+     * @return float
     **/
     
     func mean() {
@@ -45,9 +46,9 @@ class ArrayStream implements Streamable extends Collections {
         return result;
     }
 
-    func toTree(){
-        return TreeStream(this.data);
-    }
+    // func toTree(){
+    //     return TreeStream(this.data);
+    // }
 
     func countFrequency() {
         let freq = {};

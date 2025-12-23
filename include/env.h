@@ -28,7 +28,7 @@ struct Var* find_var(Env* env, const char* name);
  * @param value value of the varible e.g., String, Number
  * @param is_const this true if the variable is const
  */
-void set_var(Env* env, const char* name, Value value, bool is_const);
+void set_var(Env* env, const char* name, Value value, bool is_const,const char* type_name);
 
 /**
  * clear the environment 

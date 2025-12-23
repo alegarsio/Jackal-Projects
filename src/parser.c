@@ -592,10 +592,12 @@ static Node *parse_range(Parser *P)
  * @param P Pointer to the Parser.
  * @return Pointer to the parsed Node.
  */
-static Node *parse_comparison(Parser *P) {
-    Node *left = parse_range(P); 
+static Node *parse_comparison(Parser *P)
+{
+    Node *left = parse_range(P);
     while (P->current.kind == TOKEN_GREATER || P->current.kind == TOKEN_GREATER_EQUAL ||
-           P->current.kind == TOKEN_LESS || P->current.kind == TOKEN_LESS_EQUAL) {
+           P->current.kind == TOKEN_LESS || P->current.kind == TOKEN_LESS_EQUAL)
+    {
         Node *n = new_node(NODE_BINOP);
         n->op = P->current.kind;
         next(P);
@@ -1211,13 +1213,16 @@ static Node *parse_while_stmt(Parser *P)
     return n;
 }
 
-static Node *parse_for_each_clauses(Parser *P) {
-    if (P->current.kind != TOKEN_IDENT) return NULL;
+static Node *parse_for_each_clauses(Parser *P)
+{
+    if (P->current.kind != TOKEN_IDENT)
+        return NULL;
     Node *item_var = new_node(NODE_IDENT);
     strcpy(item_var->name, P->current.text);
     next(P);
 
-    if (P->current.kind != TOKEN_IN) {
+    if (P->current.kind != TOKEN_IN)
+    {
         free_node(item_var);
         return NULL;
     }
@@ -1225,7 +1230,7 @@ static Node *parse_for_each_clauses(Parser *P) {
 
     Node *n = new_node(NODE_FOR_EACH);
     n->left = item_var;
-    n->right = parse_expr(P); 
+    n->right = parse_expr(P);
     return n;
 }
 /**
@@ -1408,7 +1413,6 @@ Node *parse_stmt(Parser *P)
         parse_annotations(P, &meta_node);
     }
 
-    
     if (P->current.kind == TOKEN_IF)
     {
         return parse_if_stmt(P);
@@ -1497,29 +1501,55 @@ Node *parse_stmt(Parser *P)
         return parse_enum_def(P);
     }
 
-    if (P->current.kind == TOKEN_LET)
+    if (P->current.kind == TOKEN_LET || P->current.kind == TOKEN_CONST)
     {
+        bool is_const = (P->current.kind == TOKEN_CONST);
         next(P);
-        Node *n = new_node(NODE_VARDECL);
+        Node *n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
 
-        if (P->current.kind != TOKEN_IDENT)
-            print_error("Expected identifier after 'let'.");
         strcpy(n->name, P->current.text);
         next(P);
 
-        if (P->current.kind != TOKEN_ASSIGN)
-            print_error("Expected '=' after variable name.");
-        next(P);
-
-        n->right = parse_expr(P);
-
-        if (P->current.kind == TOKEN_SEMI)
+        n->type_name[0] = '\0';
+        if (P->current.kind == TOKEN_COLON)
         {
+            next(P);
+            strcpy(n->type_name, P->current.text);
             next(P);
         }
 
+        if (P->current.kind == TOKEN_ASSIGN)
+            next(P);
+        n->right = parse_expr(P);
+
+        if (P->current.kind == TOKEN_SEMI)
+            next(P);
         return n;
     }
+
+    // if (P->current.kind == TOKEN_LET)
+    // {
+    //     next(P);
+    //     Node *n = new_node(NODE_VARDECL);
+
+    //     if (P->current.kind != TOKEN_IDENT)
+    //         print_error("Expected identifier after 'let'.");
+    //     strcpy(n->name, P->current.text);
+    //     next(P);
+
+    //     if (P->current.kind != TOKEN_ASSIGN)
+    //         print_error("Expected '=' after variable name.");
+    //     next(P);
+
+    //     n->right = parse_expr(P);
+
+    //     if (P->current.kind == TOKEN_SEMI)
+    //     {
+    //         next(P);
+    //     }
+
+    //     return n;
+    // }
 
     if (P->current.kind == TOKEN_PRINT)
     {
@@ -1532,25 +1562,25 @@ Node *parse_stmt(Parser *P)
         return n;
     }
 
-    if (P->current.kind == TOKEN_CONST)
-    {
-        next(P);
-        Node *n = new_node(NODE_CONSTDECL);
-        if (P->current.kind != TOKEN_IDENT)
-            print_error("Expected identifier after 'const'.");
-        strcpy(n->name, P->current.text);
-        next(P);
+    // if (P->current.kind == TOKEN_CONST)
+    // {
+    //     next(P);
+    //     Node *n = new_node(NODE_CONSTDECL);
+    //     if (P->current.kind != TOKEN_IDENT)
+    //         print_error("Expected identifier after 'const'.");
+    //     strcpy(n->name, P->current.text);
+    //     next(P);
 
-        if (P->current.kind != TOKEN_ASSIGN)
-            print_error("Expected '=' after constant name.");
-        next(P);
+    //     if (P->current.kind != TOKEN_ASSIGN)
+    //         print_error("Expected '=' after constant name.");
+    //     next(P);
 
-        n->right = parse_expr(P);
+    //     n->right = parse_expr(P);
 
-        if (P->current.kind == TOKEN_SEMI)
-            next(P);
-        return n;
-    }
+    //     if (P->current.kind == TOKEN_SEMI)
+    //         next(P);
+    //     return n;
+    // }
 
     Node *expr = parse_expr(P);
     if (P->current.kind == TOKEN_SEMI)
@@ -1955,7 +1985,7 @@ static Node *parse_break_stmt(Parser *P)
 static Node *parse_continue_stmt(Parser *P)
 {
     Node *n = new_node(NODE_CONTINUE_STMT);
-    next(P); 
+    next(P);
     if (P->current.kind == TOKEN_SEMI)
         next(P);
     return n;
