@@ -233,6 +233,7 @@ struct Interface {
 typedef struct {
     struct Value* class_val;
     struct Env* fields;
+    char template_type[64];
 } Instance;
 
 /**

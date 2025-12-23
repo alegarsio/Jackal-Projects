@@ -19,7 +19,7 @@ class Collections{
      * @param callback
      * @return Array
     **/
-    func sorted(callback) -> Array {
+    func sort(callback) -> Array {
         this.data = __array_sort(this.data, callback);
         return this;
     }

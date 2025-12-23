@@ -876,6 +876,9 @@ void execute_source(const char *source, Env *env)
 
     lexer_init(&L, source);
     parser_init(&P, &L);
+    
+    load_jackal_file("std/io.jackal", env);
+    
 
     while (P.current.kind != TOKEN_END)
     {

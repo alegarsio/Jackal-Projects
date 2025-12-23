@@ -18,7 +18,6 @@ class ArrayStream implements Streamable extends Collections {
         this.data = data;
     }
 
-
     /**
      * mean() 
      * mean is a higher order function to calculate the mean value in the array

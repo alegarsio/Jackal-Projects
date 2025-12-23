@@ -403,21 +403,18 @@ static Node *parse_template_declaration(Parser *P)
     if (P->current.kind != TOKEN_LESS)
         return NULL;
 
-    // Simpan posisi Parser/Lexer sebelum konsumsi
     size_t saved_pos = P->lexer->pos;
     Token saved_token = P->current;
 
-    next(P); // Lewati '<'
+    next(P); 
 
     Node *head = NULL;
     Node *current = NULL;
 
-    // Template harus berisi TIPE (Identifier) dan KOMA, bukan ekspresi
     if (P->current.kind != TOKEN_GREATER)
     {
         do
         {
-            // Periksa token pertama: HARUS Identifier
             if (P->current.kind != TOKEN_IDENT)
             {
                 free_node(head);
