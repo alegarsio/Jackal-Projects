@@ -1,31 +1,22 @@
 import std.Stream.Abstract.Streamable;
+import std.collections.Abstract.collection;
+import std.Stream.Tree.SerialTree;
 
 /**
  * @author Alegrarsio gifta lesmana
  * @class ArrayStream represents the array stream API 
  * this library is the part of std/collections/Abstract
 **/
-class ArrayStream implements Streamable {
+class ArrayStream implements Streamable extends Collections {
     /**
      * ArrayStream object use the array type constructor
      * @return an array for the result
      * @param data -> Array
-    **/
+    **/ 
 
     init(data) {
         this.data = data;
     }
-
-    /**
-     * sorted is a higher order function to sort the elements in the array
-     * @return Array
-     * @param callback 
-    **/
-    func sorted(callback) {
-        this.data = __array_sort(this.data, callback);
-        return this;
-    }
-
 
      /**
      * sorted is a higher order function to sort the elements in the array
@@ -53,6 +44,11 @@ class ArrayStream implements Streamable {
         }
         return result;
     }
+
+    func toTree(){
+        return TreeStream(this.data);
+    }
+
     func countFrequency() {
         let freq = {};
         
@@ -117,6 +113,26 @@ class ArrayStream implements Streamable {
         return total / count;
     }
 
+
+    func toTree() {
+        return this.inOrder();
+    }
+
+    func inOrder() {
+        this.data = __array_to_tree(this.data, "inorder");
+        return this;
+    }
+
+    func preOrder() {
+        this.data = __array_to_tree(this.data, "preorder");
+        return this;
+    }
+
+    func postOrder() {
+        this.data = __array_to_tree(this.data, "postorder");
+        return this;
+    }
+
    
 
     /**
@@ -132,7 +148,7 @@ class ArrayStream implements Streamable {
 
     /**
      * @deprecated
-     * for now Match 
+     * use filter() insted
     **/
     @deprecated
     func Match(callback){

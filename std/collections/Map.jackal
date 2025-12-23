@@ -6,9 +6,8 @@ import std.stream;
  * Map[@param K @param V] 
  * Map is Wrapper class for Jackal Dictionary object, privides a higher level 
  * abstraction for dictionary operation, implementing 
- 
 **/
-class Map <K,V> implements Sets{
+class Map<K,V> implements Sets{
     
     init(){
         this.data = {}; 

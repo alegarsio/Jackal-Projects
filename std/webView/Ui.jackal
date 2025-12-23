@@ -1,27 +1,63 @@
 object UI {
-    func Sidebar(title, items) {
-        let list = "<ul>";
-        let i = 0;
-        let n = items.length();
+    func Layout(sidebar, content) {
+        let html = "<div style='display:flex; min-height:100vh;'>";
+        html = html + sidebar;
+        html = html + "<div style='flex:1; padding:40px; background:#f8fafc; color:#1e293b;'>" + content + "</div>";
+        html = html + "</div>";
+        return html;
+    }
+
+    func Sidebar(title, menuItems) {
+        let html = "<div style='width:280px; background:#1e293b; color:white; padding:30px; box-shadow: 2px 0 10px rgba(0,0,0,0.1);'>";
+        html = html + "<h2 style='color:#38bdf8; margin-bottom:40px; border-bottom:1px solid #334155; padding-bottom:10px;'>" + title + "</h2>";
+        html = html + "<ul style='list-style:none; padding:0;'>";
         
+        let i = 0;
+        let n = menuItems.length();
         while (i < n) {
-            list = list + "<li>" + items[i].toString() + "</li>";
+            html = html + "<li style='padding:12px 0; border-bottom:1px solid #334155; color:#94a3b8; cursor:pointer;'>";
+            html = html + "<span>▸</span> " + menuItems[i].toString();
+            html = html + "</li>";
             i = i + 1;
         }
-        list = list + "</ul>";
         
-        return "<div class='sidebar'><h2>" + title + "</h2>" + list + "</div>";
+        html = html + "</ul></div>";
+        return html;
     }
 
     func Card(title, body) {
-        return "<div class='card'><h3>" + title + "</h3><div>" + body + "</div></div>";
+        let html = "<div style='background:white; border-radius:12px; padding:25px; margin-bottom:25px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); border:1px solid #e2e8f0;'>";
+        html = html + "<h3 style='margin-top:0; color:#0f172a; border-left:4px solid #38bdf8; padding-left:15px;'>" + title + "</h3>";
+        html = html + "<div style='color:#475569; line-height:1.6;'>" + body + "</div>";
+        html = html + "</div>";
+        return html;
     }
 
-    func Layout(left, right) {
-        return left + "<div class='content'>" + right + "</div>";
-    }
-    
-    func Stat(label, value) {
-        return "<p>" + label + ": <code>" + value.toString() + "</code></p>";
+    func Table(headers, rows) {
+        let html = "<table style='width:100%; border-collapse:collapse; margin-top:10px;'>";
+        
+        html = html + "<thead style='background:#f1f5f9;'><tr>";
+        let h = 0;
+        while (h < headers.length()) {
+            html = html + "<th style='text-align:left; padding:12px; border-bottom:2px solid #e2e8f0; color:#64748b;'>" + headers[h].toString() + "</th>";
+            h = h + 1;
+        }
+        html = html + "</tr></thead><tbody>";
+
+        let r = 0;
+        while (r < rows.length()) {
+            html = html + "<tr style='border-bottom:1px solid #f1f5f9;'>";
+            let rowData = rows[r];
+            let d = 0;
+            while (d < rowData.length()) {
+                html = html + "<td style='padding:12px; color:#334155;'>" + rowData[d].toString() + "</td>";
+                d = d + 1;
+            }
+            html = html + "</tr>";
+            r = r + 1;
+        }
+
+        html = html + "</tbody></table>";
+        return html;
     }
 }

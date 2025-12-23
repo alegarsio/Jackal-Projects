@@ -72,9 +72,6 @@ static bool is_integer_value(Value val)
     return val.as.number == floor(val.as.number);
 }
 
-
-
-
 /**
  * @brief get value for return type
  */
@@ -85,9 +82,12 @@ const char *get_value_type_name(Value val)
     case VAL_NIL:
         return "nil";
     case VAL_NUMBER:
-        if (is_integer_value(val)) {
+        if (is_integer_value(val))
+        {
             return "Int";
-        } else {
+        }
+        else
+        {
             return "Float";
         }
     case VAL_STRING:
@@ -115,22 +115,27 @@ const char *get_value_type_name(Value val)
     }
 }
 
-
-static bool is_type_alias_match(const char* expected_type, Value actual_val) {
-    if (actual_val.type == VAL_NUMBER) {
-        if (strcmp(expected_type, "Int") == 0) {
+static bool is_type_alias_match(const char *expected_type, Value actual_val)
+{
+    if (actual_val.type == VAL_NUMBER)
+    {
+        if (strcmp(expected_type, "Int") == 0)
+        {
             return is_integer_value(actual_val);
         }
-        if (strcmp(expected_type, "Float") == 0) {
+        if (strcmp(expected_type, "Float") == 0)
+        {
             return !is_integer_value(actual_val);
         }
-        if (strcmp(expected_type, "Number") == 0) {
+        if (strcmp(expected_type, "Number") == 0)
+        {
             return true;
         }
     }
-    
+
     const char *actual_type_name = get_value_type_name(actual_val);
-    if (strcmp(expected_type, actual_type_name) == 0) {
+    if (strcmp(expected_type, actual_type_name) == 0)
+    {
         return true;
     }
 
@@ -304,7 +309,37 @@ Value eval_node(Env *env, Node *n)
             return catch_res;
         }
     }
+    case NODE_RANGE_EXPR:
+    {
+        Value start = eval_node(env, n->left);
+        Value end = eval_node(env, n->right);
 
+        if (start.type != VAL_NUMBER || end.type != VAL_NUMBER)
+        {
+            free_value(start);
+            free_value(end);
+            return (Value){VAL_NIL, {0}};
+        }
+
+        ValueArray *arr = array_new();
+        int s = (int)start.as.number;
+        int e = (int)end.as.number;
+
+        if (s <= e)
+        {
+            for (int i = s; i <= e; i++)
+                array_append(arr, (Value){VAL_NUMBER, {.number = (double)i}});
+        }
+        else
+        {
+            for (int i = s; i >= e; i--)
+                array_append(arr, (Value){VAL_NUMBER, {.number = (double)i}});
+        }
+
+        free_value(start);
+        free_value(end);
+        return (Value){VAL_ARRAY, {.array = arr}};
+    }
     case NODE_MAP_LITERAL:
     {
         HashMap *map = map_new();
@@ -850,8 +885,6 @@ Value eval_node(Env *env, Node *n)
             return eval_node(env, n->right);
         }
 
-        
-
         Value left = eval_node(env, n->left);
         Value right = eval_node(env, n->right);
 
@@ -1254,8 +1287,8 @@ Value eval_node(Env *env, Node *n)
                 }
 
                 /**
-                 * @deprecated 
-                 * this array implementation is now on value.c 
+                 * @deprecated
+                 * this array implementation is now on value.c
                  * RESITER as built in global function
                  */
 
@@ -1527,7 +1560,7 @@ Value eval_node(Env *env, Node *n)
 
             const char *expected_type = NULL;
             const char *actual_type = NULL;
-            Value v = (Value){VAL_NIL, {0}}; 
+            Value v = (Value){VAL_NIL, {0}};
 
             for (int i = 0; i < n->arity; i++)
             {
@@ -1771,113 +1804,116 @@ Value eval_node(Env *env, Node *n)
     }
 
     case NODE_FOR_EACH:
-{
-    Node *item_var = n->left;
-    Node *collection_expr = n->right;
-    Node *body = n->super_template_types;
-    
-    Value collection_val = eval_node(env, collection_expr);
-    Env *loop_env = env_new(env); 
-    
-    if (collection_val.type != VAL_ARRAY) {
-        print_error("for-each loop currently supports only Array.");
+    {
+        Node *item_var = n->left;
+        Node *collection_expr = n->right;
+        Node *body = n->super_template_types;
+
+        Value collection_val = eval_node(env, collection_expr);
+
+        if (collection_val.type != VAL_ARRAY)
+        {
+            free_value(collection_val);
+            return (Value){VAL_NIL, {0}};
+        }
+
+        ValueArray *arr = collection_val.as.array;
+        Env *loop_env = env_new(env);
+
+        for (int i = 0; i < arr->count; i++)
+        {
+            set_var(loop_env, item_var->name, arr->values[i], false);
+
+            Value result = eval_node(loop_env, body);
+
+            if (result.type == VAL_RETURN)
+            {
+                env_free(loop_env);
+                return result;
+            }
+            if (result.type == VAL_BREAK)
+            {
+                free_value(result);
+                break;
+            }
+            free_value(result);
+        }
+
         env_free(loop_env);
-        free_value(collection_val);
+        if (collection_expr->kind == NODE_RANGE_EXPR)
+        {
+            array_free(arr);
+        }
         return (Value){VAL_NIL, {0}};
     }
-    
-    ValueArray *arr = collection_val.as.array;
-    
-    for (int i = 0; i < arr->count; i++) {
-        
-        Value item_copy = copy_value(arr->values[i]);
-        
-        set_var(loop_env, item_var->name, item_copy, true);
-        free_value(item_copy);
-        
-        Value result = eval_node(loop_env, body);
-
-        if (result.type == VAL_RETURN) { 
-            env_free(loop_env); 
-            return result; 
-        }
-        
-        if (result.type == VAL_BREAK) { 
-            free_value(result); 
-            break; 
-        }
-        
-        free_value(result);
-    }
-    
-    env_free(loop_env);
-    free_value(collection_val);
-    return (Value){VAL_NIL, {0}};
-}
-
     case NODE_FOR_IN:
-{
-    Node *key_var = n->left;
-    Node *value_var = n->right;
-    Node *iteree_expr = n->next;
-    Node *body = n->super_template_types;
-    
-    Value map_val = eval_node(env, iteree_expr);
-    
-    if (map_val.type != VAL_MAP) {
-        print_error("for-in loop expression must evaluate to a Map.");
+    {
+        Node *key_var = n->left;
+        Node *value_var = n->right;
+        Node *iteree_expr = n->next;
+        Node *body = n->super_template_types;
+
+        Value map_val = eval_node(env, iteree_expr);
+
+        if (map_val.type != VAL_MAP)
+        {
+            print_error("for-in loop expression must evaluate to a Map.");
+            free_value(map_val);
+            return (Value){VAL_NIL, {0}};
+        }
+
+        HashMap *map = map_val.as.map;
+        Env *loop_env = env_new(env);
+
+        for (int i = 0; i < map->capacity; i++)
+        {
+            Entry *entry = &map->entries[i];
+
+            if (entry->key != NULL)
+            {
+
+                Value key_copy;
+                key_copy.type = VAL_STRING;
+
+                size_t len = strlen(entry->key);
+                key_copy.as.string = malloc(len + 1);
+                if (key_copy.as.string == NULL)
+                {
+                    env_free(loop_env);
+                    free_value(map_val);
+                    print_error("Memory allocation failed for string key.");
+                    return (Value){VAL_NIL, {0}};
+                }
+                strcpy(key_copy.as.string, entry->key);
+
+                set_var(loop_env, key_var->name, key_copy, true);
+                free_value(key_copy);
+
+                Value value_copy = copy_value(entry->value);
+                set_var(loop_env, value_var->name, value_copy, true);
+                free_value(value_copy);
+
+                Value result = eval_node(loop_env, body);
+
+                if (result.type == VAL_BREAK)
+                {
+                    free_value(result);
+                    break;
+                }
+                if (result.type == VAL_CONTINUE)
+                {
+                    free_value(result);
+                    continue;
+                }
+                free_value(result);
+            }
+        }
+
+        env_free(loop_env);
         free_value(map_val);
         return (Value){VAL_NIL, {0}};
     }
 
-    HashMap *map = map_val.as.map;
-    Env *loop_env = env_new(env); 
-    
-    for (int i = 0; i < map->capacity; i++) {
-        Entry *entry = &map->entries[i];
-
-        if (entry->key != NULL) {
-            
-            Value key_copy;
-            key_copy.type = VAL_STRING;
-            
-            size_t len = strlen(entry->key);
-            key_copy.as.string = malloc(len + 1);
-            if (key_copy.as.string == NULL) {
-                env_free(loop_env);
-                free_value(map_val);
-                print_error("Memory allocation failed for string key.");
-                return (Value){VAL_NIL, {0}};
-            }
-            strcpy(key_copy.as.string, entry->key);
-
-            set_var(loop_env, key_var->name, key_copy, true);
-            free_value(key_copy);
-
-            Value value_copy = copy_value(entry->value);
-            set_var(loop_env, value_var->name, value_copy, true);
-            free_value(value_copy);
-
-            Value result = eval_node(loop_env, body); 
-            
-            if (result.type == VAL_BREAK) {
-                free_value(result);
-                break;
-            }
-            if (result.type == VAL_CONTINUE) {
-                free_value(result);
-                continue;
-            }
-            free_value(result); 
-        }
-    }
-
-    env_free(loop_env);
-    free_value(map_val);
-    return (Value){VAL_NIL, {0}};
-}
-
-    
     case NODE_EVERY_LOOP:
     {
         Env *every_env = env_new(env);

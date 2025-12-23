@@ -1,0 +1,23 @@
+// import std.Stream.array.ArrayStream;
+
+class TreeStream {
+
+    init(data : Array) {
+        this.data = data;
+    }
+
+    func inOrder() {
+        let res = __array_to_tree(this.data, "inorder");
+        return ArrayStream(res);
+    }
+
+    func preOrder() {
+        let res = __array_to_tree(this.data, "preorder");
+        return ArrayStream(res);
+    }
+
+    func postOrder() {
+        let res = __array_to_tree(this.data, "postorder");
+        return ArrayStream(res);
+    }
+}

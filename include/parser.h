@@ -60,7 +60,8 @@ typedef enum {
     NODE_OBSERVE_STMT,
     NODE_OBSERVE_CASE, 
     NODE_FOR_IN,
-    NODE_FOR_EACH
+    NODE_FOR_EACH,
+    NODE_RANGE_EXPR
 } NodeKind;
 
 /**
@@ -78,6 +79,7 @@ typedef struct Node {
     double value;
     struct Node* left;
     struct Node* right;
+    
     
     struct Node* next; 
     bool is_private;

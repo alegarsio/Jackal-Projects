@@ -1,0 +1,18 @@
+/**
+ * @author Alegrarsio gifta lesmana
+ * Server objects
+ * represents set of function to make HTTP Server 
+ * this library is the part of std/network/http
+**/
+object Server {
+
+    /**
+     * listen function use to start http server on your computer
+     * @return None
+     * @param port
+     * @param content (Keep content is nil or "" if you dont want put the content to http server)
+    **/
+    func listen(port, content) {
+        http_serve_internal(port, content);
+    }
+}

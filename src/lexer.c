@@ -202,6 +202,8 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_IN;
         else if (strcmp(tk.text, "implements") == 0)
             tk.kind = TOKEN_IMPLEMENTS;
+        else if (strcmp(tk.text, "to") == 0)
+            tk.kind = TOKEN_TO;
         else
             tk.kind = TOKEN_IDENT;
 
@@ -279,7 +281,7 @@ Token lexer_next(Lexer *L)
         else if (next_char == '>')
         {
             get(L);
-            tk.kind = TOKEN_ARROW_TO_RETURN; 
+            tk.kind = TOKEN_ARROW_TO_RETURN;
         }
         else
         {
@@ -299,7 +301,7 @@ Token lexer_next(Lexer *L)
         tk.kind = TOKEN_LPAREN;
         strcpy(tk.text, "(");
         break;
-    
+
     case ')':
         tk.kind = TOKEN_RPAREN;
         strcpy(tk.text, ")");
@@ -332,9 +334,18 @@ Token lexer_next(Lexer *L)
         tk.kind = TOKEN_RBRACKET;
         strcpy(tk.text, "]");
         break;
+    
     case '.':
-        tk.kind = TOKEN_DOT;
-        strcpy(tk.text, ".");
+        if (match(L, '.'))
+        {
+            tk.kind = TOKEN_DOT_DOT;
+            strcpy(tk.text, "..");
+        }
+        else
+        {
+            tk.kind = TOKEN_DOT;
+            strcpy(tk.text, ".");
+        }
         break;
     case ':':
         tk.kind = TOKEN_COLON;

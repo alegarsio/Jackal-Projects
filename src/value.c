@@ -7,7 +7,7 @@
 #include "parser.h"
 #include "eval.h"
 #include "env.h"
-#
+
 
 /**
  * @include collections dsa
@@ -18,6 +18,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <curl/curl.h>
+
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h> 
+#include <arpa/inet.h>  
+#include <unistd.h>    
 
 typedef struct
 {
@@ -1517,4 +1524,88 @@ Value builtin_system(int argCount, Value *args) {
     int result = system(command);
 
     return (Value){VAL_NUMBER, {.number = (double)result}};
+}
+Value builtin_http_serve(int argCount, Value *args) {
+    if (argCount < 2) return (Value){VAL_NIL, {0}};
+
+    int port = (int)args[0].as.number;
+    char* html_content = args[1].as.string;
+
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd < 0) return (Value){VAL_NIL, {0}};
+
+    int opt = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in address; 
+    memset(&address, 0, sizeof(address)); 
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY; 
+    address.sin_port = htons(port);     
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        close(server_fd);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    listen(server_fd, 5);
+
+    int new_socket = accept(server_fd, NULL, NULL);
+    if (new_socket >= 0) {
+        char response[20000];
+        sprintf(response, 
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: %lu\r\n"
+            "Connection: close\r\n\r\n%s", 
+            strlen(html_content), html_content);
+
+        send(new_socket, response, strlen(response), 0);
+        close(new_socket);
+    }
+
+    close(server_fd);
+    return (Value){VAL_NIL, {0}};
+}
+
+
+void inorder_traverse_logic(ValueArray* source, ValueArray* dest, int index) {
+    if (index >= source->count) return;
+    inorder_traverse_logic(source, dest, 2 * index + 1);
+    array_append(dest, copy_value(source->values[index]));
+    inorder_traverse_logic(source, dest, 2 * index + 2);
+}
+
+void preorder_traverse_logic(ValueArray* source, ValueArray* dest, int index) {
+    if (index >= source->count) return;
+    array_append(dest, copy_value(source->values[index]));
+    preorder_traverse_logic(source, dest, 2 * index + 1);
+    preorder_traverse_logic(source, dest, 2 * index + 2);
+}
+
+void postorder_traverse_logic(ValueArray* source, ValueArray* dest, int index) {
+    if (index >= source->count) return;
+    postorder_traverse_logic(source, dest, 2 * index + 1);
+    postorder_traverse_logic(source, dest, 2 * index + 2);
+    array_append(dest, copy_value(source->values[index]));
+}
+
+Value builtin_array_to_tree(int argCount, Value* args) {
+    if (argCount < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_STRING) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray* src = args[0].as.array;
+    char* mode = args[1].as.string;
+    ValueArray* result = array_new();
+
+    if (strcmp(mode, "inorder") == 0) {
+        inorder_traverse_logic(src, result, 0);
+    } else if (strcmp(mode, "preorder") == 0) {
+        preorder_traverse_logic(src, result, 0);
+    } else if (strcmp(mode, "postorder") == 0) {
+        postorder_traverse_logic(src, result, 0);
+    }
+
+    return (Value){VAL_ARRAY, {.array = result}};
 }

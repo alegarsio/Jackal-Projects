@@ -406,7 +406,7 @@ static Node *parse_template_declaration(Parser *P)
     // Simpan posisi Parser/Lexer sebelum konsumsi
     size_t saved_pos = P->lexer->pos;
     Token saved_token = P->current;
-    
+
     next(P); // Lewati '<'
 
     Node *head = NULL;
@@ -418,7 +418,8 @@ static Node *parse_template_declaration(Parser *P)
         do
         {
             // Periksa token pertama: HARUS Identifier
-            if (P->current.kind != TOKEN_IDENT) {
+            if (P->current.kind != TOKEN_IDENT)
+            {
                 free_node(head);
                 goto fail;
             }
@@ -427,27 +428,31 @@ static Node *parse_template_declaration(Parser *P)
             strcpy(type_param->name, P->current.text);
             next(P);
 
-            if (head == NULL) {
+            if (head == NULL)
+            {
                 head = type_param;
                 current = type_param;
-            } else {
+            }
+            else
+            {
                 current->next = type_param;
                 current = type_param;
             }
         } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
     }
 
-    if (P->current.kind != TOKEN_GREATER) {
+    if (P->current.kind != TOKEN_GREATER)
+    {
         free_node(head);
         goto fail;
     }
-    
+
     next(P);
     return head;
 
 fail:
     P->lexer->pos = saved_pos;
-    P->current = saved_token; 
+    P->current = saved_token;
     return NULL;
 }
 
@@ -493,7 +498,6 @@ static Node *parse_postfix(Parser *P)
             node = parse_func_call(P, node);
         }
 
-
         else if (P->current.kind == TOKEN_DOT)
         {
             next(P);
@@ -525,8 +529,6 @@ static Node *parse_postfix(Parser *P)
         }
     }
     return node;
-
-    
 }
 
 /**
@@ -572,22 +574,33 @@ static Node *parse_addition(Parser *P)
     return left;
 }
 
+static Node *parse_range(Parser *P)
+{
+    Node *left = parse_addition(P);
+    if (P->current.kind == TOKEN_TO)
+    {
+        next(P);
+        Node *n = new_node(NODE_RANGE_EXPR);
+        n->left = left;
+        n->right = parse_addition(P);
+        return n;
+    }
+    return left;
+}
 /**
  * @brief Parses a comparison expression.
  * @param P Pointer to the Parser.
  * @return Pointer to the parsed Node.
  */
-static Node *parse_comparison(Parser *P)
-{
-    Node *left = parse_addition(P);
+static Node *parse_comparison(Parser *P) {
+    Node *left = parse_range(P); 
     while (P->current.kind == TOKEN_GREATER || P->current.kind == TOKEN_GREATER_EQUAL ||
-           P->current.kind == TOKEN_LESS || P->current.kind == TOKEN_LESS_EQUAL)
-    {
+           P->current.kind == TOKEN_LESS || P->current.kind == TOKEN_LESS_EQUAL) {
         Node *n = new_node(NODE_BINOP);
         n->op = P->current.kind;
         next(P);
         n->left = left;
-        n->right = parse_addition(P);
+        n->right = parse_range(P);
         left = n;
     }
     return left;
@@ -1168,8 +1181,6 @@ static Node *parse_return_stmt(Parser *P)
         n->left = NULL;
     }
 
-    if (P->current.kind != TOKEN_SEMI)
-        print_error("Expected ';' after return value.");
     if (P->current.kind == TOKEN_SEMI)
         next(P);
     return n;
@@ -1200,31 +1211,21 @@ static Node *parse_while_stmt(Parser *P)
     return n;
 }
 
-
-static Node *parse_for_each_clauses(Parser *P)
-{
-    
-    Node *n = new_node(NODE_FOR_EACH);
-
-    if (P->current.kind != TOKEN_IDENT) {
-        return NULL; 
-    }
+static Node *parse_for_each_clauses(Parser *P) {
+    if (P->current.kind != TOKEN_IDENT) return NULL;
     Node *item_var = new_node(NODE_IDENT);
     strcpy(item_var->name, P->current.text);
     next(P);
 
     if (P->current.kind != TOKEN_IN) {
         free_node(item_var);
-        return NULL; 
+        return NULL;
     }
     next(P);
 
-    Node *collection_expr = parse_expr(P);
-    
+    Node *n = new_node(NODE_FOR_EACH);
     n->left = item_var;
-    n->right = collection_expr;
-    
-  
+    n->right = parse_expr(P); 
     return n;
 }
 /**
@@ -1239,29 +1240,25 @@ static Node *parse_for_stmt(Parser *P)
     if (P->current.kind != TOKEN_LPAREN)
         print_error("Expected '(' after 'for'.");
     next(P);
-    
-    // --- DISPATCH FOR-EACH ---
+
     if (P->current.kind == TOKEN_IDENT)
     {
-        Parser saved_P = *P; 
-        
+        Parser saved_P = *P;
         Node *iteration_node = parse_for_each_clauses(P);
 
-        if (iteration_node != NULL) {
+        if (iteration_node != NULL)
+        {
             if (P->current.kind != TOKEN_RPAREN)
                 print_error("Expected ')' after for-each clauses.");
             next(P);
-            
-            iteration_node->super_template_types = parse_block(P); 
+
+            iteration_node->super_template_types = parse_block(P);
             return iteration_node;
         }
-
-        *P = saved_P; 
+        *P = saved_P;
     }
 
-    // --- SINTAKS LAMA (C-style) ---
     Node *n = new_node(NODE_FOR_STMT);
-
     if (P->current.kind == TOKEN_LET)
     {
         n->left = parse_stmt(P);
@@ -1269,66 +1266,59 @@ static Node *parse_for_stmt(Parser *P)
     else
     {
         n->left = parse_expr(P);
-        if (P->current.kind != TOKEN_SEMI)
-            print_error("Expected ';' after initializer.");
         if (P->current.kind == TOKEN_SEMI)
             next(P);
     }
 
     n->right = new_node(NODE_IDENT);
-
     n->right->left = parse_expr(P);
-    if (P->current.kind != TOKEN_SEMI)
-        print_error("Expected ';' after condition.");
     if (P->current.kind == TOKEN_SEMI)
         next(P);
 
     n->right->right = new_node(NODE_IDENT);
-
     n->right->right->left = parse_expr(P);
-    if (P->current.kind != TOKEN_RPAREN)
-        print_error("Expected ')' after for clauses.");
     if (P->current.kind == TOKEN_RPAREN)
         next(P);
 
     n->right->right->right = parse_block(P);
-
     return n;
 }
-
-
 static Node *parse_for_in_stmt(Parser *P)
 {
     Node *n = new_node(NODE_FOR_IN);
 
-    if (P->current.kind != TOKEN_IDENT) {
+    if (P->current.kind != TOKEN_IDENT)
+    {
         return NULL;
     }
-    
+
     Node *key_var = new_node(NODE_IDENT);
     strcpy(key_var->name, P->current.text);
     next(P);
 
-    if (P->current.kind != TOKEN_COMMA) {
+    if (P->current.kind != TOKEN_COMMA)
+    {
         free_node(key_var);
-        return NULL; 
+        return NULL;
     }
     next(P);
 
-    if (P->current.kind != TOKEN_IDENT) {
+    if (P->current.kind != TOKEN_IDENT)
+    {
         print_error("Expected identifier for 'value' in for-in loop.");
         free_node(key_var);
         return NULL;
     }
-    
+
     Node *value_var = new_node(NODE_IDENT);
     strcpy(value_var->name, P->current.text);
     next(P);
 
-    n->left = key_var; 
-    n->right = value_var; 
+    n->left = key_var;
+    n->right = value_var;
 
-    if (P->current.kind != TOKEN_IN) {
+    if (P->current.kind != TOKEN_IN)
+    {
         print_error("Expected 'in' in for-in loop.");
         free_node(key_var);
         free_node(value_var);
@@ -1337,14 +1327,14 @@ static Node *parse_for_in_stmt(Parser *P)
     next(P);
 
     Node *iteree = parse_expr(P);
-    n->next = iteree; 
+    n->next = iteree;
 
     if (P->current.kind != TOKEN_LBRACE)
         print_error("Expected '{' for for-in loop body.");
-    
+
     Node *body_node = parse_block(P);
     n->super_template_types = body_node;
-    
+
     return n;
 }
 
@@ -1418,6 +1408,7 @@ Node *parse_stmt(Parser *P)
         parse_annotations(P, &meta_node);
     }
 
+    
     if (P->current.kind == TOKEN_IF)
     {
         return parse_if_stmt(P);
@@ -1522,10 +1513,11 @@ Node *parse_stmt(Parser *P)
 
         n->right = parse_expr(P);
 
-        if (P->current.kind != TOKEN_SEMI)
-            print_error("Expected ';' after statement.");
         if (P->current.kind == TOKEN_SEMI)
+        {
             next(P);
+        }
+
         return n;
     }
 
@@ -1535,8 +1527,6 @@ Node *parse_stmt(Parser *P)
         Node *n = new_node(NODE_PRINT);
         n->right = parse_expr(P);
 
-        if (P->current.kind != TOKEN_SEMI)
-            print_error("Expected ';' after statement.");
         if (P->current.kind == TOKEN_SEMI)
             next(P);
         return n;
@@ -1557,16 +1547,12 @@ Node *parse_stmt(Parser *P)
 
         n->right = parse_expr(P);
 
-        if (P->current.kind != TOKEN_SEMI)
-            print_error("Expected ';' after statement.");
         if (P->current.kind == TOKEN_SEMI)
             next(P);
         return n;
     }
 
     Node *expr = parse_expr(P);
-    if (P->current.kind != TOKEN_SEMI)
-        print_error("Expected ';' after statement.");
     if (P->current.kind == TOKEN_SEMI)
         next(P);
     return expr;
@@ -1609,8 +1595,6 @@ static Node *parse_import_stmt(Parser *P)
 
     strcpy(n->name, path);
 
-    if (P->current.kind != TOKEN_SEMI)
-        print_error("Expected ';' after import.");
     if (P->current.kind == TOKEN_SEMI)
         next(P);
 
@@ -1740,8 +1724,6 @@ static Node *parse_interface_def(Parser *P)
             print_error("Expected ')' after parameters.");
         next(P);
 
-        if (P->current.kind != TOKEN_SEMI)
-            print_error("Expected ';' after interface method declaration.");
         next(P);
 
         method->left = NULL;
@@ -1951,8 +1933,6 @@ static Node *parse_throw_stmt(Parser *P)
     Node *n = new_node(NODE_THROW_STMT);
     next(P);
     n->left = parse_expr(P);
-    if (P->current.kind != TOKEN_SEMI)
-        print_error("Expected ';' after throw.");
     if (P->current.kind == TOKEN_SEMI)
         next(P);
     return n;
@@ -1967,8 +1947,6 @@ static Node *parse_break_stmt(Parser *P)
 {
     Node *n = new_node(NODE_BREAK_STMT);
     next(P);
-    if (P->current.kind != TOKEN_SEMI)
-        print_error("Expected ';' after 'break'.");
     if (P->current.kind == TOKEN_SEMI)
         next(P);
     return n;
@@ -1977,9 +1955,7 @@ static Node *parse_break_stmt(Parser *P)
 static Node *parse_continue_stmt(Parser *P)
 {
     Node *n = new_node(NODE_CONTINUE_STMT);
-    next(P); // Lewati 'continue'
-    if (P->current.kind != TOKEN_SEMI)
-        print_error("Expected ';' after 'continue'.");
+    next(P); 
     if (P->current.kind == TOKEN_SEMI)
         next(P);
     return n;
@@ -2057,8 +2033,6 @@ static Node *parse_unary(Parser *P)
     }
 
     return parse_postfix(P);
-
-
 }
 
 static void parse_annotations(Parser *P, Node *n)

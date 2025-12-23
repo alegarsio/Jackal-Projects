@@ -104,7 +104,10 @@ typedef enum {
     TOKEN_ARROW_TO_RETURN,
     TOKEN_LEFT_TYPE,
     TOKEN_RIGHT_TYPE,
-    TOKEN_IN
+    TOKEN_IN,
+    TOKEN_DOT_DOT,
+
+    TOKEN_TO
 } TokenKind;
 
 struct Node;

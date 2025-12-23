@@ -182,3 +182,13 @@ Value builtin_web_show(int argCount, Value *args);
 Value builtin_web_sync(int argCount, Value *args);
 
 Value builtin_system(int argCount, Value *args) ;
+
+Value builtin_http_serve(int argCount, Value *args);
+
+Value builtin_array_to_tree(int argCount, Value* args);
+
+void inorder_traverse_logic(ValueArray* source, ValueArray* dest, int index);
+
+void preorder_traverse_logic(ValueArray* source, ValueArray* dest, int index);
+
+void postorder_traverse_logic(ValueArray* source, ValueArray* dest, int index);

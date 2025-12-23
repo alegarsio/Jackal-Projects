@@ -4,13 +4,23 @@
  * Io object represents the standard input and output library 
  * this library is part of std/io lib the std/io/out ara deprecated
 **/
-
 object input(){
-
+    /**
+     * readln() 
+     * represents the basic input feature
+     * @return String
+     * @param None
+    **/
     func readln() -> String{
        return __io_read_line();
     }
 
+    /**
+     * readarr() 
+     * represents the input listen feature
+     * @return String
+     * @param None
+    **/
     func readarr(prompt:String, delimeter:String) -> Array{
         return __io_read_array(prompt,delimeter);
     }
@@ -42,6 +52,57 @@ object console(){
 
     func json(value){
         __io_json(value);
+    }
+
+    func tree(data) {
+        let n = data.length();
+        if (n == 0) {
+            this.writeln("Empty.");
+            return;
+        }
+        this._draw(data, 0, "", true, true);
+        this.writeln("-----------------------------\n");
+    }
+
+    func _draw(data, index, prefix, isTail, isRoot) {
+        let n = data.length();
+        if (index >= n) { 
+            return; 
+        }
+
+        let symbol = "";
+        if (isRoot) {
+            symbol = ""; 
+        } else {
+            if (isTail) {
+                symbol = "└── ";
+            } else {
+                symbol = "├── ";
+            }
+        }
+
+        this.writeln(prefix + symbol + data[index].toString());
+
+        let left = 2 * index + 1;
+        let right = 2 * index + 2;
+
+        let newPrefix = prefix;
+        if (!isRoot) {
+            if (isTail) {
+                newPrefix = prefix + "    ";
+            } else {
+                newPrefix = prefix + "│   ";
+            }
+        }
+
+        if (left < n && right < n) {
+            this._draw(data, left, newPrefix, false, false);
+            this._draw(data, right, newPrefix, true, false);
+        } else {
+            if (left < n) {
+                this._draw(data, left, newPrefix, true, false);
+            }
+        }
     }
 }
 

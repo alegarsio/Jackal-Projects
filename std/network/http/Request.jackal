@@ -1,5 +1,12 @@
+/**
+ * @author Alegrarsio gifta lesmana
+ * Request class provides set of function to let jackal comunicate with HTTP
+**/
 class Request {
-
+    /**
+     * in the request constructor basic headers is json
+     * the api response result and value also return json as well
+    **/
     init() {
         this._headers = {
             "Accept": "application/json",
@@ -7,14 +14,21 @@ class Request {
         };
         this._auth = nil;
         this.response = "";
-
     }
-
+    /**
+     * auth()
+     * use for set auth method in http request
+     * @param token 
+     * @return this 
+    **/
     func auth(token : String) {
         this._auth = "Bearer " + token;
         return this;
     }
 
+    /**
+     * 
+    **/
     func header(key, value) {
         this._headers[key] = value;
         return this;

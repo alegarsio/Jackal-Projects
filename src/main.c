@@ -1022,12 +1022,16 @@ int main(int argc, char **argv)
     REGISTER("__array_statistics", builtin_array_statistics);
     REGISTER("__array_mean", builtin_array_mean);
     REGISTER("__array_max", builtin_array_max);
+    REGISTER("__array_to_tree", builtin_array_to_tree);
 
     REGISTER("__array_limit", builtin_array_limit);
     REGISTER("__json_string",builtin_json_stringify);
 
     REGISTER("__io_read_line", builtin_read_line);
     REGISTER("__io_read_array", builtin_read_array);
+
+    REGISTER("http_serve_internal",builtin_http_serve);
+    
 
     REGISTER("__mapstream_stream", builtin_map_forEach);
     REGISTER("__mapstream_keys", builtin_map_keys);

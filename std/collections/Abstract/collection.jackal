@@ -1,0 +1,26 @@
+/**
+ * @author Alegrarsio gifta lesmana 
+ * Collections is set of reusable function, for support stream process of your data
+ * Collections available in Map dan Array Wrapper class
+**/
+class Collections{
+
+    /**
+     * constructor in this collections is also dynamic data type
+     * @param data
+     * @return None
+    **/
+    init(data){
+        this.data = data;
+    }
+
+    /**
+     * sorted is higher order function sort element in the array 
+     * @param callback
+     * @return Array
+    **/
+    func sorted(callback) -> Array {
+        this.data = __array_sort(this.data, callback);
+        return this;
+    }
+}
