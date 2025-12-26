@@ -1027,6 +1027,14 @@ int main(int argc, char **argv)
     REGISTER("__array_max", builtin_array_max);
     REGISTER("__array_to_tree", builtin_array_to_tree);
 
+    REGISTER("__knn", native_knn_nd);
+    REGISTER("__accuracy", native_accuracy);
+    REGISTER("__normalize", native_normalize_nd);
+    REGISTER("__knn_predictprob",native_knn_prob);
+    REGISTER("__confusion_matrix",native_confusion_matrix);
+    REGISTER("__split",native_split);
+    REGISTER("__sync_shuffle",native_sync_shuffle);
+
     REGISTER("__array_limit", builtin_array_limit);
     REGISTER("__json_string",builtin_json_stringify);
 
@@ -1034,12 +1042,14 @@ int main(int argc, char **argv)
     REGISTER("__io_read_array", builtin_read_array);
 
     REGISTER("http_serve_internal",builtin_http_serve);
-    
-
+    REGISTER("native_standardnize",native_standardize);
+    REGISTER("native_smooth",native_smooth);
+    REGISTER("native_correlate",native_correlate);
     REGISTER("__mapstream_stream", builtin_map_forEach);
     REGISTER("__mapstream_keys", builtin_map_keys);
     REGISTER("__mapstream_values", builtin_map_values);
     REGISTER("__map_get", builtin_map_get);
+   
 
     /**
      * HTTP Request Client
@@ -1055,6 +1065,9 @@ int main(int argc, char **argv)
      */
     REGISTER("__json_encode", builtin_json_encode);
     REGISTER("__jackal_sleep", builtin_jackal_sleep);
+    REGISTER("plot",native_plot);
+    REGISTER("native_transpose",native_transpose);
+    REGISTER("predicts",native_linear_regression);
 
 
     DEFINE_NATIVE("len", builtin_len);
@@ -1062,6 +1075,7 @@ int main(int argc, char **argv)
     DEFINE_NATIVE("pop", builtin_pop);
     DEFINE_NATIVE("remove", builtin_remove);
     DEFINE_NATIVE("File", builtin_file_open);
+
 
     REGISTER("__typeof",builtin_type);
     REGISTER("systems",builtin_system);

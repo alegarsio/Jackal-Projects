@@ -6,26 +6,108 @@ import std.Stream.Tree.SerialTree;
  * @author Alegrarsio gifta lesmana
  * @class ArrayStream represents the array stream API 
  * this library is the part of std/collections/Abstract
+ * for now the arraylist library contains the jackal machine learning api
 **/
-class ArrayStream implements Streamable extends Collections {
+class ArrayStream implements Streamable extends Collections { 
+    
     /**
      * ArrayStream object use the array type constructor
      * @return an array for the result
      * @param data -> Array
     **/ 
-
+  
     init(data) {
         this.data = data;
     }
 
     /**
-     * mean() 
-     * mean is a higher order function to calculate the mean value in the array
-     * @return float
+     * predicProb()
+     * this function is a prediction method return an array of the accuracy score
+     * @param history history is for your dataset
+     * @param labels
+     * @param k
+     * @return Array
+     
     **/
+    func predictProb(dataset, labels, k) {
+        let results = []
+        for (point in this.data) {
+            let prob = __knn_predictprob(point, dataset, labels, k)
+            results.push(prob)
+        }
+        this.data = results
+        return this
+    }
+
+    /**
+     * confusionMatrix()
+     * return a number of T1 - T4
+    **/
+    func confusionMatrix(key) {
+        return __confusion_matrix(this.data, kunciJawaban)
+    }
+
+    func split(ratio) {
+        return __split(this.data, ratio)
+    }
+
+    func transpose(){
+        this.data = native_transpose(this.data)
+        return this
+    }
+
+    func standardize() {
+        this.data = native_standardnize(this.data)
+        return this
+    }
+
+    func smooth(period) {
+        this.data = native_smooth(this.data, period)
+        return this
+    }
+
+    func correlate(otherArray) {
+        let score = native_correlate(this.data, otherArray)
+        return score
+    }
+
+    func normalize() {
+        this.data = __normalize(this.data)
+        return this
+    }
+
+    func evaluate(actualLabels) {
+        let score = __accuracy(this.data, actualLabels)
+        return score
+    }
+
+    func classify(history, labels, k) {
+        let results = []
+        for (point in this.data) {
+           
+            let label = __knn(point, history, labels, k)
+            results.push(label)
+        }
+        this.data = results
+        return this
+    }
     
     func mean() {
         return __array_mean(this.data);
+    }
+
+    func getTrend() {
+        let model = predicts(this.data[0], this.data[1])
+        let m = model[0]
+        let c = model[1]
+        
+        let trend = []
+        for (i in this.data[0]) {
+            trend.push((m * i) + c)
+        }
+        
+        this.data.push(trend)
+        return this
     }
 
      /**
@@ -113,6 +195,9 @@ class ArrayStream implements Streamable extends Collections {
         return total / count;
     }
 
+    func shuffle(labels) {
+        return __sync_shuffle(this.data, labels)
+    }
 
     func toTree() {
         return this.inOrder();
@@ -132,9 +217,14 @@ class ArrayStream implements Streamable extends Collections {
         this.data = __array_to_tree(this.data, "postorder");
         return this;
     }
-
-   
-
+    func countBy(callback) {
+        let groups = this.groupBy(callback);
+        let counts = [];
+        for (key in groups) {
+            counts.push(groups[key].length());
+        }
+        return counts;
+    }
     /**
      * distinct() is the part of stream API reusable function 
      * distinct use to remove duplication in the array elements

@@ -41,10 +41,12 @@ object console(){
     func write(value){
         print(value);
     }
+    
+    
 
-    func plot(value){
-        _io_plot(value);
-    }
+    // func plot(value){
+    //     native_plot(value);
+    // }
 
     func table(value){
         __io_table_stream(value);

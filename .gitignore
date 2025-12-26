@@ -12,13 +12,16 @@ Thumbs.db
 *.swp
 *~
 .codeviz/
-
+.hello.dSYM/
 
 
 # Local test/script files (Ignored)
 math.jackal
 hello.jackal
 test.jackal
+server.py
+temp.jackal
+index.html
 
 *.jl
 *.jlo

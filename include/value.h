@@ -192,3 +192,31 @@ void inorder_traverse_logic(ValueArray* source, ValueArray* dest, int index);
 void preorder_traverse_logic(ValueArray* source, ValueArray* dest, int index);
 
 void postorder_traverse_logic(ValueArray* source, ValueArray* dest, int index);
+
+Value native_plot(int arg_count, Value* args);
+
+Value native_transpose(int arg_count, Value* args);
+
+Value native_linear_regression(int arg_count, Value* args);
+
+Value native_standardize(int arg_count, Value* args);
+
+Value native_smooth(int arg_count, Value* args);
+
+Value native_correlate(int arg_count, Value* args);
+
+// Value native_knn(int arg_count, Value* args);
+
+Value native_accuracy(int arg_count, Value* args);
+
+Value native_knn_nd(int arg_count, Value* args);
+
+Value native_normalize_nd(int arg_count, Value* args) ;
+
+Value native_knn_prob(int arg_count, Value* args);
+
+Value native_confusion_matrix(int arg_count, Value *args);
+
+Value native_split(int arg_count, Value* args) ;
+
+Value native_sync_shuffle(int arg_count, Value* args);
