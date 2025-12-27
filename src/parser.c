@@ -588,6 +588,16 @@ static Node *parse_range(Parser *P)
         Node *n = new_node(NODE_RANGE_EXPR);
         n->left = left;
         n->right = parse_addition(P);
+        
+        if (P->current.kind == TOKEN_STEP)
+        {
+            next(P);
+            n->next = parse_addition(P);
+        }
+        else
+        {
+            n->next = NULL;
+        }
         return n;
     }
     return left;

@@ -106,8 +106,8 @@ typedef enum {
     TOKEN_RIGHT_TYPE,
     TOKEN_IN,
     TOKEN_DOT_DOT,
-
-    TOKEN_TO
+    TOKEN_TO,
+    TOKEN_STEP
 } TokenKind;
 
 struct Node;

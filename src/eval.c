@@ -313,6 +313,17 @@ Value eval_node(Env *env, Node *n)
     {
         Value start = eval_node(env, n->left);
         Value end = eval_node(env, n->right);
+        double step_val = 1.0;
+
+        if (n->next != NULL)
+        {
+            Value step_v = eval_node(env, n->next);
+            if (step_v.type == VAL_NUMBER)
+            {
+                step_val = step_v.as.number;
+            }
+            free_value(step_v);
+        }
 
         if (start.type != VAL_NUMBER || end.type != VAL_NUMBER)
         {
@@ -322,18 +333,18 @@ Value eval_node(Env *env, Node *n)
         }
 
         ValueArray *arr = array_new();
-        int s = (int)start.as.number;
-        int e = (int)end.as.number;
+        double s = start.as.number;
+        double e = end.as.number;
 
         if (s <= e)
         {
-            for (int i = s; i <= e; i++)
-                array_append(arr, (Value){VAL_NUMBER, {.number = (double)i}});
+            for (double i = s; i <= e; i += step_val)
+                array_append(arr, (Value){VAL_NUMBER, {.number = i}});
         }
         else
         {
-            for (int i = s; i >= e; i--)
-                array_append(arr, (Value){VAL_NUMBER, {.number = (double)i}});
+            for (double i = s; i >= e; i -= step_val)
+                array_append(arr, (Value){VAL_NUMBER, {.number = i}});
         }
 
         free_value(start);
