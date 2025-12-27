@@ -271,17 +271,22 @@ static Node *parse_func_call(Parser *P, Node *callee)
  */
 static Node *parse_array_literal(Parser *P)
 {
-    Node *n = new_node(NODE_ARRAY_LITERAL);
+    Node *n = new_node(NODE_ARRAY_LITERAL); //
 
     Node *items_head = NULL;
     Node *items_current = NULL;
     n->arity = 0;
 
-    if (P->current.kind != TOKEN_RBRACKET)
+    if (P->current.kind != TOKEN_RBRACKET) //
     {
         do
         {
-            Node *item_expr = parse_expr(P);
+            if (P->current.kind == TOKEN_RBRACKET) break; 
+
+            Node *item_expr = parse_expr(P); //
+            
+            if (item_expr == NULL) break; 
+
             n->arity++;
 
             if (items_head == NULL)
@@ -294,12 +299,15 @@ static Node *parse_array_literal(Parser *P)
                 items_current->next = item_expr;
                 items_current = item_expr;
             }
-        } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
+        } while (P->current.kind == TOKEN_COMMA && (next(P), 1)); //
     }
 
     if (P->current.kind != TOKEN_RBRACKET)
-        print_error("Expected ']' after array items.");
-    next(P);
+    {
+        print_error("Expected ']' after array items."); //
+    }
+    
+    next(P); // Konsumsi TOKEN_RBRACKET
 
     n->left = items_head;
     return n;

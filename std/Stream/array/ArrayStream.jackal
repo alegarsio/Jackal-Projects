@@ -20,10 +20,10 @@ class ArrayStream implements Streamable extends Collections {
         this.data = data;
     }
 
-    // /**
-    //  * confusionMatrix()
-    //  * return a number of T1 - T4
-    // **/
+    /**
+     * now this file is in std/collections/ml/generalML
+    **/
+
     // func confusionMatrix(key) {
     //     return __confusion_matrix(this.data, kunciJawaban)
     // }

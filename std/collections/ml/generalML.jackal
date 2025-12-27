@@ -5,12 +5,12 @@
 **/
 class GeneralML{
     /**
-     *  the data 
+     *  the constructor in the generalML is also an array 
+     *  general ml support array in n demenssion 
     **/
     init(data : Array){
         this.data = data;
     }
-
     /**
      * predicProb()
      * this function is a prediction method return an array of the accuracy score
@@ -30,6 +30,12 @@ class GeneralML{
         return this
     }
 
+    /**
+     * shuffle()
+     * shuffle is function to randomly shuffle the value in the array
+     * @return Array of shuffled data in format
+     * [1] for data and [0] for labels 
+    **/
     func shuffle(labels) {
         return __sync_shuffle(this.data, labels)
     }

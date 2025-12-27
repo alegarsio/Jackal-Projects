@@ -634,12 +634,14 @@ Value eval_node(Env *env, Node *n)
 
     case NODE_THIS:
     {
-        Var *v = find_var(env, n->name);
+        Var *v = find_var(env, "this");
+        
         if (!v)
         {
-            print_error("'this' is not defined.");
+            print_error("Runtime Error: Cannot use 'this' outside of a class method context.");
             return (Value){.type = VAL_NIL, .as = {0}};
         }
+        
         return copy_value(v->value);
     }
 
