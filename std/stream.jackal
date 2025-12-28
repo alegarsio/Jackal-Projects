@@ -1,6 +1,8 @@
 import std.Stream.array.ArrayStream;
 import std.Stream.set.MapStream;
 import std.collections.Serial.Serialize;
+import std.collections.ml.Data.DataSet
+
 /**
  * Forward decalration for Stream Api
  * (c) Alegrarsio Gifta Lesmana
@@ -9,4 +11,5 @@ class Map extends MapStream {}
 
 class Array extends ArrayStream {} 
 
+class Data extends DataSet {}
 

@@ -225,14 +225,19 @@ Value eval_node(Env *env, Node *n)
 
     case NODE_FUNC_EXPR:
     {
-        Func *func = malloc(sizeof(Func));
+        Func *func = jackal_allocate_gc(sizeof(Func));
         strcpy(func->return_type, n->return_type);
         func->params_head = n->left;
         func->body_head = n->right;
         func->env = env;
         func->arity = n->arity;
 
-        return (Value){VAL_FUNCTION, {.function = func}};
+        Value val;
+        val.type = VAL_FUNCTION;
+        val.as.function = func;
+        val.gc_info = ((GCObject*)func) - 1;
+
+        return val;
     }
 
     case NODE_BREAK_STMT:
@@ -645,14 +650,12 @@ Value eval_node(Env *env, Node *n)
 
     case NODE_THIS:
     {
-        Var *v = find_var(env, "this");
-        
+        Var *v = find_var(env, n->name);
         if (!v)
         {
-            print_error("Runtime Error: Cannot use 'this' outside of a class method context.");
+            print_error("'this' is not defined.");
             return (Value){.type = VAL_NIL, .as = {0}};
         }
-        
         return copy_value(v->value);
     }
 

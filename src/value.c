@@ -19,12 +19,13 @@
 #include <curl/curl.h>
 #include <float.h>
 
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-
+#if defined(__linux__) || (__APPLE__)
+    #include <sys/socket.h>
+    #include <sys/types.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <unistd.h>
+# endif
 typedef struct
 {
     CURLcode result_code;
@@ -43,10 +44,15 @@ typedef struct
  */
 ValueArray *array_new(void)
 {
-    ValueArray *arr = malloc(sizeof(ValueArray));
+    ValueArray *arr = jackal_allocate_gc(sizeof(ValueArray));
     arr->capacity = 8;
     arr->count = 0;
     arr->values = malloc(sizeof(Value) * arr->capacity);
+    
+    for (int i = 0; i < arr->capacity; i++) {
+        arr->values[i].gc_info = NULL;
+    }
+
     return arr;
 }
 /**
@@ -69,12 +75,22 @@ void array_append(ValueArray *arr, Value val)
  */
 void array_free(ValueArray *arr)
 {
+    if (arr == NULL) return;
+
     for (int i = 0; i < arr->count; i++)
     {
         free_value(arr->values[i]);
     }
-    free(arr->values);
-    free(arr);
+
+    if (arr->values != NULL)
+    {
+        free(arr->values);
+        arr->values = NULL;
+    }
+    
+    arr->count = 0;
+    arr->capacity = 0;
+
 }
 /**
  * Prints a Value to stdout.
@@ -163,6 +179,11 @@ void print_value(Value value)
  */
 void free_value(Value value)
 {
+    if (value.gc_info != NULL)
+    {
+        return;
+    }
+
     switch (value.type)
     {
     case VAL_STRING:
@@ -175,9 +196,7 @@ void free_value(Value value)
         free_value(*value.as.return_val);
         free(value.as.return_val);
         break;
-
     case VAL_ARRAY:
-
         break;
     case VAL_CLASS:
         break;
@@ -187,7 +206,6 @@ void free_value(Value value)
         break;
     case VAL_ENUM:
         break;
-
     default:
         break;
     }
@@ -2187,6 +2205,31 @@ Value native_sync_shuffle(int arg_count, Value* args) {
     ValueArray* result = array_new();
     array_append(result, (Value){VAL_ARRAY, {.array = data}});
     array_append(result, (Value){VAL_ARRAY, {.array = labels}});
+
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
+Value native_zip(int arg_count, Value* args) {
+    if (arg_count != 2) return (Value){VAL_NIL};
+    if (args[0].type != VAL_ARRAY || args[1].type != VAL_ARRAY) {
+        printf("Runtime Error: zip() expects two arrays.\n");
+        return (Value){VAL_NIL};
+    }
+
+    ValueArray* arr1 = args[0].as.array;
+    ValueArray* arr2 = args[1].as.array;
+
+   
+    int length = (arr1->count < arr2->count) ? arr1->count : arr2->count;
+
+    ValueArray* result = array_new();
+    for (int i = 0; i < length; i++) {
+        ValueArray* pair = array_new();
+        array_append(pair, arr1->values[i]);
+        array_append(pair, arr2->values[i]);
+        
+        array_append(result, (Value){VAL_ARRAY, {.array = pair}});
+    }
 
     return (Value){VAL_ARRAY, {.array = result}};
 }

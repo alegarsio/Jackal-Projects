@@ -260,6 +260,11 @@ typedef enum {
     VAL_SOCKET
 } ValueType;
 
+typedef struct GCObject {
+    bool is_marked;
+    struct GCObject* next;
+} GCObject;
+
 /**
  * @typedef @struct VALUE
  * Represents a value in the Jackal programming language.
@@ -280,12 +285,12 @@ typedef struct Value {
         LinkedList* list;
         Enum* enum_obj;
         FILE* file;
-        
 
-        
     } as;
+    struct GCObject* gc_info;
 } Value;
 
+extern GCObject* head ;
 
 /**
  * @typedef @struct VAR
@@ -345,6 +350,8 @@ typedef struct {
     char text[64];
     double number;
 } Token;
+
+void* jackal_allocate_gc(size_t size);
 
 
 

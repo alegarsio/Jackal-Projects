@@ -5,6 +5,33 @@
 
 size_t bytesAllocated = 0;
 
+GCObject* gc_head = NULL;
+
+void* jackal_allocate_gc(size_t size) {
+    GCObject* obj = malloc(sizeof(GCObject) + size);
+    if (obj == NULL) return NULL;
+    
+    obj->is_marked = false;
+    obj->next = gc_head;
+    gc_head = obj;
+
+    return (void*)(obj + 1);
+}
+
+void gc_sweep() {
+    GCObject** current = &gc_head;
+    while (*current) {
+        if (!(*current)->is_marked) {
+            GCObject* unreached = *current;
+            *current = unreached->next;
+            
+            free(unreached);
+        } else {
+            (*current)->is_marked = false;
+            current = &(*current)->next;
+        }
+    }
+}
 /**
  * src/common.c
  * @param message Error message to be printed.

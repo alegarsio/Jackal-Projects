@@ -1027,6 +1027,8 @@ int main(int argc, char **argv)
     REGISTER("__array_max", builtin_array_max);
     REGISTER("__array_to_tree", builtin_array_to_tree);
 
+    REGISTER("__zip",native_zip);
+
     REGISTER("__knn", native_knn_nd);
     REGISTER("__accuracy", native_accuracy);
     REGISTER("__normalize", native_normalize_nd);

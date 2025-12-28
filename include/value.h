@@ -220,3 +220,5 @@ Value native_confusion_matrix(int arg_count, Value *args);
 Value native_split(int arg_count, Value* args) ;
 
 Value native_sync_shuffle(int arg_count, Value* args);
+
+Value native_zip(int arg_count, Value* args);

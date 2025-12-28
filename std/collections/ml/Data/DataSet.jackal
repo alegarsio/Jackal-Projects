@@ -1,0 +1,35 @@
+class DataSet {
+
+    init(data : Array, labels : Array){
+        this.data = data
+        this.labels = labels
+    }
+
+    func shuffle(){
+
+        let p = __sync_shuffle(this.data, this.labels)
+     
+        this.data = p[0]
+        this.labels = p[1]
+
+        return this
+    }
+
+    func normalize() {
+        this.data = __normalize(this.data)
+        return this
+    }
+
+    func zip(){
+        return __zip(this.data , this.labels)
+    }
+
+    
+
+    func exports(){
+        return [this.data , this.labels]
+    }
+
+    
+        
+}
