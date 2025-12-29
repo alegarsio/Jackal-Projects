@@ -1,0 +1,6 @@
+import std.collections.ml.Data.DataSet
+import std.collections.ml.Supervised.Knn
+
+class Data extends DataSet {}
+
+class Knn extends KNeighrest {}

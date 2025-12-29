@@ -1,0 +1,30 @@
+import std.collections.ml.Data.DataSet
+
+class KNeighrest {
+    
+    init(k) {
+        this.k = k
+        this.historyData = nil
+        this.historyLabels = nil
+    }
+
+    func fit(dataSet : DataSet) {
+        let pkt = dataSet.exports()
+        this.historyData = pkt[0]
+        this.historyLabels = pkt[1]
+        return this
+    }
+
+    func predict(newData) {
+        let results = []
+        for (point in newData) {
+            let label = __knn(point, this.historyData, this.historyLabels, this.k)
+            results.push(label)
+        }
+        return results
+    }
+
+    func each(){
+        return [this.k , this.historyData, this.historyLabels]
+    }
+}

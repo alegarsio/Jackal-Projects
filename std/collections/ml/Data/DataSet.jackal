@@ -15,6 +15,7 @@ class DataSet {
         return this
     }
 
+
     func normalize() {
         this.data = __normalize(this.data)
         return this

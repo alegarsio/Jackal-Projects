@@ -1989,7 +1989,6 @@ Value native_knn_nd(int arg_count, Value* args) {
 
     qsort(neighbors, n_history, sizeof(Neighbor), compareNeighbors);
 
-    // Voting
     int votes0 = 0;
     int votes1 = 0;
     for (int i = 0; i < k && i < n_history; i++) {
@@ -1999,7 +1998,6 @@ Value native_knn_nd(int arg_count, Value* args) {
 
     free(neighbors);
 
-    // Mengembalikan hasil voting (0 atau 1)
     return (Value){VAL_NUMBER, {.number = (votes1 > votes0 ? 1 : 0)}};
 }
 Value native_accuracy(int arg_count, Value *args)
