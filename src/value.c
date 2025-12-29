@@ -2231,3 +2231,323 @@ Value native_zip(int arg_count, Value* args) {
 
     return (Value){VAL_ARRAY, {.array = result}};
 }
+Value native_logistic_predict(int arg_count, Value* args) {
+    if (arg_count != 2) return (Value){VAL_NIL};
+
+    ValueArray* newPoint = args[0].as.array;
+    ValueArray* model = args[1].as.array;
+
+    ValueArray* weights = model->values[0].as.array;
+    double bias = model->values[1].as.number;
+
+    if (newPoint->count != weights->count) return (Value){VAL_NIL};
+
+    double z = bias;
+    for (int j = 0; j < newPoint->count; j++) {
+        z += newPoint->values[j].as.number * weights->values[j].as.number;
+    }
+
+    double probability = 1.0 / (1.0 + exp(-z));
+    double result = (probability >= 0.5) ? 1.0 : 0.0;
+
+    return (Value){VAL_NUMBER, {.number = result}};
+}
+
+Value native_logistic_fit(int arg_count, Value* args) {
+    if (arg_count != 4) return (Value){VAL_NIL};
+
+    ValueArray* data = args[0].as.array;    
+    ValueArray* labels = args[1].as.array;  
+    double lr = args[2].as.number;          
+    int iterations = (int)args[3].as.number;
+
+    int n_samples = data->count;
+    int n_features = data->values[0].as.array->count;
+
+    double* weights = malloc(sizeof(double) * n_features);
+    for(int f = 0; f < n_features; f++) weights[f] = 0.0;
+    double bias = 0.0;
+
+    for (int iter = 0; iter < iterations; iter++) {
+        double* dW_sum = malloc(sizeof(double) * n_features);
+        for(int f = 0; f < n_features; f++) dW_sum[f] = 0.0;
+        double dB_sum = 0.0;
+
+        for (int i = 0; i < n_samples; i++) {
+            ValueArray* row = data->values[i].as.array;
+            double y_true = labels->values[i].as.number;
+
+            double z = bias;
+            for (int j = 0; j < n_features; j++) {
+                z += row->values[j].as.number * weights[j];
+            }
+
+            // Stabilisasi Numerik untuk Sigmoid
+            double y_pred;
+            if (z >= 0) {
+                y_pred = 1.0 / (1.0 + exp(-z));
+            } else {
+                double ez = exp(z);
+                y_pred = ez / (1.0 + ez);
+            }
+
+            double error = y_pred - y_true;
+
+            for (int j = 0; j < n_features; j++) {
+                dW_sum[j] += error * row->values[j].as.number;
+            }
+            dB_sum += error;
+        }
+
+        for (int j = 0; j < n_features; j++) {
+            weights[j] -= lr * (dW_sum[j] / n_samples);
+        }
+        bias -= lr * (dB_sum / n_samples);
+        
+        free(dW_sum);
+    }
+
+    ValueArray* final_weights = array_new();
+    for (int j = 0; j < n_features; j++) {
+        Value w_val = {VAL_NUMBER, {.number = weights[j]}};
+        array_append(final_weights, w_val);
+    }
+
+    ValueArray* result = array_new();
+    Value weights_wrap = {VAL_ARRAY, {.array = final_weights}};
+    array_append(result, weights_wrap);
+    
+    Value bias_wrap = {VAL_NUMBER, {.number = bias}};
+    array_append(result, bias_wrap);
+
+    free(weights);
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
+Value native_nb_fit(int arg_count, Value* args) {
+    ValueArray* data = args[0].as.array;
+    ValueArray* labels = args[1].as.array;
+
+    int n_samples = data->count;
+    int n_features = data->values[0].as.array->count;
+
+    double* mean0 = malloc(sizeof(double) * n_features);
+    double* var0 = malloc(sizeof(double) * n_features);
+    double* mean1 = malloc(sizeof(double) * n_features);
+    double* var1 = malloc(sizeof(double) * n_features);
+    
+    int count0 = 0, count1 = 0;
+
+    for (int f = 0; f < n_features; f++) {
+        mean0[f] = var0[f] = mean1[f] = var1[f] = 0.0;
+    }
+
+    for (int i = 0; i < n_samples; i++) {
+        int label = (int)labels->values[i].as.number;
+        ValueArray* row = data->values[i].as.array;
+        if (label == 0) {
+            count0++;
+            for (int f = 0; f < n_features; f++) mean0[f] += row->values[f].as.number;
+        } else {
+            count1++;
+            for (int f = 0; f < n_features; f++) mean1[f] += row->values[f].as.number;
+        }
+    }
+
+    if (count0 > 0) for (int f = 0; f < n_features; f++) mean0[f] /= count0;
+    if (count1 > 0) for (int f = 0; f < n_features; f++) mean1[f] /= count1;
+
+    for (int i = 0; i < n_samples; i++) {
+        int label = (int)labels->values[i].as.number;
+        ValueArray* row = data->values[i].as.array;
+        if (label == 0) {
+            for (int f = 0; f < n_features; f++) {
+                double diff = row->values[f].as.number - mean0[f];
+                var0[f] += diff * diff;
+            }
+        } else {
+            for (int f = 0; f < n_features; f++) {
+                double diff = row->values[f].as.number - mean1[f];
+                var1[f] += diff * diff;
+            }
+        }
+    }
+
+    ValueArray* v_mean0 = array_new();
+    ValueArray* v_var0 = array_new();
+    ValueArray* v_mean1 = array_new();
+    ValueArray* v_var1 = array_new();
+
+    for (int f = 0; f < n_features; f++) {
+        array_append(v_mean0, (Value){VAL_NUMBER, {.number = mean0[f]}});
+        array_append(v_var0, (Value){VAL_NUMBER, {.number = (var0[f] / (count0 > 0 ? count0 : 1)) + 1e-9}});
+        array_append(v_mean1, (Value){VAL_NUMBER, {.number = mean1[f]}});
+        array_append(v_var1, (Value){VAL_NUMBER, {.number = (var1[f] / (count1 > 0 ? count1 : 1)) + 1e-9}});
+    }
+
+    ValueArray* final_model = array_new();
+    array_append(final_model, (Value){VAL_ARRAY, {.array = v_mean0}});
+    array_append(final_model, (Value){VAL_ARRAY, {.array = v_var0}});
+    array_append(final_model, (Value){VAL_ARRAY, {.array = v_mean1}});
+    array_append(final_model, (Value){VAL_ARRAY, {.array = v_var1}});
+    array_append(final_model, (Value){VAL_NUMBER, {.number = (double)count0}});
+    array_append(final_model, (Value){VAL_NUMBER, {.number = (double)count1}});
+
+    free(mean0); free(var0); free(mean1); free(var1);
+
+    return (Value){VAL_ARRAY, {.array = final_model}};
+}
+Value native_nb_predict(int arg_count, Value* args) {
+    if (arg_count != 2) return (Value){VAL_NIL};
+
+    ValueArray* point = args[0].as.array;
+    ValueArray* model = args[1].as.array;
+
+    ValueArray* mean0 = model->values[0].as.array;
+    ValueArray* var0 = model->values[1].as.array;
+    ValueArray* mean1 = model->values[2].as.array;
+    ValueArray* var1 = model->values[3].as.array;
+    double count0 = model->values[4].as.number;
+    double count1 = model->values[5].as.number;
+
+    int n_features = point->count;
+    double log_probs[2];
+    
+    log_probs[0] = log(count0 / (count0 + count1));
+    log_probs[1] = log(count1 / (count0 + count1));
+
+    for (int f = 0; f < n_features; f++) {
+        double x = point->values[f].as.number;
+
+        double m0 = mean0->values[f].as.number;
+        double v0 = var0->values[f].as.number;
+        log_probs[0] += -0.5 * log(2 * M_PI * v0) - pow(x - m0, 2) / (2 * v0);
+
+        double m1 = mean1->values[f].as.number;
+        double v1 = var1->values[f].as.number;
+        log_probs[1] += -0.5 * log(2 * M_PI * v1) - pow(x - m1, 2) / (2 * v1);
+    }
+
+    double result = (log_probs[1] > log_probs[0]) ? 1.0 : 0.0;
+    return (Value){VAL_NUMBER, {.number = result}};
+}
+
+Value native_kmeans_predict(int arg_count, Value* args) {
+    ValueArray* point = args[0].as.array;
+    ValueArray* centroids = args[1].as.array;
+
+    double min_dist = 1e18;
+    int best_cluster = 0;
+
+    for (int i = 0; i < centroids->count; i++) {
+        ValueArray* centroid = centroids->values[i].as.array;
+        double dist = 0;
+        for (int f = 0; f < point->count; f++) {
+            double diff = point->values[f].as.number - centroid->values[f].as.number;
+            dist += diff * diff;
+        }
+        if (dist < min_dist) {
+            min_dist = dist;
+            best_cluster = i;
+        }
+    }
+
+    return (Value){VAL_NUMBER, {.number = (double)best_cluster}};
+}
+
+Value native_kmeans_fit(int arg_count, Value* args) {
+    ValueArray* data = args[0].as.array;
+    int k = (int)args[1].as.number;
+    int iterations = (int)args[2].as.number;
+
+    int n_samples = data->count;
+    int n_features = data->values[0].as.array->count;
+
+    double** centroids = malloc(sizeof(double*) * k);
+    for (int i = 0; i < k; i++) {
+        centroids[i] = malloc(sizeof(double) * n_features);
+        ValueArray* random_row = data->values[i % n_samples].as.array;
+        for (int f = 0; f < n_features; f++) {
+            centroids[i][f] = random_row->values[f].as.number;
+        }
+    }
+
+    for (int iter = 0; iter < iterations; iter++) {
+        int* assignments = malloc(sizeof(int) * n_samples);
+        
+        for (int i = 0; i < n_samples; i++) {
+            double min_dist = 1e18;
+            int best_cluster = 0;
+            ValueArray* row = data->values[i].as.array;
+
+            for (int j = 0; j < k; j++) {
+                double dist = 0;
+                for (int f = 0; f < n_features; f++) {
+                    double diff = row->values[f].as.number - centroids[j][f];
+                    dist += diff * diff;
+                }
+                if (dist < min_dist) {
+                    min_dist = dist;
+                    best_cluster = j;
+                }
+            }
+            assignments[i] = best_cluster;
+        }
+
+        for (int j = 0; j < k; j++) {
+            double* new_mean = malloc(sizeof(double) * n_features);
+            for(int f=0; f<n_features; f++) new_mean[f] = 0;
+            int count = 0;
+
+            for (int i = 0; i < n_samples; i++) {
+                if (assignments[i] == j) {
+                    count++;
+                    for (int f = 0; f < n_features; f++) {
+                        new_mean[f] += data->values[i].as.array->values[f].as.number;
+                    }
+                }
+            }
+
+            if (count > 0) {
+                for (int f = 0; f < n_features; f++) centroids[j][f] = new_mean[f] / count;
+            }
+            free(new_mean);
+        }
+        free(assignments);
+    }
+
+    ValueArray* final_centroids = array_new();
+    for (int i = 0; i < k; i++) {
+        ValueArray* c_row = array_new();
+        for (int f = 0; f < n_features; f++) {
+            array_append(c_row, (Value){VAL_NUMBER, {.number = centroids[i][f]}});
+        }
+        array_append(final_centroids, (Value){VAL_ARRAY, {.array = c_row}});
+        free(centroids[i]);
+    }
+    free(centroids);
+
+    return (Value){VAL_ARRAY, {.array = final_centroids}};
+}
+
+Value native_kmeans_loss(int arg_count, Value* args) {
+    ValueArray* data = args[0].as.array;
+    ValueArray* centroids = args[1].as.array;
+    double total_sse = 0;
+
+    for (int i = 0; i < data->count; i++) {
+        double min_dist = 1e18;
+        ValueArray* row = data->values[i].as.array;
+        for (int j = 0; j < centroids->count; j++) {
+            double dist = 0;
+            ValueArray* c = centroids->values[j].as.array;
+            for (int f = 0; f < row->count; f++) {
+                double diff = row->values[f].as.number - c->values[f].as.number;
+                dist += diff * diff;
+            }
+            if (dist < min_dist) min_dist = dist;
+        }
+        total_sse += min_dist;
+    }
+    return (Value){VAL_NUMBER, {.number = total_sse}};
+}

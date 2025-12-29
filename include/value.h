@@ -4,6 +4,26 @@
 #include <stdbool.h>
 #include<cjson/cJSON.h>
 
+
+typedef struct {
+    int k;
+    int n_features;
+    double** centroids;
+} KMeansModel;
+
+
+typedef struct {
+    double mean;
+    double variance;
+} FeatureStats;
+
+
+typedef struct {
+    int class_label;
+    int sample_count;
+    FeatureStats* stats;
+} ClassModel;
+
 /**
  * @typedef @struct ENTRY
  * Represents a key-value pair in the HashMap.
@@ -222,3 +242,17 @@ Value native_split(int arg_count, Value* args) ;
 Value native_sync_shuffle(int arg_count, Value* args);
 
 Value native_zip(int arg_count, Value* args);
+
+Value native_logistic_predict(int arg_count, Value* args);
+
+Value native_logistic_fit(int arg_count, Value* args);
+
+Value native_nb_predict(int arg_count, Value* args);
+
+Value native_nb_fit(int arg_count, Value* args);
+
+Value native_kmeans_fit(int arg_count, Value* args);
+
+Value native_kmeans_predict(int arg_count, Value* args);
+
+Value native_kmeans_loss(int arg_count, Value* args);

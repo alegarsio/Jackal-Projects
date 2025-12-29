@@ -15,7 +15,6 @@ class DataSet {
         return this
     }
 
-
     func normalize() {
         this.data = __normalize(this.data)
         return this
@@ -24,8 +23,14 @@ class DataSet {
     func zip(){
         return __zip(this.data , this.labels)
     }
-
     
+    func getData() {
+        return this.data
+    }
+
+    func getLabels() {
+        return this.labels
+    }
 
     func exports(){
         return [this.data , this.labels]

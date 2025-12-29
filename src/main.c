@@ -1037,8 +1037,18 @@ int main(int argc, char **argv)
     REGISTER("__split",native_split);
     REGISTER("__sync_shuffle",native_sync_shuffle);
 
+    REGISTER("__logistic_predict",native_logistic_predict);
+    REGISTER("__logistic_fit",native_logistic_fit);
+
+    REGISTER("__nb_fit",native_nb_fit);
+    REGISTER("__nb_predict",native_nb_predict);
+    
     REGISTER("__array_limit", builtin_array_limit);
     REGISTER("__json_string",builtin_json_stringify);
+
+    REGISTER("__kmeans_fit",native_kmeans_fit);
+    REGISTER("__kmeans_predict",native_kmeans_predict);
+
 
     REGISTER("__io_read_line", builtin_read_line);
     REGISTER("__io_read_array", builtin_read_array);

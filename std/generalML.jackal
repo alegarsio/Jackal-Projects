@@ -1,6 +1,15 @@
 import std.collections.ml.Data.DataSet
 import std.collections.ml.Supervised.Knn
+import std.collections.ml.Supervised.LogisticRegression
+import std.collections.ml.Supervised.NaiveBayes
+import std.collections.ml.UnsuperVised.KMeans
 
 class Data extends DataSet {}
 
 class Knn extends KNeighrest {}
+
+class LRegression extends LogisticRegression {}
+
+class Nb extends NaiveBayes {}
+
+class Kme extends KMeans {}
