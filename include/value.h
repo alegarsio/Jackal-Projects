@@ -258,3 +258,9 @@ Value native_kmeans_predict(int arg_count, Value* args);
 Value native_kmeans_loss(int arg_count, Value* args);
 
 Value native_matrix_dot(int arg_count, Value* args);
+
+Value native_matrix_add(int arg_count, Value* args);
+
+Value native_matrix_sub(int arg_count, Value* args);
+
+Value native_matrix_det(int arg_count, Value* args);

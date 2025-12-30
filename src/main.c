@@ -1051,6 +1051,9 @@ int main(int argc, char **argv)
     REGISTER("__kmeans_loss",native_kmeans_loss);
 
     REGISTER("__matrix_dot",native_matrix_dot);
+    REGISTER("__matrix_add",native_matrix_add);
+    REGISTER("__matrix_sub",native_matrix_sub);
+    REGISTER("__matrix_det",native_matrix_det);
 
 
     REGISTER("__io_read_line", builtin_read_line);

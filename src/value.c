@@ -55,6 +55,22 @@ ValueArray *array_new(void)
 
     return arr;
 }
+
+ValueArray* get_minor(ValueArray* matrix, int col_to_remove) {
+    ValueArray* minor = array_new();
+    int n = matrix->count;
+
+    for (int i = 1; i < n; i++) {
+        ValueArray* row = matrix->values[i].as.array;
+        ValueArray* new_row = array_new();
+        for (int j = 0; j < n; j++) {
+            if (j == col_to_remove) continue;
+            array_append(new_row, row->values[j]);
+        }
+        array_append(minor, (Value){VAL_ARRAY, {.array = new_row}});
+    }
+    return minor;
+}
 /**
  * Appends a Value to a ValueArray.
  * @param arr The ValueArray to append to.
@@ -2576,4 +2592,96 @@ Value native_matrix_dot(int arg_count, Value* args) {
     }
 
     return (Value){VAL_ARRAY, {.array = result}};
+}
+
+Value native_matrix_add(int arg_count, Value* args) {
+    ValueArray* A = args[0].as.array;
+    ValueArray* B = args[1].as.array;
+
+    int rows = A->count;
+    int cols = A->values[0].as.array->count;
+
+    if (rows != B->count || cols != B->values[0].as.array->count) {
+        return (Value){VAL_NIL};
+    }
+
+    ValueArray* result = array_new();
+
+    for (int i = 0; i < rows; i++) {
+        ValueArray* rowA = A->values[i].as.array;
+        ValueArray* rowB = B->values[i].as.array;
+        ValueArray* new_row = array_new();
+
+        for (int j = 0; j < cols; j++) {
+            double sum = rowA->values[j].as.number + rowB->values[j].as.number;
+            array_append(new_row, (Value){VAL_NUMBER, {.number = sum}});
+        }
+        array_append(result, (Value){VAL_ARRAY, {.array = new_row}});
+    }
+
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
+Value native_matrix_sub(int arg_count, Value* args) {
+    ValueArray* A = args[0].as.array;
+    ValueArray* B = args[1].as.array;
+
+    int rows = A->count;
+    int cols = A->values[0].as.array->count;
+
+    if (rows != B->count || cols != B->values[0].as.array->count) {
+        return (Value){VAL_NIL};
+    }
+
+    ValueArray* result = array_new();
+
+    for (int i = 0; i < rows; i++) {
+        ValueArray* rowA = A->values[i].as.array;
+        ValueArray* rowB = B->values[i].as.array;
+        ValueArray* new_row = array_new();
+
+        for (int j = 0; j < cols; j++) {
+            double diff = rowA->values[j].as.number - rowB->values[j].as.number;
+            array_append(new_row, (Value){VAL_NUMBER, {.number = diff}});
+        }
+        array_append(result, (Value){VAL_ARRAY, {.array = new_row}});
+    }
+
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
+double calculate_determinant(ValueArray* matrix) {
+    int n = matrix->count;
+
+    if (n == 1) return matrix->values[0].as.array->values[0].as.number;
+    
+    if (n == 2) {
+        double a = matrix->values[0].as.array->values[0].as.number;
+        double b = matrix->values[0].as.array->values[1].as.number;
+        double c = matrix->values[1].as.array->values[0].as.number;
+        double d = matrix->values[1].as.array->values[1].as.number;
+        return (a * d) - (b * c);
+    }
+
+    double det = 0;
+    int sign = 1;
+    ValueArray* first_row = matrix->values[0].as.array;
+
+    for (int j = 0; j < n; j++) {
+        ValueArray* minor = get_minor(matrix, j);
+        det += sign * first_row->values[j].as.number * calculate_determinant(minor);
+        sign = -sign;
+    }
+    return det;
+}
+
+Value native_matrix_det(int arg_count, Value* args) {
+    ValueArray* matrix = args[0].as.array;
+    int rows = matrix->count;
+    int cols = matrix->values[0].as.array->count;
+
+    if (rows != cols) return (Value){VAL_NIL};
+
+    double result = calculate_determinant(matrix);
+    return (Value){VAL_NUMBER, {.number = result}};
 }
