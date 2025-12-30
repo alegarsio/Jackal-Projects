@@ -1048,6 +1048,9 @@ int main(int argc, char **argv)
 
     REGISTER("__kmeans_fit",native_kmeans_fit);
     REGISTER("__kmeans_predict",native_kmeans_predict);
+    REGISTER("__kmeans_loss",native_kmeans_loss);
+
+    REGISTER("__matrix_dot",native_matrix_dot);
 
 
     REGISTER("__io_read_line", builtin_read_line);
@@ -1079,7 +1082,7 @@ int main(int argc, char **argv)
     REGISTER("__jackal_sleep", builtin_jackal_sleep);
     REGISTER("plot",native_plot);
     REGISTER("native_transpose",native_transpose);
-    REGISTER("predicts",native_linear_regression);
+    REGISTER("_native_linear_predicts",native_linear_regression);
 
 
     DEFINE_NATIVE("len", builtin_len);

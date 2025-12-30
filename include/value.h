@@ -256,3 +256,5 @@ Value native_kmeans_fit(int arg_count, Value* args);
 Value native_kmeans_predict(int arg_count, Value* args);
 
 Value native_kmeans_loss(int arg_count, Value* args);
+
+Value native_matrix_dot(int arg_count, Value* args);

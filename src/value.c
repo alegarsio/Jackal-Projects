@@ -2282,7 +2282,6 @@ Value native_logistic_fit(int arg_count, Value* args) {
                 z += row->values[j].as.number * weights[j];
             }
 
-            // Stabilisasi Numerik untuk Sigmoid
             double y_pred;
             if (z >= 0) {
                 y_pred = 1.0 / (1.0 + exp(-z));
@@ -2550,4 +2549,31 @@ Value native_kmeans_loss(int arg_count, Value* args) {
         total_sse += min_dist;
     }
     return (Value){VAL_NUMBER, {.number = total_sse}};
+}
+
+Value native_matrix_dot(int arg_count, Value* args) {
+    ValueArray* A = args[0].as.array;
+    ValueArray* B = args[1].as.array;
+
+    int rowsA = A->count;
+    int colsA = A->values[0].as.array->count;
+    int colsB = B->values[0].as.array->count;
+
+    ValueArray* result = array_new();
+
+    for (int i = 0; i < rowsA; i++) {
+        ValueArray* row = array_new();
+        for (int j = 0; j < colsB; j++) {
+            double sum = 0;
+            for (int k = 0; k < colsA; k++) {
+                double valA = A->values[i].as.array->values[k].as.number;
+                double valB = B->values[k].as.array->values[j].as.number;
+                sum += valA * valB;
+            }
+            array_append(row, (Value){VAL_NUMBER, {.number = sum}});
+        }
+        array_append(result, (Value){VAL_ARRAY, {.array = row}});
+    }
+
+    return (Value){VAL_ARRAY, {.array = result}};
 }

@@ -36,6 +36,7 @@ class GeneralML{
      * @return Array of shuffled data in format
      * [1] for data and [0] for labels 
     **/
+    
     // func shuffle(labels) {
     //     return __sync_shuffle(this.data, labels)
     // }
@@ -55,6 +56,11 @@ class GeneralML{
 
     func transpose(){
         this.data = native_transpose(this.data)
+        return this
+    }
+
+    func dot(otherArray){
+        this.data = __matrix_dot(this.data,otherArray)
         return this
     }
 
