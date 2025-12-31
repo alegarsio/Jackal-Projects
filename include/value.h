@@ -274,3 +274,5 @@ Value native_matrix_sub(int arg_count, Value* args);
 Value native_matrix_det(int arg_count, Value* args);
 
 Value native_matrix_scalar_mul(int arg_count, Value* args);
+
+Value native_read_csv(int arg_count, Value* args);

@@ -2712,3 +2712,36 @@ Value native_matrix_scalar_mul(int arg_count, Value* args) {
     }
     return (Value){VAL_ARRAY, {.array = result}};
 }
+
+Value native_read_csv(int arg_count, Value* args) {
+    const char* filename = args[0].as.string;
+    FILE* file = fopen(filename, "r");
+    if (!file) return (Value){VAL_NIL};
+
+    ValueArray* matrix = array_new();
+    char line[4096];
+
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\r\n")] = 0;
+        if (strlen(line) == 0) continue;
+
+        ValueArray* row = array_new();
+        char* token = strtok(line, ",");
+        
+        while (token) {
+            char* end;
+            double val = strtod(token, &end);
+            if (end != token) {
+                array_append(row, (Value){VAL_NUMBER, {.number = val}});
+            }
+            token = strtok(NULL, ",");
+        }
+        
+        if (row->count > 0) {
+            array_append(matrix, (Value){VAL_ARRAY, {.array = row}});
+        }
+    }
+
+    fclose(file);
+    return (Value){VAL_ARRAY, {.array = matrix}};
+}

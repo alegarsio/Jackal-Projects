@@ -1028,6 +1028,7 @@ int main(int argc, char **argv)
     REGISTER("__array_to_tree", builtin_array_to_tree);
 
     REGISTER("__zip",native_zip);
+    REGISTER("__read_csv",native_read_csv);
 
     REGISTER("__knn", native_knn_nd);
     REGISTER("__accuracy", native_accuracy);
@@ -1054,6 +1055,8 @@ int main(int argc, char **argv)
     REGISTER("__matrix_add",native_matrix_add);
     REGISTER("__matrix_sub",native_matrix_sub);
     REGISTER("__matrix_det",native_matrix_det);
+
+    REGISTER("__matrix_scalar",native_matrix_scalar_mul);
 
 
     REGISTER("__io_read_line", builtin_read_line);
