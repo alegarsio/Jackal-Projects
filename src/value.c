@@ -2568,27 +2568,36 @@ Value native_kmeans_loss(int arg_count, Value* args) {
 }
 
 Value native_matrix_dot(int arg_count, Value* args) {
+    if (arg_count != 2) return (Value){VAL_NIL};
+    
     ValueArray* A = args[0].as.array;
     ValueArray* B = args[1].as.array;
 
     int rowsA = A->count;
     int colsA = A->values[0].as.array->count;
+    int rowsB = B->count;
     int colsB = B->values[0].as.array->count;
+
+    if (colsA != rowsB) {
+        return (Value){VAL_NIL};
+    }
 
     ValueArray* result = array_new();
 
     for (int i = 0; i < rowsA; i++) {
-        ValueArray* row = array_new();
+        ValueArray* new_row = array_new();
+        ValueArray* rowA = A->values[i].as.array;
+
         for (int j = 0; j < colsB; j++) {
             double sum = 0;
             for (int k = 0; k < colsA; k++) {
-                double valA = A->values[i].as.array->values[k].as.number;
+                double valA = rowA->values[k].as.number;
                 double valB = B->values[k].as.array->values[j].as.number;
                 sum += valA * valB;
             }
-            array_append(row, (Value){VAL_NUMBER, {.number = sum}});
+            array_append(new_row, (Value){VAL_NUMBER, {.number = sum}});
         }
-        array_append(result, (Value){VAL_ARRAY, {.array = row}});
+        array_append(result, (Value){VAL_ARRAY, {.array = new_row}});
     }
 
     return (Value){VAL_ARRAY, {.array = result}};
@@ -2684,4 +2693,22 @@ Value native_matrix_det(int arg_count, Value* args) {
 
     double result = calculate_determinant(matrix);
     return (Value){VAL_NUMBER, {.number = result}};
+}
+
+Value native_matrix_scalar_mul(int arg_count, Value* args) {
+    ValueArray* M = args[0].as.array;
+    double scalar = args[1].as.number;
+    int rows = M->count;
+    int cols = M->values[0].as.array->count;
+
+    ValueArray* result = array_new();
+    for (int i = 0; i < rows; i++) {
+        ValueArray* new_row = array_new();
+        for (int j = 0; j < cols; j++) {
+            double val = M->values[i].as.array->values[j].as.number;
+            array_append(new_row, (Value){VAL_NUMBER, {.number = val * scalar}});
+        }
+        array_append(result, (Value){VAL_ARRAY, {.array = new_row}});
+    }
+    return (Value){VAL_ARRAY, {.array = result}};
 }

@@ -6,6 +6,14 @@
 
 
 typedef struct {
+    double* data;      
+    int* shape;      
+    int* strides;  
+    int ndim;        
+    int size;         
+} Tensor;
+
+typedef struct {
     int k;
     int n_features;
     double** centroids;
@@ -264,3 +272,5 @@ Value native_matrix_add(int arg_count, Value* args);
 Value native_matrix_sub(int arg_count, Value* args);
 
 Value native_matrix_det(int arg_count, Value* args);
+
+Value native_matrix_scalar_mul(int arg_count, Value* args);
