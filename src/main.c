@@ -1090,6 +1090,11 @@ int main(int argc, char **argv)
     REGISTER("native_transpose",native_transpose);
     REGISTER("_native_linear_predicts",native_linear_regression);
 
+    REGISTER("__tensor_add",native_tensor_add);
+    REGISTER("__tensor_mul",native_tensor_mul);
+    REGISTER("__tensor_sub",native_tensor_sub);
+    REGISTER("_tensor_shape",native_tensor_check_shape);
+
 
     DEFINE_NATIVE("len", builtin_len);
     DEFINE_NATIVE("push", builtin_push);

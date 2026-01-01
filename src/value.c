@@ -2745,3 +2745,57 @@ Value native_read_csv(int arg_count, Value* args) {
     fclose(file);
     return (Value){VAL_ARRAY, {.array = matrix}};
 }
+
+Value native_tensor_add(int arg_count, Value* args) {
+    ValueArray* a = args[0].as.array;
+    double scalar = args[1].as.number;
+    ValueArray* result = array_new();
+
+    for (int i = 0; i < a->count; i++) {
+        double val = a->values[i].as.number;
+        array_append(result, (Value){VAL_NUMBER, {.number = val + scalar}});
+    }
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
+Value native_tensor_sub(int arg_count, Value* args) {
+    ValueArray* a = args[0].as.array;
+    double scalar = args[1].as.number;
+    ValueArray* result = array_new();
+
+    for (int i = 0; i < a->count; i++) {
+        double val = a->values[i].as.number;
+        array_append(result, (Value){VAL_NUMBER, {.number = val - scalar}});
+    }
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
+Value native_tensor_mul(int arg_count, Value* args) {
+    ValueArray* a = args[0].as.array;
+    double scalar = args[1].as.number;
+    ValueArray* result = array_new();
+
+    for (int i = 0; i < a->count; i++) {
+        double val = a->values[i].as.number;
+        array_append(result, (Value){VAL_NUMBER, {.number = val * scalar}});
+    }
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
+Value native_tensor_check_shape(int arg_count, Value* args) {
+    ValueArray* data = args[0].as.array;
+    ValueArray* new_shape = args[1].as.array;
+
+    int current_size = data->count;
+    long target_size = 1;
+
+    for (int i = 0; i < new_shape->count; i++) {
+        target_size *= (int)new_shape->values[i].as.number;
+    }
+
+   
+    if (current_size == (int)target_size) {
+        return (Value){VAL_NUMBER, {.number = 1}}; 
+    }
+    return (Value){VAL_NUMBER, {.number = 0}};     
+}

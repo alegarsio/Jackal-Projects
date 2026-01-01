@@ -276,3 +276,11 @@ Value native_matrix_det(int arg_count, Value* args);
 Value native_matrix_scalar_mul(int arg_count, Value* args);
 
 Value native_read_csv(int arg_count, Value* args);
+
+Value native_tensor_add(int arg_count, Value* args);
+
+Value native_tensor_sub(int arg_count, Value* args);
+
+Value native_tensor_mul(int arg_count, Value* args);
+
+Value native_tensor_check_shape(int arg_count, Value* args);
