@@ -2844,3 +2844,21 @@ Value native_load_jml(int arg_count, Value* args) {
     fclose(file);
     return (Value){VAL_ARRAY, {.array = result}};
 }
+
+Value native_tensor_sum(int arg_count, Value* args) {
+    ValueArray* a = args[0].as.array;
+    double total = 0;
+
+    for (int i = 0; i < a->count; i++) {
+        total += a->values[i].as.number;
+    }
+    return (Value){VAL_NUMBER, {.number = total}};
+}
+
+Value native_tensor_mean(int arg_count, Value* args) {
+    ValueArray* a = args[0].as.array;
+    if (a->count == 0) return (Value){VAL_NUMBER, {.number = 0}};
+    
+    Value sum_val = native_tensor_sum(arg_count, args);
+    return (Value){VAL_NUMBER, {.number = sum_val.as.number / a->count}};
+}

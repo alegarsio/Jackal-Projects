@@ -288,3 +288,7 @@ Value native_tensor_check_shape(int arg_count, Value* args);
 Value native_save_jml(int arg_count, Value* args);
 
 Value native_load_jml(int arg_count, Value* args);
+
+Value native_tensor_sum(int arg_count, Value* args);
+
+Value native_tensor_mean(int arg_count, Value* args);
