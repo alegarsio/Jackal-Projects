@@ -93,9 +93,9 @@ This demonstrates array literals, C-style for loops, and array index access.
 Reading input from the user:
 
 ```jackal
-print "Hello ";
+print("Hello ");
 let name = read();
-print "Hello, " + name + "!";
+print("Hello, " + name + "!");
 ```
 
 This shows how to use the `read()` function to get user input and interact with your programs.
@@ -107,9 +107,9 @@ Using match expressions for conditional logic:
 ```jackal
 let score = 90;
 match (score) {
-    90 => print "Passed";
-    75 => print "Ok";
-    default => print "Not in the list";
+    90 => println("Passed");
+    75 => println("Ok");
+    default => println("Not in the list");
 }
 ```
 
@@ -128,4 +128,6 @@ class Person<T>{
         return this.name
     }
 }
+
+let person = Person<String>("jack")
 ```
