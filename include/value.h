@@ -284,3 +284,7 @@ Value native_tensor_sub(int arg_count, Value* args);
 Value native_tensor_mul(int arg_count, Value* args);
 
 Value native_tensor_check_shape(int arg_count, Value* args);
+
+Value native_save_jml(int arg_count, Value* args);
+
+Value native_load_jml(int arg_count, Value* args);

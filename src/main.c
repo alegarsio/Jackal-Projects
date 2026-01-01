@@ -1081,6 +1081,9 @@ int main(int argc, char **argv)
     REGISTER("web_show_internal",builtin_web_show);
     REGISTER("web_sync_internal",builtin_web_sync);
 
+    REGISTER("__save_jml",native_save_jml);
+    REGISTER("__load_jml",native_load_jml);
+
     /**
      * Json Parser
      */
@@ -1093,7 +1096,7 @@ int main(int argc, char **argv)
     REGISTER("__tensor_add",native_tensor_add);
     REGISTER("__tensor_mul",native_tensor_mul);
     REGISTER("__tensor_sub",native_tensor_sub);
-    REGISTER("_tensor_shape",native_tensor_check_shape);
+    REGISTER("__tensor_shape",native_tensor_check_shape);
 
 
     DEFINE_NATIVE("len", builtin_len);

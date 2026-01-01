@@ -2799,3 +2799,48 @@ Value native_tensor_check_shape(int arg_count, Value* args) {
     }
     return (Value){VAL_NUMBER, {.number = 0}};     
 }
+
+Value native_save_jml(int arg_count, Value* args) {
+    const char* filename = args[0].as.string;
+    ValueArray* data = args[1].as.array;
+    ValueArray* shape = args[2].as.array;
+
+    FILE* file = fopen(filename, "w");
+    if (!file) return (Value){VAL_NUMBER, {.number = 0}};
+
+    for (int i = 0; i < shape->count; i++) {
+        fprintf(file, "%f", shape->values[i].as.number);
+        if (i < shape->count - 1) fprintf(file, ",");
+    }
+    fprintf(file, "\n");
+
+    for (int i = 0; i < data->count; i++) {
+        fprintf(file, "%f", data->values[i].as.number);
+        if (i < data->count - 1) fprintf(file, ",");
+    }
+
+    fclose(file);
+    return (Value){VAL_NUMBER, {.number = 1}};
+}
+
+Value native_load_jml(int arg_count, Value* args) {
+    const char* filename = args[0].as.string;
+    FILE* file = fopen(filename, "r");
+    if (!file) return (Value){VAL_NIL};
+
+    ValueArray* result = array_new(); 
+    char line[4096];
+
+    while (fgets(line, sizeof(line), file)) {
+        ValueArray* row = array_new();
+        char* token = strtok(line, ",");
+        while (token) {
+            array_append(row, (Value){VAL_NUMBER, {.number = atof(token)}});
+            token = strtok(NULL, ",");
+        }
+        array_append(result, (Value){VAL_ARRAY, {.array = row}});
+    }
+
+    fclose(file);
+    return (Value){VAL_ARRAY, {.array = result}};
+}
