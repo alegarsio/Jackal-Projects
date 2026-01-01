@@ -2862,3 +2862,29 @@ Value native_tensor_mean(int arg_count, Value* args) {
     Value sum_val = native_tensor_sum(arg_count, args);
     return (Value){VAL_NUMBER, {.number = sum_val.as.number / a->count}};
 }
+
+Value native_tensor_dot(int arg_count, Value* args) {
+    ValueArray* data_a = args[0].as.array;
+    ValueArray* shape_a = args[1].as.array;
+    ValueArray* data_b = args[2].as.array;
+    ValueArray* shape_b = args[3].as.array;
+
+    int r1 = (int)shape_a->values[0].as.number;
+    int c1 = (int)shape_a->values[1].as.number;
+    int r2 = (int)shape_b->values[0].as.number;
+    int c2 = (int)shape_b->values[1].as.number;
+
+    if (c1 != r2) return (Value){VAL_NIL}; 
+
+    ValueArray* result = array_new();
+    for (int i = 0; i < r1; i++) {
+        for (int j = 0; j < c2; j++) {
+            double sum = 0;
+            for (int k = 0; k < c1; k++) {
+                sum += data_a->values[i * c1 + k].as.number * data_b->values[k * c2 + j].as.number;
+            }
+            array_append(result, (Value){VAL_NUMBER, {.number = sum}});
+        }
+    }
+    return (Value){VAL_ARRAY, {.array = result}};
+}

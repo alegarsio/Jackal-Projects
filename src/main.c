@@ -1099,6 +1099,7 @@ int main(int argc, char **argv)
     REGISTER("__tensor_shape",native_tensor_check_shape);
     REGISTER("__tensor_sum",native_tensor_sum);
     REGISTER("__tenso_mean",native_tensor_mean);
+    REGISTER("__tensor_dot",native_tensor_dot);
 
 
     DEFINE_NATIVE("len", builtin_len);
