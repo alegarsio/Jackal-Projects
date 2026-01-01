@@ -135,7 +135,7 @@ jack.greet();
 
 Working with arrays and loops:
 
-```jackal
+```js
 let data = ["jack","john","davin","ale"];
 
 for (let i = 0 ; i < 4 ; i ++ ){
@@ -153,7 +153,7 @@ This demonstrates array literals, C-style for loops, and array index access.
 
 Reading input from the user:
 
-```jackal
+```js
 print("Hello ");
 let name = read();
 print("Hello, " + name + "!");
