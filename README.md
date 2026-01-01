@@ -70,6 +70,27 @@ jack.greet();
 
 This code creates a `Jack` class with a constructor and a method, then instantiates an object and calls its method.
 
+
+## Inheritance
+
+Jackal also inheritance 
+
+```js
+class Person{
+    init(name){
+        this.name = name;
+    }
+}
+class Jack extends Person{
+    func greet(){
+        println("Hello " + this.name)
+    }
+}
+
+let jack = Jack("Jack");
+jack.greet();
+```
+
 ### Array Example
 
 Working with arrays and loops:
