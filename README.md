@@ -59,8 +59,8 @@ class Jack{
         this.name = name;
     }
 
-    function greet(){
-        print "Hello " + this.name;
+    func greet(){
+        println("Hello " + this.name)
     }
 }
 
@@ -114,3 +114,18 @@ match (score) {
 ```
 
 This demonstrates pattern matching syntax for elegant conditional branching.
+
+### Generic (Beta)
+
+Jackal also support generic programming pattern
+```jackal
+class Person<T>{
+    init (name : T){
+        this.name = name
+    }
+
+    func getName() {
+        return this.name
+    }
+}
+```
