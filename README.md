@@ -55,7 +55,7 @@ Here's a simple example demonstrating object-oriented programming in Jackal:
 ```jackal
 class Jack{
     
-    function init(name){
+    init(name){
         this.name = name;
     }
 
@@ -78,7 +78,11 @@ Working with arrays and loops:
 let data = ["jack","john","davin","ale"];
 
 for (let i = 0 ; i < 4 ; i ++ ){
-    print data[i];
+    print(data[i]);
+}
+
+for (i in data){
+    print(data[i])
 }
 ```
 
