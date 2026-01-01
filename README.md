@@ -192,3 +192,16 @@ class Person<T>{
 
 let person = Person<String>("jack")
 ```
+
+### Reactive (Beta)
+
+Jackal also support reactive programming pattern
+```js
+let counter = 0
+every(1000){
+    counter ++
+    println(counter)
+} until (counter >= 5 ){
+    println("loop stop")
+}
+```
