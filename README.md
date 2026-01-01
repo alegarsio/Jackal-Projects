@@ -52,7 +52,7 @@ Create a file with a `.jackal` extension and run it using the newly built interp
 
 Here's a simple example demonstrating object-oriented programming in Jackal:
 
-```jackal
+```js
 class Jack{
     
     init(name){
@@ -71,6 +71,46 @@ jack.greet();
 This code creates a `Jack` class with a constructor and a method, then instantiates an object and calls its method.
 
 
+## Inheritance
+
+Jackal also support inheritance 
+
+```js
+class Person{
+    init(name){
+        this.name = name;
+    }
+}
+class Jack extends Person{
+    func greet(){
+        println("Hello " + this.name)
+    }
+}
+
+let jack = Jack("Jack");
+jack.greet();
+```
+
+## interface
+
+Jackal also support interface 
+
+```js
+interface Greetable{
+    func greet() ;
+}
+
+class Jack implements Greetable{
+    
+    @override
+    func greet() {
+        println("hello jackal")
+    }
+}
+
+let jack = Jack();
+jack.greet();
+```
 ## Inheritance
 
 Jackal also inheritance 
