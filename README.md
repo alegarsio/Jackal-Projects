@@ -165,7 +165,7 @@ This shows how to use the `read()` function to get user input and interact with 
 
 Using match expressions for conditional logic:
 
-```jackal
+```js
 let score = 90;
 match (score) {
     90 => println("Passed");
@@ -179,7 +179,7 @@ This demonstrates pattern matching syntax for elegant conditional branching.
 ### Generic (Beta)
 
 Jackal also support generic programming pattern
-```jackal
+```js
 class Person<T>{
     init (name : T){
         this.name = name
