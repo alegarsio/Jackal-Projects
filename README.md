@@ -68,6 +68,23 @@ func add(a,b) -> Int{
 }
 ```
 
+## For loop
+
+Here's a simple example demonstrating for loop in jackal
+
+```js
+for (let i = 0 ; i < 10 ; i ++){
+    println(i)
+}
+
+for(i in 1 to 100){
+    println(i)
+}
+
+for(i in 1 to 100 step 2){
+    println(i)
+}
+```
 
 ## Class
 
