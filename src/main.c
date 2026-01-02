@@ -1093,6 +1093,10 @@ int main(int argc, char **argv)
     REGISTER("native_transpose",native_transpose);
     REGISTER("_native_linear_predicts",native_linear_regression);
 
+
+    /***
+     * This section contains the native tensor built in function
+     */
     REGISTER("__tensor_add",native_tensor_add);
     REGISTER("__tensor_mul",native_tensor_mul);
     REGISTER("__tensor_sub",native_tensor_sub);
@@ -1100,6 +1104,11 @@ int main(int argc, char **argv)
     REGISTER("__tensor_sum",native_tensor_sum);
     REGISTER("__tenso_mean",native_tensor_mean);
     REGISTER("__tensor_dot",native_tensor_dot);
+
+    REGISTER("__vector_dot",native_vector_dot);
+    REGISTER("__vector_num",native_vector_norm);
+
+    REGISTER("achos",native_math_acos);
 
 
     DEFINE_NATIVE("len", builtin_len);

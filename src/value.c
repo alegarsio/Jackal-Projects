@@ -2888,3 +2888,38 @@ Value native_tensor_dot(int arg_count, Value* args) {
     }
     return (Value){VAL_ARRAY, {.array = result}};
 }
+
+Value native_vector_dot(int arg_count, Value* args) {
+    ValueArray* a = args[0].as.array;
+    ValueArray* b = args[1].as.array;
+    double result = 0;
+
+    for (int i = 0; i < a->count; i++) {
+        result += a->values[i].as.number * b->values[i].as.number;
+    }
+    return (Value){VAL_NUMBER, {.number = result}};
+}
+
+Value native_vector_norm(int arg_count, Value* args) {
+    ValueArray* a = args[0].as.array;
+    double sum_sq = 0;
+
+    for (int i = 0; i < a->count; i++) {
+        double val = a->values[i].as.number;
+        sum_sq += val * val;
+    }
+    return (Value){VAL_NUMBER, {.number = sqrt(sum_sq)}};
+}
+
+Value native_math_acos(int arg_count, Value* args) {
+    if (args[0].type != VAL_NUMBER) {
+        return (Value){VAL_NIL};
+    }
+    
+    double val = args[0].as.number;
+    
+    if (val < -1.0) val = -1.0;
+    if (val > 1.0) val = 1.0;
+    
+    return (Value){VAL_NUMBER, {.number = acos(val)}};
+}

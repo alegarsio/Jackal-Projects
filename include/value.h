@@ -294,3 +294,9 @@ Value native_tensor_sum(int arg_count, Value* args);
 Value native_tensor_mean(int arg_count, Value* args);
 
 Value native_tensor_dot(int arg_count, Value* args);
+
+Value native_vector_dot(int arg_count, Value* args);
+
+Value native_vector_norm(int arg_count, Value* args);
+
+Value native_math_acos(int arg_count, Value* args);

@@ -48,7 +48,20 @@ Create a file with a `.jackal` extension and run it using the newly built interp
 ./jackal your_script.jackal
 ```
 
-## Example Code
+
+## Type Safe
+
+Here's a simple example demonstrating type safe feature in jackal
+
+```js
+let a : Int = 10
+let a : Float = 10
+let b : String = "hello"
+let c : Number = 20
+```
+
+
+## Class
 
 Here's a simple example demonstrating object-oriented programming in Jackal:
 
