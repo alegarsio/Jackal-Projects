@@ -55,9 +55,17 @@ Here's a simple example demonstrating type safe feature in jackal
 
 ```js
 let a : Int = 10
-let a : Float = 10
-let b : String = "hello"
-let c : Number = 20
+let b : Float = 20
+let c : String = "hello"
+let d : Number = 20
+
+func add(a : Int, b : Int){
+    return a + b
+}
+
+func add(a,b) -> Int{
+    return a + b
+}
 ```
 
 
