@@ -92,6 +92,23 @@ jack.greet();
 This code creates a `Jack` class with a constructor and a method, then instantiates an object and calls its method.
 
 
+## Singleton
+
+Here's a simple example demonstrating singleton programming pattern in Jackal:
+
+```js
+object Person(name){
+    func getName(){
+        return this.name
+    }
+}
+
+Person.name = "jack"
+println(Person.getName())
+```
+
+
+
 ## Inheritance
 
 Jackal also support inheritance 
