@@ -125,7 +125,6 @@ println(Person.getName())
 ```
 
 
-
 ## Inheritance
 
 Jackal also support inheritance 
@@ -203,6 +202,21 @@ for (i in data){
 ```
 
 This demonstrates array literals, C-style for loops, and array index access.
+
+
+### Map Example
+
+Working with maps
+
+```js
+let data {
+    "id" : 1,
+    "name" : "ale"
+}
+
+println(data["name"])
+```
+
 
 ### User Input Example
 
