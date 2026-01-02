@@ -49,7 +49,7 @@ Create a file with a `.jackal` extension and run it using the newly built interp
 ```
 
 
-## Type Safe
+## Type Safe ( In Development )
 
 Here's a simple example demonstrating type safe feature in jackal
 
