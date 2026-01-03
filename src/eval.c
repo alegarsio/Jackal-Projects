@@ -9,8 +9,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include<pthread.h>
 
+Func* current_executing_func = NULL;
 /**
  * @include collections DSA stl
  */
@@ -162,14 +163,22 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
     }
 
     Func *func = func_val.as.function;
-    Env *new_env = env_new(func->env);
 
     if (arg_count != func->arity)
     {
         char buffer[128];
-        snprintf(buffer, sizeof(buffer), "Callback function expected %d arguments but got %d.", func->arity, arg_count);
+        snprintf(buffer, sizeof(buffer), "Function expected %d arguments but got %d.", func->arity, arg_count);
         print_error(buffer);
         return (Value){VAL_NIL, {0}};
+    }
+
+    if (func->is_deprecated) {
+        printf("\033[1;33m[Warning]\033[0m Function ");
+        if (func->deprecated_message != NULL && strlen(func->deprecated_message) > 0) {
+            printf("is deprecated: %s\n", func->deprecated_message);
+        } else {
+            printf("is deprecated and may be removed in a future version.\n");
+        }
     }
 
     if (func->is_memoized && arg_count > 0) {
@@ -180,38 +189,43 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         if (map_get(func->cache, key, &cached_res)) {
             return cached_res; 
         }
-
-        Value result = eval_node(new_env, func->body_head);
-        map_set(func->cache, key, result); 
-        return result;
     }
 
-    if (func->is_parallel) {
-        pthread_t thread;
-        ThreadArgs *t_args = malloc(sizeof(ThreadArgs));
-        t_args->env = new_env;
-        t_args->body = func->body_head;
-
-        pthread_create(&thread, NULL, parallel_wrapper, t_args);
-        
-        // Opsi A: Tunggu selesai (Join)
-        pthread_join(thread, NULL);
-        
-        Value final_res = t_args->result;
-        free(t_args);
-        return final_res;
-    }
+    Func *previous_func = current_executing_func;
+    current_executing_func = func;
 
     Env *call_env = env_new(func->env);
     Node *param = func->params_head;
-
     for (int i = 0; i < arg_count; i++)
     {
         set_var(call_env, param->name, args[i], false, "");
         param = param->next;
     }
 
-    Value result = eval_node(call_env, func->body_head);
+    Value result;
+    if (func->is_parallel) {
+        pthread_t thread;
+        ThreadArgs *t_args = malloc(sizeof(ThreadArgs));
+        t_args->env = call_env;
+        t_args->body = func->body_head;
+
+        pthread_create(&thread, NULL, parallel_wrapper, t_args);
+        pthread_join(thread, NULL);
+        
+        result = t_args->result;
+        free(t_args);
+    } else {
+        result = eval_node(call_env, func->body_head);
+    }
+
+    current_executing_func = previous_func;
+
+    if (func->is_memoized && arg_count > 0) {
+        char key[64];
+        snprintf(key, sizeof(key), "%g", args[0].as.number);
+        map_set(func->cache, key, result);
+    }
+
     env_free(call_env);
 
     if (result.type == VAL_RETURN)
@@ -221,9 +235,8 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         return actual_return;
     }
 
-    return (Value){VAL_NIL, {0}};
+    return result;
 }
-
 /**
  * @brief Recursively searches for a method in a class and its superclasses.
  * @param klass The class to search in.
@@ -1057,25 +1070,43 @@ Value eval_node(Env *env, Node *n)
     }
 
     case NODE_VARDECL:
-    {
+{
+    if (n->is_static && current_executing_func != NULL) {
+        Value existing_val;
+        
+        if (map_get(current_executing_func->static_vars, n->name, &existing_val)) {
+            set_var(env, n->name, existing_val, false, n->type_name);
+            return (Value){VAL_NIL, {0}};
+        }
+
         Value val = eval_node(env, n->right);
         const char *actual_type = get_value_type_name(val);
 
-        if (n->type_name[0] != '\0')
-        {
-            if (strcmp(n->type_name, actual_type) != 0)
-            {
+        if (n->type_name[0] != '\0') {
+            if (strcmp(n->type_name, actual_type) != 0) {
                 print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
-                free_value(val);
                 return (Value){VAL_NIL, {0}};
             }
         }
 
+        map_set(current_executing_func->static_vars, n->name, val);
         set_var(env, n->name, val, false, n->type_name);
-
-        free_value(val);
         return (Value){VAL_NIL, {0}};
     }
+
+    Value val = eval_node(env, n->right);
+    const char *actual_type = get_value_type_name(val);
+
+    if (n->type_name[0] != '\0') {
+        if (strcmp(n->type_name, actual_type) != 0) {
+            print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
+            return (Value){VAL_NIL, {0}};
+        }
+    }
+
+    set_var(env, n->name, val, false, n->type_name);
+    return (Value){VAL_NIL, {0}};
+}
 
         // case NODE_PRINT:
         // {
@@ -1268,6 +1299,8 @@ Value eval_node(Env *env, Node *n)
         func->is_private = n->is_private;
         func->is_deprecated = n->is_deprecated;
         func->is_memoized = n->is_memoize;
+
+        func->static_vars = map_new();
 
         n->left = NULL;
         n->right = NULL;

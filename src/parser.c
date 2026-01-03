@@ -2092,6 +2092,7 @@ static void parse_annotations(Parser *P, Node *n)
     n->is_main = false;
     n->is_memoize = false;
     n->is_paralel = false;
+    n->is_static = false;
 
     while (P->current.kind == TOKEN_AT)
     {
@@ -2105,6 +2106,9 @@ static void parse_annotations(Parser *P, Node *n)
         if (strcmp(P->current.text, "main") == 0) 
         {
             n->is_main = true;
+        }
+        else if (strcmp(P->current.text,"static") == 0){
+            n->is_static = true;
         }
         else if (strcmp(P->current.text, "parallel") == 0){
             n -> is_paralel = true;

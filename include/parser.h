@@ -69,6 +69,7 @@ typedef enum {
  * Represents a node in the Abstract Syntax Tree (AST) of the Jackal programming language.
  */
 typedef struct Node {
+
     NodeKind kind;
     TokenKind op;
     
@@ -79,18 +80,17 @@ typedef struct Node {
     double value;
     struct Node* left;
     struct Node* right;
-    
-    
     struct Node* next; 
     bool is_private;
     bool is_singleton;
-
     bool is_override;
     bool is_deprecated;
     bool is_record;
     bool is_main;
     bool is_memoize;
     bool is_paralel;
+    bool is_static;
+    char* deprecated_message;
 
     struct Node* super_template_types;
     struct Node* template_types;

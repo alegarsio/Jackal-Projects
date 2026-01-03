@@ -174,6 +174,7 @@ typedef struct Value (*NativeFn)(int argCount, struct Value* args);
  * Represents a function in the Jackal programming language.
  */
 typedef struct Func {
+
     struct Node* params_head;
     struct Node* body_head;
     struct Env* env;
@@ -182,6 +183,8 @@ typedef struct Func {
     bool is_deprecated;
     bool is_private;
     bool is_parallel;
+    char* deprecated_message;
+    struct HashMap* static_vars;
     struct HashMap* cache;
     char return_type[64];
 } Func;
