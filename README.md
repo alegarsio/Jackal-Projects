@@ -292,9 +292,26 @@ Memoization is a specific form of caching. When a function is marked with @memoi
 @memoize
 func counter(n) {
     let count = 1
-    for (let i = 1; i <= n; i++) {
+    for (let i = 1; i < n; i++) {
         count = count * 2
     }
     return count
 }
 ```
+
+## Parallel Decorator
+
+In standard programming, functions run sequentially (one after another). If Function A takes 5 seconds, Function B must wait 5 seconds to start. With @parallel, Jackal uses the POSIX Threads (pthreads) library from C to run the function on a different core of your processor.
+
+```js
+@parallel
+func counter(n) {
+    let count = 1
+    for (let i = 1; i < n; i++) {
+        count = count + 1
+    }
+    return count
+}
+
+```
+
