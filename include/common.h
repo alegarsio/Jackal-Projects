@@ -178,9 +178,11 @@ typedef struct Func {
     struct Node* body_head;
     struct Env* env;
     int arity;
+    bool is_memoized;
     bool is_deprecated;
     bool is_private;
-    
+    bool is_parallel;
+    struct HashMap* cache;
     char return_type[64];
 } Func;
 

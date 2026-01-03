@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 /**
  * @include collections DSA stl
@@ -70,6 +71,12 @@ static bool is_integer_value(Value val)
     if (val.type != VAL_NUMBER)
         return false;
     return val.as.number == floor(val.as.number);
+}
+
+void* parallel_wrapper(void* arg) {
+    ThreadArgs* t_args = (ThreadArgs*)arg;
+    t_args->result = eval_node(t_args->env, t_args->body);
+    return NULL;
 }
 
 /**
@@ -155,6 +162,7 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
     }
 
     Func *func = func_val.as.function;
+    Env *new_env = env_new(func->env);
 
     if (arg_count != func->arity)
     {
@@ -162,6 +170,36 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         snprintf(buffer, sizeof(buffer), "Callback function expected %d arguments but got %d.", func->arity, arg_count);
         print_error(buffer);
         return (Value){VAL_NIL, {0}};
+    }
+
+    if (func->is_memoized && arg_count > 0) {
+        char key[64];
+        snprintf(key, sizeof(key), "%g", args[0].as.number); 
+
+        Value cached_res;
+        if (map_get(func->cache, key, &cached_res)) {
+            return cached_res; 
+        }
+
+        Value result = eval_node(new_env, func->body_head);
+        map_set(func->cache, key, result); 
+        return result;
+    }
+
+    if (func->is_parallel) {
+        pthread_t thread;
+        ThreadArgs *t_args = malloc(sizeof(ThreadArgs));
+        t_args->env = new_env;
+        t_args->body = func->body_head;
+
+        pthread_create(&thread, NULL, parallel_wrapper, t_args);
+        
+        // Opsi A: Tunggu selesai (Join)
+        pthread_join(thread, NULL);
+        
+        Value final_res = t_args->result;
+        free(t_args);
+        return final_res;
     }
 
     Env *call_env = env_new(func->env);
@@ -235,7 +273,7 @@ Value eval_node(Env *env, Node *n)
         Value val;
         val.type = VAL_FUNCTION;
         val.as.function = func;
-        val.gc_info = ((GCObject*)func) - 1;
+        val.gc_info = ((GCObject *)func) - 1;
 
         return val;
     }
@@ -1229,23 +1267,35 @@ Value eval_node(Env *env, Node *n)
         func->arity = n->arity;
         func->is_private = n->is_private;
         func->is_deprecated = n->is_deprecated;
+        func->is_memoized = n->is_memoize;
 
         n->left = NULL;
         n->right = NULL;
 
         Value func_val = (Value){VAL_FUNCTION, {.function = func}};
-        set_var(env, n->name, func_val, true, ""); 
+        set_var(env, n->name, func_val, true, "");
 
-        if (n->is_main) {
-        
-            struct Var* name_var = find_var(env, "__name__");
-            
-           if (name_var && name_var->value.type == VAL_STRING && 
-                strcmp(name_var->value.as.string, "main") == 0) {
-                
-                Value args[0]; 
-                call_jackal_function(env, func_val, 0, args); 
+        if (n->is_main)
+        {
+
+            struct Var *name_var = find_var(env, "__name__");
+
+            if (name_var && name_var->value.type == VAL_STRING &&
+                strcmp(name_var->value.as.string, "main") == 0)
+            {
+
+                Value args[0];
+                call_jackal_function(env, func_val, 0, args);
             }
+        }
+
+        if (func->is_memoized)
+        {
+            func->cache = map_new(); 
+        }
+        else
+        {
+            func->cache = NULL;
         }
 
         return (Value){.type = VAL_NIL, .as = {0}};

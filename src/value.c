@@ -123,9 +123,16 @@ void print_value(Value value)
     case VAL_NIL:
 
         break;
-    case VAL_NUMBER:
-        printf("%g", value.as.number);
-        break;
+   case VAL_NUMBER:
+    {
+        double n = value.as.number;
+        if (n == (long long)n) {
+            printf("%lld", (long long)n);
+        } else {
+            printf("%g", n);
+        }
+    }
+    break;
     case VAL_STRING:
         printf("%s", value.as.string);
         break;

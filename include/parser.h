@@ -89,17 +89,22 @@ typedef struct Node {
     bool is_deprecated;
     bool is_record;
     bool is_main;
+    bool is_memoize;
+    bool is_paralel;
 
     struct Node* super_template_types;
     struct Node* template_types;
     
     int arity;
     char return_type[64];
-
-
     
 } Node;
 
+typedef struct {
+    struct Env* env;
+    struct Node* body;
+    Value result;
+} ThreadArgs;
 
 /**
  * @typedef @struct PARSER
