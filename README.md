@@ -165,25 +165,7 @@ class Jack implements Greetable{
 let jack = Jack();
 jack.greet();
 ```
-## Inheritance
 
-Jackal also inheritance 
-
-```js
-class Person{
-    init(name){
-        this.name = name;
-    }
-}
-class Jack extends Person{
-    func greet(){
-        println("Hello " + this.name)
-    }
-}
-
-let jack = Jack("Jack");
-jack.greet();
-```
 
 ### Array Example
 
