@@ -274,11 +274,27 @@ every(1000){
 Here's a simple example demonstrating Decorator Metadata in Jackal:
 
 ## Main Decorator 
+
 In complex programming, a script might contain hundreds of functions. The @main decorator tells the Jackal interpreter exactly where to start execution. Without it, the interpreter wouldn't know which function to run first after loading all definitions.
 
 ```js
 @main
 func main(){
     println("hello world")
+}
+```
+
+## Memoize Decorator
+
+Memoization is a specific form of caching. When a function is marked with @memoize, the interpreter saves the result of every function call in a hidden table
+
+```js
+@memoize
+func counter(n) {
+    let count = 1
+    for (let i = 1; i <= n; i++) {
+        count = count * 2
+    }
+    return count
 }
 ```
