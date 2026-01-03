@@ -947,6 +947,8 @@ void runFile(const char *path, Env *env)
     source[len] = '\0';
     fclose(f);
 
+    set_var(env, "__name__", (Value){VAL_STRING, {.string = strdup("main")}}, true, "");
+
     execute_source(source, env);
     free(source);
 }
@@ -959,6 +961,7 @@ int main(int argc, char **argv)
      * Set Of Jackal Built In Method Entry
      */
     set_var(env, "nil", (Value){VAL_NIL, {0}}, true,"");
+   
     set_var(env, "typeof", (Value){VAL_NATIVE, {.native = builtin_typeof}}, true,"");
 
 /**
@@ -1029,6 +1032,7 @@ int main(int argc, char **argv)
 
     REGISTER("__zip",native_zip);
     REGISTER("__read_csv",native_read_csv);
+    REGISTER("__read_csv_advance",native_load_csv_smart);
 
     REGISTER("__knn", native_knn_nd);
     REGISTER("__accuracy", native_accuracy);
@@ -1104,6 +1108,7 @@ int main(int argc, char **argv)
     REGISTER("__tensor_sum",native_tensor_sum);
     REGISTER("__tenso_mean",native_tensor_mean);
     REGISTER("__tensor_dot",native_tensor_dot);
+    
 
     REGISTER("__vector_dot",native_vector_dot);
     REGISTER("__vector_num",native_vector_norm);
@@ -1260,7 +1265,7 @@ int main(int argc, char **argv)
     }
     else
     {
-
+        set_var(env, "__name__", (Value){VAL_STRING, {.string = strdup("main")}}, true, "");
         runFile(filename, env);
         env_free(env);
     }

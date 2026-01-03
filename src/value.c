@@ -2746,6 +2746,37 @@ Value native_read_csv(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = matrix}};
 }
 
+Value native_load_csv_smart(int arg_count, Value* args) {
+    const char* filename = args[0].as.string;
+    FILE* file = fopen(filename, "r");
+    if (!file) return (Value){VAL_NIL};
+
+    ValueArray* all_rows = array_new();
+    char line[10240]; 
+
+    while (fgets(line, sizeof(line), file)) {
+        ValueArray* row = array_new();
+        char* token = strtok(line, ",");
+        while (token) {
+            token[strcspn(token, "\r\n")] = 0;
+            
+            char* endptr;
+            double val = strtod(token, &endptr);
+            
+            
+            if (endptr == token) {
+                array_append(row, (Value){VAL_STRING, {.string = strdup(token)}});
+            } else {
+                array_append(row, (Value){VAL_NUMBER, {.number = val}});
+            }
+            token = strtok(NULL, ",");
+        }
+        array_append(all_rows, (Value){VAL_ARRAY, {.array = row}});
+    }
+    fclose(file);
+    return (Value){VAL_ARRAY, {.array = all_rows}};
+}
+
 Value native_tensor_add(int arg_count, Value* args) {
     ValueArray* a = args[0].as.array;
     double scalar = args[1].as.number;

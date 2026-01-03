@@ -88,6 +88,7 @@ typedef struct Node {
     bool is_override;
     bool is_deprecated;
     bool is_record;
+    bool is_main;
 
     struct Node* super_template_types;
     struct Node* template_types;

@@ -1486,6 +1486,7 @@ Node *parse_stmt(Parser *P)
         next(P);
         Node *n = parse_func_def(P);
 
+        n->is_main = meta_node.is_main;
         n->is_override = meta_node.is_override;
         n->is_deprecated = meta_node.is_deprecated;
         return n;
@@ -2085,6 +2086,7 @@ static void parse_annotations(Parser *P, Node *n)
 
     n->is_override = false;
     n->is_deprecated = false;
+    n->is_main = false;
 
     while (P->current.kind == TOKEN_AT)
     {
@@ -2095,8 +2097,11 @@ static void parse_annotations(Parser *P, Node *n)
             print_error("Expected annotation name after '@'.");
             return;
         }
-
-        if (strcmp(P->current.text, "override") == 0)
+        if (strcmp(P->current.text, "main") == 0) 
+        {
+            n->is_main = true;
+        }
+        else if (strcmp(P->current.text, "override") == 0)
         {
             n->is_override = true;
         }
@@ -2106,6 +2111,7 @@ static void parse_annotations(Parser *P, Node *n)
         }
         else
         {
+          
             print_error("Unknown annotation '@%s'.", P->current.text);
         }
         next(P);

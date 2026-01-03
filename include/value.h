@@ -300,3 +300,5 @@ Value native_vector_dot(int arg_count, Value* args);
 Value native_vector_norm(int arg_count, Value* args);
 
 Value native_math_acos(int arg_count, Value* args);
+
+Value native_load_csv_smart(int arg_count, Value* args);
