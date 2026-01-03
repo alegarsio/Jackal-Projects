@@ -268,3 +268,17 @@ every(1000){
     println("loop stop")
 }
 ```
+
+## Decorator
+
+Here's a simple example demonstrating Decorator Metadata in Jackal:
+
+## Main Decorator 
+In complex programming, a script might contain hundreds of functions. The @main decorator tells the Jackal interpreter exactly where to start execution. Without it, the interpreter wouldn't know which function to run first after loading all definitions.
+
+```js
+@main
+func main(){
+    println("hello world")
+}
+```
