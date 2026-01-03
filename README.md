@@ -315,3 +315,25 @@ func counter(n) {
 
 ```
 
+## Override Decorator
+
+When you create a specialized object based on a generic one, you might want to change how a specific behavior works. By marking a function as @override, you are explicitly telling the interpreter: "I know this function exists in the parent, and I am intentionally replacing it with this new version.
+
+```js
+
+interface Greetable{
+    func greet() ;
+}
+
+class Jack implements Greetable{
+    
+    @override
+    func greet() {
+        println("hello jackal")
+    }
+}
+
+let jack = Jack();
+jack.greet();
+
+```
