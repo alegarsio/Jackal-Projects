@@ -68,11 +68,21 @@ func main(){
 
 Here's a simple example demonstrating type safe feature in jackal
 
+
 ```js
 let a : Int = 10
+```
+```js
 let b : Float = 20
+```
+```js
 let c : String = "hello"
+```
+```js
 let d : Number = 20
+```
+
+```js
 
 func add(a : Int, b : Int){
     return a + b
