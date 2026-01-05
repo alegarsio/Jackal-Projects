@@ -166,10 +166,11 @@ static bool is_type_alias_match(const char *expected_type, Value actual_val)
 
     return false;
 }
-void* async_wrapper(void* data) {
-    AsyncData* ad = (AsyncData*)data;
-    eval_node(ad->func->body_head, ad->func->env); 
-    free(ad); 
+void *async_wrapper(void *data)
+{
+    AsyncData *ad = (AsyncData *)data;
+    eval_node(ad->func->body_head, ad->func->env);
+    free(ad);
     return NULL;
 }
 
@@ -187,38 +188,38 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         return (Value){VAL_NIL, {0}};
     }
 
+    if (func->is_platform_specific && func->target_os != NULL)
+    {
+        const char *current_os = get_platform_name();
 
-    if (func->is_platform_specific && func->target_os != NULL) {
-        const char* current_os = get_platform_name();
-        
-     
+        if (strcmp(func->target_os, current_os) != 0)
+        {
 
-        if (strcmp(func->target_os, current_os) != 0) {
-           
-            if (strcmp(func->target_os, "unix") == 0 && 
-               (strcmp(current_os, "macos") == 0 || strcmp(current_os, "linux") == 0)) {
-
-            } else {
-                return (Value){VAL_NIL, {0}}; 
+            if (strcmp(func->target_os, "unix") == 0 &&
+                (strcmp(current_os, "macos") == 0 || strcmp(current_os, "linux") == 0))
+            {
+            }
+            else
+            {
+                return (Value){VAL_NIL, {0}};
             }
         }
     }
 
+    if (func->is_async)
+    {
 
-    if (func->is_async) {
-      
         pthread_t thread;
-        AsyncData* data = malloc(sizeof(AsyncData));
+        AsyncData *data = malloc(sizeof(AsyncData));
         data->func = func;
         data->arg_count = arg_count;
         data->args = args;
 
         pthread_create(&thread, NULL, async_wrapper, data);
-        pthread_detach(thread); 
+        pthread_detach(thread);
 
-        return (Value){VAL_NIL, {0}}; 
+        return (Value){VAL_NIL, {0}};
     }
-    
 
     // Func *func = func_val.as.function;
 
@@ -302,7 +303,6 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         free(result.as.return_val);
         return actual_return;
     }
-    
 
     return result;
 }
@@ -337,6 +337,8 @@ static Var *find_method(Class *klass, const char *name)
 
 Value eval_node(Env *env, Node *n)
 {
+
+    
     if (!n)
         return (Value){.type = VAL_NIL, .as = {0}};
 
@@ -1374,20 +1376,18 @@ Value eval_node(Env *env, Node *n)
         func->is_private = n->is_private;
         func->is_deprecated = n->is_deprecated;
         func->is_memoized = n->is_memoize;
-        func->is_async = n -> is_async;
+        func->is_async = n->is_async;
 
         func->is_platform_specific = n->is_platform_specific;
 
         if (n->is_platform_specific && n->target_os != NULL)
         {
-            func->target_os = strdup(n->target_os); 
+            func->target_os = strdup(n->target_os);
         }
         else
         {
             func->target_os = NULL;
         }
-
-       
 
         func->static_vars = map_new();
 
@@ -1432,8 +1432,11 @@ Value eval_node(Env *env, Node *n)
     case NODE_FUNC_CALL:
     {
 
+    
+
         if (n->left->kind == NODE_IDENT && strcmp(n->left->name, "read") == 0)
         {
+
             char buffer[1024];
             if (fgets(buffer, sizeof(buffer), stdin))
             {

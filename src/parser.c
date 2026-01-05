@@ -664,39 +664,35 @@ static Node *parse_logical_and(Parser *P)
     }
     return left;
 }
-
 static Node *parse_pipeline(Parser *P)
 {
-    
     Node *node = parse_logical_or(P);
 
     while (P->current.kind == TOKEN_PIPELINE)
     {
         next(P);
-        Node *right = parse_unary(P); 
-        
+        Node *right = parse_unary(P);
+
         if (right->kind == NODE_IDENT)
         {
             Node *call = new_node(NODE_FUNC_CALL);
             strcpy(call->name, right->name);
-            call->left = node; 
+            call->left = node;
             call->arity = 1;
             node = call;
-            free_node(right);
         }
         else if (right->kind == NODE_FUNC_CALL)
         {
-            node->next = right->left; 
-            right->left = node;
+            node->next = right->right;
+            right->right = node;
             right->arity++;
             node = right;
         }
         else
         {
-            print_error("Pipeline target must be a function or identifier.");
+            print_error("Pipeline target must be a function.");
         }
     }
-
     return node;
 }
 /**
@@ -747,7 +743,6 @@ static Node *parse_assignment(Parser *P)
     }
     return node;
 }
-
 
 /**
  * @brief Parses an expression.
@@ -1450,21 +1445,24 @@ static Node *parse_observe_stmt(Parser *P)
     return n;
 }
 
-Node* apply_pipeline(Node* left, Node* right) {
-    if (right->kind == NODE_IDENT) {
-        Node* call = malloc(sizeof(Node));
+Node *apply_pipeline(Node *left, Node *right)
+{
+    if (right->kind == NODE_IDENT)
+    {
+        Node *call = malloc(sizeof(Node));
         memset(call, 0, sizeof(Node));
         call->kind = NODE_FUNC_CALL;
 
-        strcpy(call->name, right->name); 
+        strcpy(call->name, right->name);
 
-        call->left = left; 
+        call->left = left;
         call->arity = 1;
         return call;
     }
 
-    if (right->kind == NODE_FUNC_CALL) {
-        left->next = right->left; 
+    if (right->kind == NODE_FUNC_CALL)
+    {
+        left->next = right->left;
         right->left = left;
         right->arity++;
         return right;
@@ -2218,7 +2216,7 @@ static void parse_annotations(Parser *P, Node *n)
                         n->target_os = strdup(raw);
                     }
 
-                    next(P); 
+                    next(P);
                 }
                 else
                 {
@@ -2245,9 +2243,10 @@ static void parse_annotations(Parser *P, Node *n)
         {
             n->is_main = true;
         }
-        
-        else if (strcmp(P->current.text, "async") == 0){
-            n -> is_async = true;
+
+        else if (strcmp(P->current.text, "async") == 0)
+        {
+            n->is_async = true;
         }
         else if (strcmp(P->current.text, "static") == 0)
         {
