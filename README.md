@@ -48,6 +48,17 @@ Create a file with a `.jackal` extension and run it using the newly built interp
 ./jackal your_script.jackal
 ```
 
+## Pipe Operator ( Beta )
+
+Here's a simple example demonstrating pipeline operator  in jackal
+
+```js
+@main
+func main(){
+    "Hello world " |> println()
+}
+```
+
 
 ## Type Safe ( In Development )
 
