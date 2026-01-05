@@ -994,6 +994,7 @@ int main(int argc, char **argv)
      * Network Built In API
      * e.g., Socket, Inet
      */
+    #ifdef __unix__ || defined(__APPLE__) || defined(__DARWIN__)
     REGISTER("__net_listen", builtin_net_listen);
     REGISTER("__net_accept", builtin_net_accept);
     REGISTER("__net_send", builtin_net_send);
@@ -1001,6 +1002,8 @@ int main(int argc, char **argv)
     REGISTER("__net_resolve_ip", builtin_net_resolve_ip);
     REGISTER("__net_htons", builtin_net_htons);
     REGISTER("__net_aton", builtin_net_aton);
+    #endif
+
     REGISTER("__time_now", builtin_time_now);
 
     REGISTER("__get_local_hour", builtin_time_get_local_hour);
