@@ -189,6 +189,7 @@ typedef struct Func {
     char return_type[64];
     bool is_platform_specific;
     char* target_os;
+    bool is_async;
 } Func;
 
 struct Value;
@@ -311,6 +312,7 @@ typedef struct Var {
     char expected_type[64];
 } Var;
 
+
 /**
  * Prints an error message to stderr.
  * @param message Error message to be printed.
@@ -357,6 +359,13 @@ typedef struct {
     char text[64];
     double number;
 } Token;
+
+typedef struct {
+    Func* func;
+    int arg_count;
+    Value* args;
+} AsyncData;
+
 
 void* jackal_allocate_gc(size_t size);
 

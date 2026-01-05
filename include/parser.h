@@ -99,6 +99,7 @@ typedef struct Node {
     char* target_os;
     int arity;
     char return_type[64];
+    bool is_async;
     
 } Node;
 

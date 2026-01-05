@@ -1488,6 +1488,16 @@ Node *parse_stmt(Parser *P)
         next(P);
         Node *n = parse_func_def(P);
 
+        n->is_platform_specific = meta_node.is_platform_specific;
+        if (meta_node.is_platform_specific && meta_node.target_os != NULL)
+        {
+            n->target_os = strdup(meta_node.target_os);
+        }
+        else
+        {
+            n->target_os = NULL;
+        }
+
         n->is_main = meta_node.is_main;
         n->is_paralel = meta_node.is_paralel;
         n->is_memoize = meta_node.is_memoize;
@@ -1495,9 +1505,11 @@ Node *parse_stmt(Parser *P)
         n->is_deprecated = meta_node.is_deprecated;
         n->is_platform_specific = meta_node.is_platform_specific;
 
+        meta_node.is_platform_specific = false;
+
         if (meta_node.is_platform_specific && meta_node.target_os != NULL)
         {
-           
+
             n->target_os = strdup(meta_node.target_os);
         }
         else
@@ -2097,6 +2109,13 @@ static Node *parse_unary(Parser *P)
     return parse_postfix(P);
 }
 
+static inline bool is_ident(Parser *P, const char *s)
+{
+    return P->current.kind == TOKEN_IDENT &&
+           P->current.text &&
+           strcmp(P->current.text, s) == 0;
+}
+
 static void parse_annotations(Parser *P, Node *n)
 {
 
@@ -2107,6 +2126,7 @@ static void parse_annotations(Parser *P, Node *n)
     n->is_paralel = false;
     n->is_static = false;
     n->is_platform_specific = false;
+    n->is_main = false;
 
     while (P->current.kind == TOKEN_AT)
     {
@@ -2126,11 +2146,21 @@ static void parse_annotations(Parser *P, Node *n)
             if (P->current.kind == TOKEN_LPAREN)
             {
                 next(P);
-                if (P->current.kind == TOKEN_STRING)
+                if (P->current.kind == TOKEN_STRING && P->current.text != NULL)
                 {
+                    char *raw = P->current.text;
+                    size_t len = strlen(raw);
 
-                    n->target_os = strdup(P->current.text);
-                    next(P);
+                    if (len >= 2 && raw[0] == '"' && raw[len - 1] == '"')
+                    {
+                        n->target_os = strndup(raw + 1, len - 2);
+                    }
+                    else
+                    {
+                        n->target_os = strdup(raw);
+                    }
+
+                    next(P); 
                 }
                 else
                 {
@@ -2157,7 +2187,10 @@ static void parse_annotations(Parser *P, Node *n)
         {
             n->is_main = true;
         }
-
+        
+        else if (strcmp(P->current.text, "async") == 0){
+            n -> is_async = true;
+        }
         else if (strcmp(P->current.text, "static") == 0)
         {
             n->is_static = true;

@@ -3,29 +3,31 @@
 #include "eval.h"
 #include "value.h"
 #include "env.h"
+#include "common.h"
 
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include<pthread.h>
+#include <pthread.h>
 
-const char* get_platform_name() {
-    #if defined(_WIN32) || defined(_WIN64)
-        return "windows";
-    #elif defined(__APPLE__) || defined(__MACH__)
-        return "macos";
-    #elif defined(__linux__)
-        return "linux";
-    #elif defined(__unix__)
-        return "unix";
-    #else
-        return "unknown";
-    #endif
+const char *get_platform_name()
+{
+#if defined(_WIN32) || defined(_WIN64)
+    return "windows";
+#elif defined(__APPLE__) || defined(__MACH__)
+    return "macos";
+#elif defined(__linux__)
+    return "linux";
+#elif defined(__unix__)
+    return "unix";
+#else
+    return "unknown";
+#endif
 }
 
-Func* current_executing_func = NULL;
+Func *current_executing_func = NULL;
 /**
  * @include collections DSA stl
  */
@@ -88,8 +90,9 @@ static bool is_integer_value(Value val)
     return val.as.number == floor(val.as.number);
 }
 
-void* parallel_wrapper(void* arg) {
-    ThreadArgs* t_args = (ThreadArgs*)arg;
+void *parallel_wrapper(void *arg)
+{
+    ThreadArgs *t_args = (ThreadArgs *)arg;
     t_args->result = eval_node(t_args->env, t_args->body);
     return NULL;
 }
@@ -163,6 +166,12 @@ static bool is_type_alias_match(const char *expected_type, Value actual_val)
 
     return false;
 }
+void* async_wrapper(void* data) {
+    AsyncData* ad = (AsyncData*)data;
+    eval_node(ad->func->body_head, ad->func->env); 
+    free(ad); 
+    return NULL;
+}
 
 /**
  * @brief call stream built in method
@@ -178,20 +187,38 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         return (Value){VAL_NIL, {0}};
     }
 
+
     if (func->is_platform_specific && func->target_os != NULL) {
         const char* current_os = get_platform_name();
         
+     
+
         if (strcmp(func->target_os, current_os) != 0) {
-            
-            if (strcmp(func->target_os, "unix") == 0) {
-                if (strcmp(current_os, "macos") != 0 && strcmp(current_os, "linux") != 0) {
-                    return (Value){VAL_NIL, {0}}; 
-                }
+           
+            if (strcmp(func->target_os, "unix") == 0 && 
+               (strcmp(current_os, "macos") == 0 || strcmp(current_os, "linux") == 0)) {
+
             } else {
                 return (Value){VAL_NIL, {0}}; 
             }
         }
     }
+
+
+    if (func->is_async) {
+      
+        pthread_t thread;
+        AsyncData* data = malloc(sizeof(AsyncData));
+        data->func = func;
+        data->arg_count = arg_count;
+        data->args = args;
+
+        pthread_create(&thread, NULL, async_wrapper, data);
+        pthread_detach(thread); 
+
+        return (Value){VAL_NIL, {0}}; 
+    }
+    
 
     // Func *func = func_val.as.function;
 
@@ -203,22 +230,28 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         return (Value){VAL_NIL, {0}};
     }
 
-    if (func->is_deprecated) {
+    if (func->is_deprecated)
+    {
         printf("\033[1;33m[Warning]\033[0m Function ");
-        if (func->deprecated_message != NULL && strlen(func->deprecated_message) > 0) {
+        if (func->deprecated_message != NULL && strlen(func->deprecated_message) > 0)
+        {
             printf("is deprecated: %s\n", func->deprecated_message);
-        } else {
+        }
+        else
+        {
             printf("is deprecated and may be removed in a future version.\n");
         }
     }
 
-    if (func->is_memoized && arg_count > 0) {
+    if (func->is_memoized && arg_count > 0)
+    {
         char key[64];
-        snprintf(key, sizeof(key), "%g", args[0].as.number); 
+        snprintf(key, sizeof(key), "%g", args[0].as.number);
 
         Value cached_res;
-        if (map_get(func->cache, key, &cached_res)) {
-            return cached_res; 
+        if (map_get(func->cache, key, &cached_res))
+        {
+            return cached_res;
         }
     }
 
@@ -234,7 +267,8 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
     }
 
     Value result;
-    if (func->is_parallel) {
+    if (func->is_parallel)
+    {
         pthread_t thread;
         ThreadArgs *t_args = malloc(sizeof(ThreadArgs));
         t_args->env = call_env;
@@ -242,16 +276,19 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
 
         pthread_create(&thread, NULL, parallel_wrapper, t_args);
         pthread_join(thread, NULL);
-        
+
         result = t_args->result;
         free(t_args);
-    } else {
+    }
+    else
+    {
         result = eval_node(call_env, func->body_head);
     }
 
     current_executing_func = previous_func;
 
-    if (func->is_memoized && arg_count > 0) {
+    if (func->is_memoized && arg_count > 0)
+    {
         char key[64];
         snprintf(key, sizeof(key), "%g", args[0].as.number);
         map_set(func->cache, key, result);
@@ -265,6 +302,7 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         free(result.as.return_val);
         return actual_return;
     }
+    
 
     return result;
 }
@@ -1101,43 +1139,49 @@ Value eval_node(Env *env, Node *n)
     }
 
     case NODE_VARDECL:
-{
-    if (n->is_static && current_executing_func != NULL) {
-        Value existing_val;
-        
-        if (map_get(current_executing_func->static_vars, n->name, &existing_val)) {
-            set_var(env, n->name, existing_val, false, n->type_name);
+    {
+        if (n->is_static && current_executing_func != NULL)
+        {
+            Value existing_val;
+
+            if (map_get(current_executing_func->static_vars, n->name, &existing_val))
+            {
+                set_var(env, n->name, existing_val, false, n->type_name);
+                return (Value){VAL_NIL, {0}};
+            }
+
+            Value val = eval_node(env, n->right);
+            const char *actual_type = get_value_type_name(val);
+
+            if (n->type_name[0] != '\0')
+            {
+                if (strcmp(n->type_name, actual_type) != 0)
+                {
+                    print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
+                    return (Value){VAL_NIL, {0}};
+                }
+            }
+
+            map_set(current_executing_func->static_vars, n->name, val);
+            set_var(env, n->name, val, false, n->type_name);
             return (Value){VAL_NIL, {0}};
         }
 
         Value val = eval_node(env, n->right);
         const char *actual_type = get_value_type_name(val);
 
-        if (n->type_name[0] != '\0') {
-            if (strcmp(n->type_name, actual_type) != 0) {
+        if (n->type_name[0] != '\0')
+        {
+            if (strcmp(n->type_name, actual_type) != 0)
+            {
                 print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
                 return (Value){VAL_NIL, {0}};
             }
         }
 
-        map_set(current_executing_func->static_vars, n->name, val);
         set_var(env, n->name, val, false, n->type_name);
         return (Value){VAL_NIL, {0}};
     }
-
-    Value val = eval_node(env, n->right);
-    const char *actual_type = get_value_type_name(val);
-
-    if (n->type_name[0] != '\0') {
-        if (strcmp(n->type_name, actual_type) != 0) {
-            print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
-            return (Value){VAL_NIL, {0}};
-        }
-    }
-
-    set_var(env, n->name, val, false, n->type_name);
-    return (Value){VAL_NIL, {0}};
-}
 
         // case NODE_PRINT:
         // {
@@ -1330,6 +1374,20 @@ Value eval_node(Env *env, Node *n)
         func->is_private = n->is_private;
         func->is_deprecated = n->is_deprecated;
         func->is_memoized = n->is_memoize;
+        func->is_async = n -> is_async;
+
+        func->is_platform_specific = n->is_platform_specific;
+
+        if (n->is_platform_specific && n->target_os != NULL)
+        {
+            func->target_os = strdup(n->target_os); 
+        }
+        else
+        {
+            func->target_os = NULL;
+        }
+
+       
 
         func->static_vars = map_new();
 
@@ -1353,9 +1411,15 @@ Value eval_node(Env *env, Node *n)
             }
         }
 
+        if (n->target_os != NULL)
+        {
+            func->target_os = strdup(n->target_os);
+            func->target_os = NULL;
+        }
+
         if (func->is_memoized)
         {
-            func->cache = map_new(); 
+            func->cache = map_new();
         }
         else
         {
