@@ -665,6 +665,40 @@ static Node *parse_logical_and(Parser *P)
     return left;
 }
 
+static Node *parse_pipeline(Parser *P)
+{
+    
+    Node *node = parse_logical_or(P);
+
+    while (P->current.kind == TOKEN_PIPELINE)
+    {
+        next(P);
+        Node *right = parse_unary(P); 
+        
+        if (right->kind == NODE_IDENT)
+        {
+            Node *call = new_node(NODE_FUNC_CALL);
+            strcpy(call->name, right->name);
+            call->left = node; 
+            call->arity = 1;
+            node = call;
+            free_node(right);
+        }
+        else if (right->kind == NODE_FUNC_CALL)
+        {
+            node->next = right->left; 
+            right->left = node;
+            right->arity++;
+            node = right;
+        }
+        else
+        {
+            print_error("Pipeline target must be a function or identifier.");
+        }
+    }
+
+    return node;
+}
 /**
  * @brief Parses an assignment expression.
  * @param P Pointer to the Parser.
@@ -676,7 +710,7 @@ static Node *parse_assignment(Parser *P)
     /**
      * Logical (||) or operator
      */
-    Node *node = parse_logical_or(P);
+    Node *node = parse_pipeline(P);
 
     if (P->current.kind == TOKEN_ASSIGN)
     {
@@ -713,6 +747,7 @@ static Node *parse_assignment(Parser *P)
     }
     return node;
 }
+
 
 /**
  * @brief Parses an expression.
@@ -1413,6 +1448,29 @@ static Node *parse_observe_stmt(Parser *P)
 
     n->right = cases_head;
     return n;
+}
+
+Node* apply_pipeline(Node* left, Node* right) {
+    if (right->kind == NODE_IDENT) {
+        Node* call = malloc(sizeof(Node));
+        memset(call, 0, sizeof(Node));
+        call->kind = NODE_FUNC_CALL;
+
+        strcpy(call->name, right->name); 
+
+        call->left = left; 
+        call->arity = 1;
+        return call;
+    }
+
+    if (right->kind == NODE_FUNC_CALL) {
+        left->next = right->left; 
+        right->left = left;
+        right->arity++;
+        return right;
+    }
+
+    return right;
 }
 
 /**

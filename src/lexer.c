@@ -382,6 +382,8 @@ Token lexer_next(Lexer *L)
     case '|':
         if (match(L, '|'))
             tk.kind = TOKEN_PIPE_PIPE;
+        else if (match(L,'>'))
+            tk.kind = TOKEN_PIPELINE;
         else
             tk.kind = TOKEN_INVALID;
         break;
