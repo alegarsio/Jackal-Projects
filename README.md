@@ -97,15 +97,21 @@ func add(a,b) -> Int{
 
 Here's a simple example demonstrating for loop in jackal
 
+
 ```js
+// classic for loop
 for (let i = 0 ; i < 10 ; i ++){
     println(i)
 }
-
+```
+```js
+// range based loop
 for(i in 1 to 100){
     println(i)
 }
-
+```
+```js
+// range based loop with step keyword
 for(i in 1 to 100 step 2){
     println(i)
 }
