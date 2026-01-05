@@ -1,17 +1,25 @@
+UNAME_S := $(shell uname -s)
 
-CC = gcc
-CXX = g++
+ifeq ($(UNAME_S),Darwin)
+	CC = clang
+	CXX = clang++
+	EXE =
+	CJSON_INCLUDE = -I/opt/homebrew/include
+	CJSON_LIBPATH = -L/opt/homebrew/lib
+	CURL_CFLAGS = $(shell curl-config --cflags)
+	CURL_LDFLAGS = $(shell curl-config --libs)
+else
+	CC = x86_64-w64-mingw32-gcc
+	CXX = x86_64-w64-mingw32-g++
+	EXE = .exe
+	CJSON_INCLUDE =
+	CJSON_LIBPATH =
+	CURL_CFLAGS =
+	CURL_LDFLAGS = -lcurl
+endif
 
-CURL_CFLAGS = $(shell curl-config --cflags)
-CURL_LDFLAGS = $(shell curl-config --libs)
-
-CJSON_INCLUDE_PATH = -I/opt/homebrew/include
-CJSON_LIBRARY = -lcjson
-CJSON_LIBRARY_PATH = -L/opt/homebrew/lib 
-
-CFLAGS = -Wall -Wextra -std=c11 -Iinclude -g $(CURL_CFLAGS) $(CJSON_INCLUDE_PATH)
-
-LDFLAGS = $(CJSON_LIBRARY_PATH) $(CURL_LDFLAGS) $(CJSON_LIBRARY) -lm
+CFLAGS = -Wall -Wextra -std=c11 -Iinclude -g $(CURL_CFLAGS) $(CJSON_INCLUDE)
+LDFLAGS = $(CJSON_LIBPATH) $(CURL_LDFLAGS) -lcjson -lm
 
 OBJDIR = obj
 
@@ -27,18 +35,18 @@ SRC = src/common.c \
       src/vm/chunk.c \
       src/main.c
 
-OBJ = $(patsubst src/%.c, $(OBJDIR)/%.o, $(SRC))
+OBJ = $(patsubst src/%.c,$(OBJDIR)/%.o,$(SRC))
 
 all: jackal
 
 jackal: $(OBJ)
-	$(CXX) $(OBJ) -o jackal $(LDFLAGS)
+	$(CXX) $(OBJ) -o jackal$(EXE) $(LDFLAGS)
 
 $(OBJDIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJDIR) jackal
+	rm -rf $(OBJDIR) jackal jackal.exe
 
 .PHONY: all clean
