@@ -53,6 +53,9 @@ Create a file with a `.jackal` extension and run it using the newly built interp
 Here's a simple example demonstrating pipeline operator  in jackal
 
 ```js
+
+"hello world" |> println()
+
 @main
 func main(){
     "Hello world " |> println()
