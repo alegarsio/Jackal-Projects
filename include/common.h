@@ -187,6 +187,8 @@ typedef struct Func {
     struct HashMap* static_vars;
     struct HashMap* cache;
     char return_type[64];
+    bool is_platform_specific;
+    char* target_os;
 } Func;
 
 struct Value;

@@ -281,11 +281,13 @@ static Node *parse_array_literal(Parser *P)
     {
         do
         {
-            if (P->current.kind == TOKEN_RBRACKET) break; 
+            if (P->current.kind == TOKEN_RBRACKET)
+                break;
 
             Node *item_expr = parse_expr(P); //
-            
-            if (item_expr == NULL) break; 
+
+            if (item_expr == NULL)
+                break;
 
             n->arity++;
 
@@ -306,7 +308,7 @@ static Node *parse_array_literal(Parser *P)
     {
         print_error("Expected ']' after array items."); //
     }
-    
+
     next(P); // Konsumsi TOKEN_RBRACKET
 
     n->left = items_head;
@@ -414,7 +416,7 @@ static Node *parse_template_declaration(Parser *P)
     size_t saved_pos = P->lexer->pos;
     Token saved_token = P->current;
 
-    next(P); 
+    next(P);
 
     Node *head = NULL;
     Node *current = NULL;
@@ -588,7 +590,7 @@ static Node *parse_range(Parser *P)
         Node *n = new_node(NODE_RANGE_EXPR);
         n->left = left;
         n->right = parse_addition(P);
-        
+
         if (P->current.kind == TOKEN_STEP)
         {
             next(P);
@@ -1491,6 +1493,17 @@ Node *parse_stmt(Parser *P)
         n->is_memoize = meta_node.is_memoize;
         n->is_override = meta_node.is_override;
         n->is_deprecated = meta_node.is_deprecated;
+        n->is_platform_specific = meta_node.is_platform_specific;
+
+        if (meta_node.is_platform_specific && meta_node.target_os != NULL)
+        {
+           
+            n->target_os = strdup(meta_node.target_os);
+        }
+        else
+        {
+            n->target_os = NULL;
+        }
 
         return n;
     }
@@ -2093,6 +2106,7 @@ static void parse_annotations(Parser *P, Node *n)
     n->is_memoize = false;
     n->is_paralel = false;
     n->is_static = false;
+    n->is_platform_specific = false;
 
     while (P->current.kind == TOKEN_AT)
     {
@@ -2103,18 +2117,59 @@ static void parse_annotations(Parser *P, Node *n)
             print_error("Expected annotation name after '@'.");
             return;
         }
-        if (strcmp(P->current.text, "main") == 0) 
+
+        if (strcmp(P->current.text, "os") == 0)
+        {
+            n->is_platform_specific = true;
+            next(P);
+
+            if (P->current.kind == TOKEN_LPAREN)
+            {
+                next(P);
+                if (P->current.kind == TOKEN_STRING)
+                {
+
+                    n->target_os = strdup(P->current.text);
+                    next(P);
+                }
+                else
+                {
+                    print_error("Expected platform string inside @os(...).");
+                }
+
+                if (P->current.kind == TOKEN_RPAREN)
+                {
+                    next(P);
+                }
+                else
+                {
+                    print_error("Expected ')' after platform name.");
+                }
+            }
+            else
+            {
+                print_error("Expected '(' after @os.");
+            }
+
+            continue;
+        }
+        if (strcmp(P->current.text, "main") == 0)
         {
             n->is_main = true;
         }
-        else if (strcmp(P->current.text,"static") == 0){
+
+        else if (strcmp(P->current.text, "static") == 0)
+        {
             n->is_static = true;
         }
-        else if (strcmp(P->current.text, "parallel") == 0){
-            n -> is_paralel = true;
+        else if (strcmp(P->current.text, "parallel") == 0)
+        {
+            n->is_paralel = true;
         }
-        else if (strcmp(P->current.text,"memoize") == 0){
-            n -> is_memoize = true;
+
+        else if (strcmp(P->current.text, "memoize") == 0)
+        {
+            n->is_memoize = true;
         }
         else if (strcmp(P->current.text, "override") == 0)
         {
@@ -2126,7 +2181,7 @@ static void parse_annotations(Parser *P, Node *n)
         }
         else
         {
-          
+
             print_error("Unknown annotation '@%s'.", P->current.text);
         }
         next(P);

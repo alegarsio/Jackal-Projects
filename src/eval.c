@@ -11,6 +11,20 @@
 #include <stdlib.h>
 #include<pthread.h>
 
+const char* get_platform_name() {
+    #if defined(_WIN32) || defined(_WIN64)
+        return "windows";
+    #elif defined(__APPLE__) || defined(__MACH__)
+        return "macos";
+    #elif defined(__linux__)
+        return "linux";
+    #elif defined(__unix__)
+        return "unix";
+    #else
+        return "unknown";
+    #endif
+}
+
 Func* current_executing_func = NULL;
 /**
  * @include collections DSA stl
@@ -156,13 +170,30 @@ static bool is_type_alias_match(const char *expected_type, Value actual_val)
  */
 Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
 {
+    Func *func = func_val.as.function;
+
     if (func_val.type != VAL_FUNCTION)
     {
         print_error("Invalid callback: not a function.");
         return (Value){VAL_NIL, {0}};
     }
 
-    Func *func = func_val.as.function;
+    if (func->is_platform_specific && func->target_os != NULL) {
+        const char* current_os = get_platform_name();
+        
+        if (strcmp(func->target_os, current_os) != 0) {
+            
+            if (strcmp(func->target_os, "unix") == 0) {
+                if (strcmp(current_os, "macos") != 0 && strcmp(current_os, "linux") != 0) {
+                    return (Value){VAL_NIL, {0}}; 
+                }
+            } else {
+                return (Value){VAL_NIL, {0}}; 
+            }
+        }
+    }
+
+    // Func *func = func_val.as.function;
 
     if (arg_count != func->arity)
     {

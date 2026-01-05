@@ -94,7 +94,9 @@ typedef struct Node {
 
     struct Node* super_template_types;
     struct Node* template_types;
-    
+
+    bool is_platform_specific;
+    char* target_os;
     int arity;
     char return_type[64];
     
