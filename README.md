@@ -1,4 +1,4 @@
-# Jackal Compiler
+# Jackal Scripting Language
 
 **The open source programming language for all open source scientists**
 
