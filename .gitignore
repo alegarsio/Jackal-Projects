@@ -34,3 +34,4 @@ src/vm/
 src/compiler/
 
 std/
+*.py
