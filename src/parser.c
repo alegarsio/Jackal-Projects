@@ -1601,31 +1601,107 @@ Node *parse_stmt(Parser *P)
         return parse_enum_def(P);
     }
 
-    if (P->current.kind == TOKEN_LET || P->current.kind == TOKEN_CONST)
-    {
-        bool is_const = (P->current.kind == TOKEN_CONST);
-        next(P);
-        Node *n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+   if (P->current.kind == TOKEN_LET || P->current.kind == TOKEN_CONST)
+{
+    bool is_const = (P->current.kind == TOKEN_CONST);
+    next(P);
 
+    if (P->current.kind == TOKEN_LBRACKET) 
+    {
+        next(P);
+        Node *destructure_node = new_node(NODE_DESTRUCTURE);
+        Node *head = NULL;
+        Node *current = NULL;
+
+        while (P->current.kind != TOKEN_RBRACKET) 
+        {
+            if (P->current.kind == TOKEN_IDENT) 
+            {
+                Node *var_node = new_node(NODE_IDENT);
+                strcpy(var_node->name, P->current.text);
+                next(P);
+
+                if (head == NULL) {
+                    head = var_node;
+                    current = var_node;
+                } else {
+                    current->next = var_node;
+                    current = var_node;
+                }
+            }
+            if (P->current.kind == TOKEN_COMMA) next(P);
+        }
+        next(P);
+
+        if (P->current.kind == TOKEN_ASSIGN) next(P);
+
+        Node *n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+        n->left = destructure_node;
+        destructure_node->left = head;
+        n->right = parse_expr(P);
+
+        if (P->current.kind == TOKEN_SEMI) next(P);
+        return n;
+    } 
+    else if (P->current.kind == TOKEN_LBRACE) 
+    {
+        next(P);
+        Node *destructure_node = new_node(NODE_DESTRUCTURE);
+        destructure_node->is_record = true; 
+        Node *head = NULL;
+        Node *current = NULL;
+
+        while (P->current.kind != TOKEN_RBRACE) 
+        {
+            if (P->current.kind == TOKEN_IDENT) 
+            {
+                Node *var_node = new_node(NODE_IDENT);
+                strcpy(var_node->name, P->current.text);
+                next(P);
+
+                if (head == NULL) {
+                    head = var_node;
+                    current = var_node;
+                } else {
+                    current->next = var_node;
+                    current = var_node;
+                }
+            }
+            if (P->current.kind == TOKEN_COMMA) next(P);
+        }
+        next(P);
+
+        if (P->current.kind == TOKEN_ASSIGN) next(P);
+
+        Node *n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+        n->left = destructure_node;
+        destructure_node->left = head;
+        n->right = parse_expr(P);
+
+        if (P->current.kind == TOKEN_SEMI) next(P);
+        return n;
+    }
+    else 
+    {
+        Node *n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
         strcpy(n->name, P->current.text);
         next(P);
 
         n->type_name[0] = '\0';
-        if (P->current.kind == TOKEN_COLON)
+        if (P->current.kind == TOKEN_COLON) 
         {
             next(P);
             strcpy(n->type_name, P->current.text);
             next(P);
         }
 
-        if (P->current.kind == TOKEN_ASSIGN)
-            next(P);
+        if (P->current.kind == TOKEN_ASSIGN) next(P);
         n->right = parse_expr(P);
 
-        if (P->current.kind == TOKEN_SEMI)
-            next(P);
+        if (P->current.kind == TOKEN_SEMI) next(P);
         return n;
     }
+}
 
     // if (P->current.kind == TOKEN_LET)
     // {

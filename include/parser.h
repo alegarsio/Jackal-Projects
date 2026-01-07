@@ -61,7 +61,8 @@ typedef enum {
     NODE_OBSERVE_CASE, 
     NODE_FOR_IN,
     NODE_FOR_EACH,
-    NODE_RANGE_EXPR
+    NODE_RANGE_EXPR,
+    NODE_DESTRUCTURE
 } NodeKind;
 
 /**

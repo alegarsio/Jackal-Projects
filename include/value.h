@@ -302,3 +302,55 @@ Value native_vector_norm(int arg_count, Value* args);
 Value native_math_acos(int arg_count, Value* args);
 
 Value native_load_csv_smart(int arg_count, Value* args);
+
+
+/**
+ * Array Native
+ */
+Value builtin_push(int argCount, Value *args);
+
+Value builtin_pop(int argCount, Value *args);
+
+Value builtin_remove(int argCount, Value *args);
+
+Value builtin_len(int argCount, Value *args);
+
+/***
+ * File IO Native
+ */
+Value builtin_file_open(int argCount, Value *args);
+Value builtin_io_close(int argCount, Value *args);
+Value builtin_io_write(int argCount, Value *args);
+Value builtin_io_readAll(int argCount, Value *args);
+Value builtin_io_open(int argCount, Value *args);
+
+
+Value builtin_typeof(int argCount, Value *args);
+
+Value builtin_math_pow(int argCount, Value *args);
+
+Value builtin_math_sqrt(int argCount, Value *args);
+
+Value builtin_jackal_sleep(int argCount, Value *args);
+
+Value builtin_net_ntoa(int argCount, Value *args);
+
+Value builtin_net_aton(int argCount, Value *args);
+
+Value builtin_math_fmod(int argCount, Value *args);
+
+Value builtin_time_get_local_hour(int argCount, Value *args);
+
+Value builtin_net_htons(int argCount, Value *args);
+
+Value builtin_time_now(int argCount, Value *args);
+
+Value builtin_time_sleep(int argCount, Value *args);
+
+Value builtin_writeline(int argCount, Value *args);
+
+Value builtin_write(int argCount, Value *args);
+
+Value builtin_http_request(int argCount, Value *args);
+
+Value builtin_json_encode(int argCount, Value *args);

@@ -33,6 +33,8 @@ SRC = src/common.c \
       src/compiler/compiler.c \
       src/vm/vm.c \
       src/vm/chunk.c \
+	  src/socket/net_utils.c \
+	  src/native/native_registry.c \
       src/main.c
 
 OBJ = $(patsubst src/%.c,$(OBJDIR)/%.o,$(SRC))

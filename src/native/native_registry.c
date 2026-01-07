@@ -1,24 +1,25 @@
 #include "native/native_registry.h"
 
 #define REGISTER(env, name, func) set_var(env, name, (Value){VAL_NATIVE, {.native = func}}, true, "")
+
 #define DEFINE_NATIVE(env, name_str, func_ptr) set_var(env, name_str, (Value){VAL_NATIVE, {.native = func_ptr}}, true, "")
 
 void register_all_natives(Env* env) {
     set_var(env, "nil", (Value){VAL_NIL, {0}}, true, "");
-    // set_var(env, "typeof", (Value){VAL_NATIVE, {.native = builtin_typeof}}, true, "");
+    set_var(env, "typeof", (Value){VAL_NATIVE, {.native = builtin_typeof}}, true, "");
     set_var(env, "__math_PI", (Value){VAL_NUMBER, {.number = 3.1415926535}}, true, "");
 
-    // REGISTER(env, "__math_sqrt", builtin_math_sqrt);
-    // REGISTER(env, "__math_pow", builtin_math_pow);
-    // REGISTER(env, "fmod", builtin_math_fmod);
-    // REGISTER(env, "achos", native_math_acos);
+    REGISTER(env, "__math_sqrt", builtin_math_sqrt);
+    REGISTER(env, "__math_pow", builtin_math_pow);
+    REGISTER(env, "fmod", builtin_math_fmod);
+    REGISTER(env, "achos", native_math_acos);
 
-    // REGISTER(env, "__io_open", builtin_io_open);
-    // REGISTER(env, "__io_readAll", builtin_io_readAll);
-    // REGISTER(env, "__io_write", builtin_io_write);
-    // REGISTER(env, "__io_close", builtin_io_close);
-    // REGISTER(env, "println", builtin_writeline);
-    // REGISTER(env, "print", builtin_write);
+    REGISTER(env, "__io_open", builtin_io_open);
+    REGISTER(env, "__io_readAll", builtin_io_readAll);
+    REGISTER(env, "__io_write", builtin_io_write);
+    REGISTER(env, "__io_close", builtin_io_close);
+    REGISTER(env, "println", builtin_writeline);
+    REGISTER(env, "print", builtin_write);
     REGISTER(env, "__io_read_line", builtin_read_line);
     REGISTER(env, "__io_read_array", builtin_read_array);
     REGISTER(env, "__io_table_stream", builtin_print_table);
@@ -71,24 +72,24 @@ void register_all_natives(Env* env) {
 
     REGISTER(env, "__read_csv", native_read_csv);
     REGISTER(env, "__read_csv_advance", native_load_csv_smart);
-    // REGISTER(env, "http_request", builtin_http_request);
+    REGISTER(env, "http_request", builtin_http_request);
     REGISTER(env, "http_serve_internal", builtin_http_serve);
     REGISTER(env, "__json_parse", builtin_json_parse);
-    // REGISTER(env, "__json_encode", builtin_json_encode);
+    REGISTER(env, "__json_encode", builtin_json_encode);
     REGISTER(env, "__json_string", builtin_json_stringify);
     REGISTER(env, "web_show_internal", builtin_web_show);
     REGISTER(env, "web_sync_internal", builtin_web_sync);
     REGISTER(env, "__save_jml", native_save_jml);
     REGISTER(env, "__load_jml", native_load_jml);
-    // REGISTER(env, "__jackal_sleep", builtin_jackal_sleep);
+    REGISTER(env, "__jackal_sleep", builtin_jackal_sleep);
     REGISTER(env, "plot", native_plot);
     REGISTER(env, "_native_linear_predicts", native_linear_regression);
     REGISTER(env, "native_standardnize", native_standardize);
     REGISTER(env, "native_smooth", native_smooth);
     REGISTER(env, "native_correlate", native_correlate);
     REGISTER(env, "__zip", native_zip);
-    // REGISTER(env, "__time_now", builtin_time_now);
-    // REGISTER(env, "__get_local_hour", builtin_time_get_local_hour);
+    REGISTER(env, "__time_now", builtin_time_now);
+    REGISTER(env, "__get_local_hour", builtin_time_get_local_hour);
     REGISTER(env, "systems", builtin_system);
     REGISTER(env, "__typeof", builtin_type);
 
@@ -97,11 +98,10 @@ void register_all_natives(Env* env) {
     REGISTER(env, "__mapstream_values", builtin_map_values);
     REGISTER(env, "__map_get", builtin_map_get);
 
-    // DEFINE_NATIVE(env, "len", builtin_len);
-    // DEFINE_NATIVE(env, "push", builtin_push);
-    // DEFINE_NATIVE(env, "pop", builtin_pop);
-    // DEFINE_NATIVE(env, "remove", builtin_remove);
-    // DEFINE_NATIVE(env, "File", builtin_file_open);
+    DEFINE_NATIVE(env, "len", builtin_len);
+    DEFINE_NATIVE(env, "push", builtin_push);
+    DEFINE_NATIVE(env, "pop", builtin_pop);
+    DEFINE_NATIVE(env, "remove", builtin_remove);
+    DEFINE_NATIVE(env, "File", builtin_file_open);
 
-    register_socket_natives(env);
 }

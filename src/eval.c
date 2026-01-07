@@ -1142,26 +1142,78 @@ Value eval_node(Env *env, Node *n)
 
     case NODE_VARDECL:
     {
+        Value val = eval_node(env, n->right);
+
+        if (n->left && n->left->kind == NODE_DESTRUCTURE)
+        {
+            if (val.type == VAL_ARRAY)
+            {
+                ValueArray *arr = val.as.array;
+                Node *var_node = n->left->left;
+                int i = 0;
+                while (var_node && i < arr->count)
+                {
+                    set_var(env, var_node->name, arr->values[i], false, "");
+                    var_node = var_node->next;
+                    i++;
+                }
+            }
+            else if (val.type == VAL_MAP)
+            {
+                HashMap *map = val.as.map;
+                Node *var_node = n->left->left;
+                while (var_node)
+                {
+                    Value out_val;
+                    if (map_get(map, var_node->name, &out_val))
+                    {
+                        set_var(env, var_node->name, out_val, false, "");
+                    }
+                    else
+                    {
+                        set_var(env, var_node->name, (Value){VAL_NIL, {0}}, false, "");
+                    }
+                    var_node = var_node->next;
+                }
+            }
+            else if (val.type == VAL_INSTANCE)
+            {
+                Instance *inst = val.as.instance;
+                Node *var_node = n->left->left;
+                while (var_node)
+                {
+                    Var *field = find_var(inst->fields, var_node->name);
+                    if (field)
+                    {
+                        set_var(env, var_node->name, field->value, false, "");
+                    }
+                    else
+                    {
+                        set_var(env, var_node->name, (Value){VAL_NIL, {0}}, false, "");
+                    }
+                    var_node = var_node->next;
+                }
+            }
+            free_value(val);
+            return (Value){VAL_NIL, {0}};
+        }
+
         if (n->is_static && current_executing_func != NULL)
         {
             Value existing_val;
-
             if (map_get(current_executing_func->static_vars, n->name, &existing_val))
             {
                 set_var(env, n->name, existing_val, false, n->type_name);
+                free_value(val);
                 return (Value){VAL_NIL, {0}};
             }
 
-            Value val = eval_node(env, n->right);
             const char *actual_type = get_value_type_name(val);
-
-            if (n->type_name[0] != '\0')
+            if (n->type_name[0] != '\0' && strcmp(n->type_name, actual_type) != 0)
             {
-                if (strcmp(n->type_name, actual_type) != 0)
-                {
-                    print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
-                    return (Value){VAL_NIL, {0}};
-                }
+                print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
+                free_value(val);
+                return (Value){VAL_NIL, {0}};
             }
 
             map_set(current_executing_func->static_vars, n->name, val);
@@ -1169,16 +1221,12 @@ Value eval_node(Env *env, Node *n)
             return (Value){VAL_NIL, {0}};
         }
 
-        Value val = eval_node(env, n->right);
         const char *actual_type = get_value_type_name(val);
-
-        if (n->type_name[0] != '\0')
+        if (n->type_name[0] != '\0' && strcmp(n->type_name, actual_type) != 0)
         {
-            if (strcmp(n->type_name, actual_type) != 0)
-            {
-                print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
-                return (Value){VAL_NIL, {0}};
-            }
+            print_error("Type Mismatch: Expected %s but got %s", n->type_name, actual_type);
+            free_value(val);
+            return (Value){VAL_NIL, {0}};
         }
 
         set_var(env, n->name, val, false, n->type_name);
