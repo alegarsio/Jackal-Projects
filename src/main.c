@@ -185,36 +185,7 @@ Value builtin_net_close(int argCount, Value *args)
     return (Value){VAL_NUMBER, {.number = (double)res}};
 }
 
-Value builtin_writeline(int argCount, Value *args)
-{
-    if (argCount != 1)
-    {
-        print_error("Error: 'println' requires exactly one argument.");
-        return (Value){.type = VAL_NIL, .as = {0}};
-    }
 
-    print_value(args[0]);
-
-    printf("\n");
-    fflush(stdout);
-
-    return (Value){.type = VAL_NIL, .as = {0}};
-}
-
-Value builtin_write(int argCount, Value *args)
-{
-    if (argCount != 1)
-    {
-        print_error("Error: 'println' requires exactly one argument.");
-        return (Value){.type = VAL_NIL, .as = {0}};
-    }
-
-    print_value(args[0]);
-
-    fflush(stdout);
-
-    return (Value){.type = VAL_NIL, .as = {0}};
-}
 Value builtin_net_resolve_ip(int argCount, Value *args)
 {
     if (argCount != 1 || args[0].type != VAL_STRING)

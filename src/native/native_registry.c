@@ -1,5 +1,9 @@
 #include "native/native_registry.h"
 
+/**
+ * Register DEFAULT is now DEPRECATED
+ */
+
 #define SAFE_REGISTER(env, name, func) \
     do { \
         if (func != NULL) { \
@@ -10,6 +14,7 @@
     } while (0)
 
 #define REGISTER_CONST(env, name, val) set_var(env, name, val, true, "")
+
 void register_all_natives(Env* env) {
     if (env == NULL) return;
 

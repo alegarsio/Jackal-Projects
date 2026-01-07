@@ -376,6 +376,29 @@ Value eval_equals(Value a, Value b)
     }
     return (Value){VAL_NUMBER, {.number = result}};
 }
+
+Value builtin_writeline(int argCount, Value *args) {
+    for (int i = 0; i < argCount; i++) {
+        print_value(args[i]);
+        if (i < argCount - 1) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+    fflush(stdout);
+    return (Value){VAL_NIL, {0}};
+}
+
+Value builtin_write(int argCount, Value *args) {
+    for (int i = 0; i < argCount; i++) {
+        print_value(args[i]);
+        if (i < argCount - 1) {
+            printf(" ");
+        }
+    }
+    fflush(stdout);
+    return (Value){VAL_NIL, {0}};
+}
 /**
  * Reads a line from standard input and returns it as a Value of type VAL_STRING.
  * @param arity The number of arguments (should be 0).
