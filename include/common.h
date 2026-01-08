@@ -110,7 +110,8 @@ typedef enum {
     TOKEN_IN,
     TOKEN_DOT_DOT,
     TOKEN_TO,
-    TOKEN_STEP
+    TOKEN_STEP,
+    TOKEN_SUPER
 } TokenKind;
 
 struct Node;

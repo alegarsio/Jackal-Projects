@@ -1067,10 +1067,12 @@ static Node *parse_class_def(Parser *P)
         n->template_types = template_check;
     }
 
-    while (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS)
+    while (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS || P->current.kind == TOKEN_COLON || P->current.kind == TOKEN_COMMA)
     {
-        if (P->current.kind == TOKEN_EXTENDS)
+        if (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_COLON)
         {
+            
+            
             if (n->super_name[0] != '\0')
             {
                 print_error("Class can only extend one superclass.");
@@ -1089,7 +1091,7 @@ static Node *parse_class_def(Parser *P)
                 n->super_template_types = super_template_args;
             }
         }
-        else if (P->current.kind == TOKEN_IMPLEMENTS)
+        else if (P->current.kind == TOKEN_IMPLEMENTS || P->current.kind == TOKEN_COMMA)
         {
             if (interface_list_head != NULL)
             {
