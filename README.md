@@ -185,7 +185,7 @@ interface Greetable{
     func greet() ;
 }
 
-class Jack implements Greetable{
+class Jack , Greetable{
     
     @override
     func greet() {
