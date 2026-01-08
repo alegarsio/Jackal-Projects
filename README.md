@@ -166,7 +166,7 @@ class Person{
         this.name = name;
     }
 }
-class Jack extends Person{
+class Jack : Person{
     func greet(){
         println("Hello " + this.name)
     }
