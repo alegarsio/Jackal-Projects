@@ -1,4 +1,5 @@
 #include "native/native_registry.h"
+#include "socket/socket_native.h"
 
 /**
  * Register DEFAULT is now DEPRECATED
@@ -113,4 +114,6 @@ void register_all_natives(Env* env) {
     SAFE_REGISTER(env, "pop", builtin_pop);
     SAFE_REGISTER(env, "remove", builtin_remove);
     SAFE_REGISTER(env, "File", builtin_file_open);
+
+    register_socket_natives(env);
 }

@@ -1,11 +1,11 @@
 class Socket {
     
-    function init(port) {
+    init(port) {
         this.port = port;
         this.fd = -1; 
     }
 
-    function listen() {
+    func listen() {
         if (this.fd != -1) {
             print "Warning: Socket is already listening. Close it first.";
             return this.fd;
@@ -21,7 +21,8 @@ class Socket {
         this.fd = fd; 
         return this.fd;
     }
-    function accept() {
+
+    func accept() {
         if (this.fd == -1) {
             print "Error: Cannot accept; listener not active.";
             return -1;
@@ -36,7 +37,8 @@ class Socket {
         
         return client_fd;
     }
-    function send(target_fd, data) {
+
+    func send(target_fd, data) {
         let sent = __net_send(target_fd, data);
         
         if (sent == -1) {

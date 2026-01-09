@@ -1,4 +1,4 @@
-#include "net_utils.h"
+#include "socket/net_utils.h"
 #include <string.h>
 
 void net_init(void) {

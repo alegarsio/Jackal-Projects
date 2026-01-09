@@ -42,6 +42,8 @@
 #include "compiler/compiler.h"
 #include "vm/vm.h"
 
+#include "socket/net_utils.h"
+
 #define HTTP_DEFAULT_PORT 80
 #define BUFFER_SIZE 4096
 
@@ -928,6 +930,7 @@ void runFile(const char *path, Env *env)
 int main(int argc, char **argv)
 {
 
+    net_init();
     Env *env = env_new(NULL);
     register_all_natives(env);
     load_jackal_file("std/io.jackal", env);
@@ -1073,6 +1076,7 @@ int main(int argc, char **argv)
         runFile(filename, env);
         env_free(env);
     }
+    net_cleanup();
 
     return 0;
 }

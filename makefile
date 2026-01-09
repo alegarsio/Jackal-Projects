@@ -35,6 +35,7 @@ SRC = src/common.c \
       src/vm/chunk.c \
 	  src/socket/net_utils.c \
 	  src/native/native_registry.c \
+	  src/socket/socket_native.c \
       src/main.c
 
 OBJ = $(patsubst src/%.c,$(OBJDIR)/%.o,$(SRC))
