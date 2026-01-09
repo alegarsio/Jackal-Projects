@@ -353,6 +353,20 @@ func counter(n) {
 }
 
 ```
+## Async Decorator
+
+the @async decorator is a powerful tool used to handle Concurrency. It allows the interpreter to execute tasks in the background, ensuring that the main execution thread is not blocked by time-consuming operations.
+
+```js
+@async
+func count(n){
+    let count = 0
+    for(let i = 0 ; i < n ; i++){
+        count ++
+    }
+    return count
+}
+```
 
 ## Override Decorator
 
