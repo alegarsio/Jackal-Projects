@@ -147,6 +147,21 @@ jack.greet();
 
 This code creates a `Jack` class with a constructor and a method, then instantiates an object and calls its method.
 
+## Struct
+
+Here's a simple example demonstrating struct in Jackal:
+
+```js
+struct Point(x, y, z)
+```
+
+```js
+let p = Point(1,2,3)
+```
+
+```js
+print(p.x)
+```
 
 ## Singleton
 
