@@ -825,24 +825,25 @@ Value eval_node(Env *env, Node *n)
     {
         Value obj = eval_node(env, n->left);
 
-
         if (obj.type == VAL_STRUCT_INSTANCE)
-{
-    StructInstance *s_inst = obj.as.struct_instance;
-    StructDefinition *s_def = s_inst->definition;
-
-    for (int i = 0; i < s_def->field_count; i++)
     {
-        
-        if (strcmp(s_def->field_names[i], n->name) == 0)
-        {
-            return copy_value(s_inst->values[i]);
-        }
-    }
+        StructInstance *s_inst = obj.as.struct_instance;
+        StructDefinition *s_def = s_inst->definition;
 
-    print_error("Property not found in struct.");
-    return (Value){VAL_NIL, {0}};
-}
+        for (int i = 0; i < s_def->field_count; i++)
+        {
+            if (s_def->field_names[i] != NULL && strcmp(s_def->field_names[i], n->name) == 0)
+            {
+                
+                return copy_value(s_inst->values[i]);
+            }
+        }
+        
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Property '%s' not found in struct '%s'.", n->name, s_def->name);
+        print_error(msg);
+        return (Value){VAL_NIL, {0}};
+    }
 
         else if (obj.type == VAL_MAP)
         {
@@ -1288,29 +1289,57 @@ Value eval_node(Env *env, Node *n)
         return (Value){VAL_NIL, {0}};
     }
 
-    case NODE_STRUCT_DEF:
+   case NODE_STRUCT_DEF:
 {
     StructDefinition *s_def = malloc(sizeof(StructDefinition));
-    strcpy(s_def->name, n->name);
+    if (!s_def) {
+        print_error("Fatal: Out of memory during struct definition.");
+        return (Value){VAL_NIL, {0}};
+    }
 
-    int count = 0;
-    Node *temp = n->right;
-    while (temp) { count++; temp = temp->next; }
+    strcpy(s_def->name, n->name);
+    s_def->computed_body = n->left; 
+
+    int total_count = 0;
     
-    s_def->field_count = count;
-    s_def->field_names = malloc(sizeof(char*) * count);
+    Node *temp = n->right;
+    while (temp) {
+        total_count++;
+        temp = temp->next;
+    }
+
+    Node *body_node = n->left;
+    while (body_node) {
+        if (body_node->kind == NODE_VARDECL) {
+            total_count++;
+        }
+        body_node = body_node->next;
+    }
+
+    s_def->field_count = total_count;
+    s_def->field_names = malloc(sizeof(char*) * total_count);
+
+    int idx = 0;
 
     Node *field_node = n->right;
-    for (int i = 0; i < count; i++) {
-        s_def->field_names[i] = strdup(field_node->name); 
+    while (field_node) {
+        s_def->field_names[idx++] = strdup(field_node->name);
         field_node = field_node->next;
+    }
+
+    body_node = n->left;
+    while (body_node) {
+        if (body_node->kind == NODE_VARDECL) {
+            s_def->field_names[idx++] = strdup(body_node->name);
+        }
+        body_node = body_node->next;
     }
 
     Value s_val = (Value){VAL_STRUCT_DEF, {.struct_def = s_def}};
     set_var(env, n->name, s_val, true, "");
-    return (Value){.type = VAL_NIL, .as = {0}};
-}
 
+    return (Value){VAL_NIL, {0}};
+}
     case NODE_CLASS_DEF:
     {
         Class *class_obj = malloc(sizeof(Class));
@@ -1777,25 +1806,59 @@ Value eval_node(Env *env, Node *n)
             return instance_val;
         }
 
-        if (callee.type == VAL_STRUCT_DEF)
+       if (callee.type == VAL_STRUCT_DEF)
+{
+    StructDefinition *s_def = callee.as.struct_def;
+    StructInstance *s_inst = malloc(sizeof(StructInstance));
+    s_inst->definition = s_def;
+    s_inst->values = malloc(sizeof(Value) * s_def->field_count);
+
+    for (int i = 0; i < s_def->field_count; i++) {
+        s_inst->values[i] = (Value){VAL_NIL, {0}};
+    }
+    
+    Env *temp_env = env_new(env);
+    Node *arg_node = n->right; 
+
+    for (int i = 0; i < s_def->field_count; i++) 
+    {
+        if (arg_node != NULL) 
         {
-            StructDefinition *s_def = callee.as.struct_def;
-
-            StructInstance *s_inst = malloc(sizeof(StructInstance));
-            s_inst->definition = s_def;
-
-            s_inst->values = malloc(sizeof(Value) * n->arity);
-
-            Node *arg_node = n->right;
-            for (int i = 0; i < n->arity; i++)
-            {
-                s_inst->values[i] = eval_node(env, arg_node);
-                arg_node = arg_node->next;
-            }
-
-            return (Value){VAL_STRUCT_INSTANCE, {.struct_instance = s_inst}};
+            Value val = eval_node(env, arg_node);
+            s_inst->values[i] = copy_value(val);
+            set_var(temp_env, s_def->field_names[i], val, false, "");
+            arg_node = arg_node->next;
         }
+    }
 
+    if (s_def->computed_body != NULL)
+    {
+        Node *stmt = s_def->computed_body;
+        while (stmt)
+        {
+            if (stmt->kind == NODE_VARDECL) 
+            {
+                eval_node(temp_env, stmt);
+                Var *v = find_var(temp_env, stmt->name);
+                if (v) 
+                {
+                    for (int j = 0; j < s_def->field_count; j++) 
+                    {
+                        if (strcmp(s_def->field_names[j], stmt->name) == 0) 
+                        {
+                            s_inst->values[j] = copy_value(v->value);
+                            break;
+                        }
+                    }
+                }
+            }
+            stmt = stmt->next;
+        }
+    }
+
+    env_free(temp_env);
+    return (Value){VAL_STRUCT_INSTANCE, {.struct_instance = s_inst}};
+}
         if (callee.type == VAL_FUNCTION)
         {
 

@@ -178,6 +178,7 @@ typedef struct {
     char name[100];
     char **field_names; // Array of strings
     int field_count;
+    struct Node *computed_body;
 } StructDefinition;
 typedef struct {
     StructDefinition *definition;

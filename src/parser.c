@@ -945,10 +945,6 @@ static Node *parse_func_def(Parser *P)
 static Node *parse_struct_def(Parser *P)
 {
     next(P);
-
-    if (P->current.kind != TOKEN_IDENT)
-        print_error("Expected struct name.");
-
     Node *n = new_node(NODE_STRUCT_DEF);
     strcpy(n->name, P->current.text);
     next(P);
@@ -963,41 +959,33 @@ static Node *parse_struct_def(Parser *P)
         {
             do
             {
-                if (P->current.kind != TOKEN_IDENT)
-                    print_error("Expected field name in struct.");
-
                 Node *field_node = new_node(NODE_IDENT);
                 strcpy(field_node->name, P->current.text);
                 next(P);
-
-                if (P->current.kind == TOKEN_COLON)
-                {
-                    next(P);
-                    strcpy(field_node->type_name, P->current.text);
-                    next(P);
-                }
-
                 if (fields_head == NULL) fields_head = field_node;
                 else fields_current->next = field_node;
                 fields_current = field_node;
-
             } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
         }
-
-        if (P->current.kind != TOKEN_RPAREN)
-            print_error("Expected ')' after struct fields.");
         next(P);
     }
-    else
-    {
-        print_error("Struct definition requires parameters '(...)'.");
-    }
-
     n->right = fields_head;
 
+    n->left = NULL;
     if (P->current.kind == TOKEN_LBRACE)
     {
-        print_error("Struct cannot have a body or methods. Use 'class' instead.");
+        next(P);
+        Node *body_head = NULL;
+        Node *body_current = NULL;
+        while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
+        {
+            Node *stmt = parse_stmt(P);
+            if (body_head == NULL) body_head = stmt;
+            else body_current->next = stmt;
+            body_current = stmt;
+        }
+        n->left = body_head;
+        next(P);
     }
 
     return n;
