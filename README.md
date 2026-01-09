@@ -6,8 +6,6 @@
 
 Jackal is a dynamic, object-oriented interpreted programming language built from scratch in C. This project is designed as an in-depth exploration of language implementation, covering a lexer, a recursive descent parser, and a tree-walking evaluator.
 
-The language is named for its agility and cleverness, represented by our mascot, **Jack** the Fox!
-
 ## Project Vision
 
 The goal of this project is to create a programming language **together** as a community. Jackal is built by and for open source scientists and developers who want to learn, contribute, and shape the future of a language collaboratively.
@@ -50,6 +48,17 @@ Create a file with a `.jackal` extension and run it using the newly built interp
 
 ## Pipe Operator ( Beta )
 
+Here's a simple example demonstrating destructor  in jackal
+
+```js
+let [a,b] = [1,2]
+println(a)
+println(b)
+```
+
+
+## Pipe Operator ( Beta )
+
 Here's a simple example demonstrating pipeline operator  in jackal
 
 ```js
@@ -62,7 +71,6 @@ func main(){
     "Hello world " |> println()
 }
 ```
-
 
 ## Type Safe ( In Development )
 

@@ -91,6 +91,7 @@ typedef struct Node {
     bool is_memoize;
     bool is_paralel;
     bool is_static;
+    // bool is_data;
     char* deprecated_message;
 
     struct Node* super_template_types;

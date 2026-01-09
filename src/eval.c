@@ -338,7 +338,6 @@ static Var *find_method(Class *klass, const char *name)
 Value eval_node(Env *env, Node *n)
 {
 
-    
     if (!n)
         return (Value){.type = VAL_NIL, .as = {0}};
 
@@ -1320,6 +1319,17 @@ Value eval_node(Env *env, Node *n)
             class_obj->interface = iface_var->value.as.interface_obj;
         }
 
+        if (n->is_record)
+        {
+            class_obj->is_record = true;
+
+           
+            Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
+            set_var(env, n->name, class_val, true, "");
+
+            return (Value){.type = VAL_NIL, .as = {0}};
+        }
+
         if (n->is_singleton)
         {
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
@@ -1479,8 +1489,6 @@ Value eval_node(Env *env, Node *n)
 
     case NODE_FUNC_CALL:
     {
-
-    
 
         if (n->left->kind == NODE_IDENT && strcmp(n->left->name, "read") == 0)
         {

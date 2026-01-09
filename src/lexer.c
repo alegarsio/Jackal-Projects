@@ -150,6 +150,8 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_WHILE;
         else if (strcmp(tk.text, "record") == 0)
             tk.kind = TOKEN_RECORD; 
+        // else if (strcmp(tk.text,"") == 0)
+        //     tk.kind = TOKEN_TYPE;
         else if (strcmp(tk.text, "every") == 0)
             tk.kind = TOKEN_EVERY;
         else if (strcmp(tk.text, "until") == 0)

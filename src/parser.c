@@ -949,6 +949,7 @@ static Node *parse_func_def(Parser *P)
  */
 static Node *parse_class_def(Parser *P)
 {
+
     Node *n = new_node(NODE_CLASS_DEF);
     Node *template_check = parse_template_declaration(P);
 
@@ -957,6 +958,11 @@ static Node *parse_class_def(Parser *P)
         n->is_singleton = true;
         n->is_record = false;
     }
+    if (P -> current.kind == TOKEN_RECORD){
+        n -> is_record = true;
+        n -> is_singleton = false;
+    }
+
     next(P);
 
     if (P->current.kind != TOKEN_IDENT)
@@ -1113,7 +1119,7 @@ static Node *parse_class_def(Parser *P)
                     Node *interface_node = new_node(NODE_IDENT);
                     strcpy(interface_node->name, P->current.text);
 
-                    interface_node->next = current_list;
+                    interface_node->next = interface_list_head;
                     current_list = interface_node;
 
                     next(P);

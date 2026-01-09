@@ -100,6 +100,7 @@ typedef enum {
     
     TOKEN_OBSERVE, 
     TOKEN_ON,
+    TOKEN_TYPE,
 
     TOKEN_PRIVATE,
     TOKEN_OBJECT,
@@ -111,7 +112,8 @@ typedef enum {
     TOKEN_DOT_DOT,
     TOKEN_TO,
     TOKEN_STEP,
-    TOKEN_SUPER
+    TOKEN_SUPER,
+    
 } TokenKind;
 
 struct Node;
