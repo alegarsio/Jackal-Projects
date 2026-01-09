@@ -1,14 +1,14 @@
-# Jackal
-
 <div align="center">
+
+# Jackal
 
 **A lightweight, elegant programming language for the open source community**
 
 [![Website](https://img.shields.io/badge/website-jackal--lang-blue)](https://jackal-intro-page-qhqv.vercel.app)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![Built with C](https://img.shields.io/badge/built%20with-C-orange.svg)](https://en.wikipedia.org/wiki/C_(programming_language))
 
-[Website](https://jackal-intro-page-qhqv.vercel.app) • [Documentation](#documentation) • [Contributing](#contributing) • [Examples](#examples)
+[Website](https://jackal-intro-page-qhqv.vercel.app) • [Documentation](#language-guide) • [Contributing](#contributing) • [Examples](#language-guide)
 
 </div>
 
@@ -16,61 +16,20 @@
 
 ## About
 
-Jackal is a dynamic, object-oriented interpreted programming language built from the ground up in C. Designed with elegance and simplicity at its core, Jackal provides a modern programming experience without sacrificing performance or clarity.
-
-The language features a hand-crafted lexer, recursive descent parser, and tree-walking evaluator—making it an excellent study in language implementation and compiler theory.
+Jackal is a dynamic, object-oriented interpreted programming language built from scratch in C. This project is designed as an in-depth exploration of language implementation, covering a lexer, a recursive descent parser, and a tree-walking evaluator.
 
 ## Project Vision
 
-Jackal is more than just a programming language—it's a collaborative journey. Our mission is to create a **lightweight and elegant** programming language that:
-
-- Removes unnecessary complexity while maintaining expressive power
-- Provides intuitive syntax that reads like natural logic
-- Offers modern features without bloating the runtime
-- Empowers developers to write clean, maintainable code
-- Grows organically through community collaboration
-
-We believe the best languages are built **together**—by scientists, developers, students, and enthusiasts who share a passion for elegant design and open source values.
-
-## Why Jackal?
-
-- **🪶 Lightweight**: Minimal runtime overhead with fast startup times
-- **✨ Elegant Syntax**: Clean, readable code that expresses intent clearly
-- **🎯 Modern Features**: Advanced capabilities without complexity
-- **🔓 Open Source**: Built by the community, for the community
-- **📚 Educational**: Learn language design through hands-on contribution
+The goal of this project is to create a **lightweight and elegant** programming language **together** as a community. Jackal is built by and for open source scientists and developers who want to learn, contribute, and shape the future of a language collaboratively.
 
 ## Key Features
 
-### Core Language Features
-
-- **Dynamic Typing** — Write code without ceremony or boilerplate
-- **Object-Oriented Programming** — Full support for classes, inheritance, and interfaces
-- **First-Class Functions** — Functions as values with closure support
-- **Pattern Matching** — Elegant conditional logic with `match` expressions
-- **Reactive Programming** — Built-in support for time-based reactive patterns
-- **Concurrent Execution** — Parallel and async decorators for performance
-
-### Data Structures
-
-- **Arrays** — `[1, 2, 3]` with intuitive indexing
-- **Maps** — `{"key": "value"}` for key-value storage
-- **Destructuring** — `let [a, b] = [1, 2]` for elegant assignment
-- **Structs** — Lightweight data containers
-
-### Control Flow
-
-- **Conditional Logic** — `if`/`else if`/`else` chains
-- **Loops** — Classic `for`, range-based `for`, and `while`
-- **Pattern Matching** — `match` expressions for multi-way branching
-
-### Advanced Features
-
-- **Generics** *(Beta)* — Type-safe generic programming
-- **Type Annotations** *(In Development)* — Optional static typing
-- **Decorators** — Metadata-driven function enhancement
-- **Pipe Operator** *(Beta)* — Functional composition with `|>`
-- **Singletons** — Object-level programming pattern
+- **Dynamic Typing** — No complex type declarations required
+- **Fully Object-Oriented** — Support for `class`, `this`, methods, constructors (`init`), and object properties
+- **Modern Data Structures** — Array literals and maps with easy manipulation
+- **First-Class Functions** — Functions can be stored in variables, passed as arguments, and support closures
+- **Complete Control Flow** — `if`/`else if`/`else`, `while` loops, and C-style `for` loops
+- **Comprehensive Operators** — Arithmetic, comparison, logical (`&&` with short-circuit), and postfix (`i++`, `i--`)
 
 ---
 
@@ -78,12 +37,10 @@ We believe the best languages are built **together**—by scientists, developers
 
 ### Prerequisites
 
-- Standard C compiler (`gcc`, `clang`, or `msvc`)
-- `make` build system
+- Standard C compiler (like `gcc` or `clang`)
+- `make`
 
 ### Installation
-
-Clone the repository and build the interpreter:
 
 ```bash
 git clone https://github.com/alegarsio/Jackal-Projects
@@ -91,270 +48,247 @@ cd jackal
 make jackal
 ```
 
-### Your First Program
+### Running a Program
 
-Create a file named `hello.jackal`:
-
-```js
-@main
-func main() {
-    println("Hello, Jackal!")
-}
-```
-
-Run it:
+Create a file with a `.jackal` extension and run it:
 
 ```bash
-./jackal hello.jackal
+./jackal your_script.jackal
 ```
 
 ---
 
 ## Language Guide
 
-### Variables and Data Types
+### Destructor
 
 ```js
-// Dynamic typing
-let name = "Jackal"
-let version = 1.0
-let isOpen = true
-
-// Type annotations (in development)
-let count: Int = 42
-let price: Float = 99.99
-let message: String = "Hello"
+let [a, b] = [1, 2]
+println(a)
+println(b)
 ```
 
-### Functions
+### Pipe Operator (Beta)
 
 ```js
-// Basic function
-func greet(name) {
-    return "Hello, " + name
+"hello world" |> println()
+```
+
+```js
+@main
+func main() {
+    "Hello world" |> println()
+}
+```
+
+### Type Safe (In Development)
+
+```js
+let a: Int = 10
+let b: Float = 20
+let c: String = "hello"
+let d: Number = 20
+```
+
+```js
+func add(a: Int, b: Int) {
+    return a + b
 }
 
-// First-class functions
-let sayHello = greet
-sayHello("World")
-
-// Type-safe functions (in development)
-func add(a: Int, b: Int) -> Int {
+func add(a, b) -> Int {
     return a + b
 }
 ```
 
-### Classes and Objects
+### For Loop
+
+Classic for loop:
 
 ```js
-class Person {
-    init(name, age) {
-        this.name = name
-        this.age = age
+for (let i = 0; i < 10; i++) {
+    println(i)
+}
+```
+
+Range based loop:
+
+```js
+for (i in 1 to 100) {
+    println(i)
+}
+```
+
+Range based loop with step:
+
+```js
+for (i in 1 to 100 step 2) {
+    println(i)
+}
+```
+
+### Class
+
+```js
+class Jack {
+    init(name) {
+        this.name = name;
     }
     
-    func introduce() {
-        println("I'm " + this.name + ", " + this.age + " years old")
+    func greet() {
+        println("Hello " + this.name)
     }
 }
 
-let person = Person("Alice", 30)
-person.introduce()
+let jack = Jack("Jack");
+jack.greet();
+```
+
+### Struct
+
+```js
+struct Point(x, y, z)
+
+let p = Point(1, 2, 3)
+println(p.x)
+```
+
+### Singleton
+
+```js
+object Person(name) {
+    func getName() {
+        return this.name
+    }
+}
+
+Person.name = "jack"
+println(Person.getName())
 ```
 
 ### Inheritance
 
 ```js
-class Student : Person {
-    init(name, age, major) {
-        this.name = name
-        this.age = age
-        this.major = major
+class Person {
+    init(name) {
+        this.name = name;
     }
-    
+}
+
+class Jack: Person {
+    func greet() {
+        println("Hello " + this.name)
+    }
+}
+
+let jack = Jack("Jack");
+jack.greet();
+```
+
+### Interface
+
+```js
+interface Greetable {
+    func greet();
+}
+
+class Jack implements Greetable {
     @override
-    func introduce() {
-        println("I'm " + this.name + ", studying " + this.major)
+    func greet() {
+        println("hello jackal")
     }
 }
 
-let student = Student("Bob", 20, "Computer Science")
-student.introduce()
+let jack = Jack();
+jack.greet();
 ```
 
-### Interfaces
+### Array
 
 ```js
-interface Drawable {
-    func draw();
+let data = ["jack", "john", "davin", "ale"];
+
+for (let i = 0; i < 4; i++) {
+    print(data[i]);
 }
 
-class Circle implements Drawable {
-    @override
-    func draw() {
-        println("Drawing a circle")
-    }
+for (i in data) {
+    print(data[i])
 }
-
-let shape = Circle()
-shape.draw()
 ```
 
-### Structs
+Nested arrays:
 
 ```js
-struct Point(x, y, z)
-
-let position = Point(10, 20, 30)
-println(position.x)  // 10
-```
-
-### Singleton Pattern
-
-```js
-object Logger(level) {
-    func log(message) {
-        println("[" + this.level + "] " + message)
-    }
-}
-
-Logger.level = "INFO"
-Logger.log("Application started")
-```
-
-### Arrays
-
-```js
-let numbers = [1, 2, 3, 4, 5]
-
-// Classic for loop
-for (let i = 0; i < 5; i++) {
-    println(numbers[i])
-}
-
-// Range-based for loop
-for (num in numbers) {
-    println(num)
-}
-
-// Nested arrays
-let matrix = [
-    [1, 2, 3],
-    [4, 5, 6],
-    [7, 8, 9]
+let data = [
+    [1, 2],
+    [3, 4],
+    [5, 6]
 ]
+
+for (i in data) {
+    println(i)
+}
 ```
 
-### Maps
+### Map
 
 ```js
-let user = {
+let data = {
     "id": 1,
-    "name": "Alice",
-    "email": "alice@example.com"
+    "name": "ale"
 }
 
-println(user["name"])  // Alice
+println(data["name"])
 ```
 
-### Destructuring
+### User Input
 
 ```js
-let [x, y, z] = [10, 20, 30]
-println(x)  // 10
-println(y)  // 20
-println(z)  // 30
-```
-
-### Control Flow
-
-```js
-// If-else
-let score = 85
-
-if (score >= 90) {
-    println("Excellent")
-} else if (score >= 75) {
-    println("Good")
-} else {
-    println("Keep trying")
-}
-
-// While loop
-let count = 0
-while (count < 5) {
-    println(count)
-    count++
-}
-
-// Range-based for loop
-for (i in 1 to 10) {
-    println(i)
-}
-
-// Range with step
-for (i in 0 to 100 step 5) {
-    println(i)
-}
+print("Hello ");
+let name = read();
+print("Hello, " + name + "!");
 ```
 
 ### Pattern Matching
 
 ```js
-let status = 200
+let score = 90;
 
-match (status) {
-    200 => println("OK")
-    404 => println("Not Found")
-    500 => println("Server Error")
-    default => println("Unknown Status")
+match (score) {
+    90 => println("Passed");
+    75 => println("Ok");
+    default => println("Not in the list");
 }
 ```
 
-### Pipe Operator *(Beta)*
+### Generic (Beta)
 
 ```js
-@main
-func main() {
-    "Hello, Jackal!" |> println()
-    
-    // Chain operations
-    let result = getValue()
-        |> transform()
-        |> validate()
-        |> save()
-}
-```
-
-### Generics *(Beta)*
-
-```js
-class Container<T> {
-    init(value: T) {
-        this.value = value
+class Person<T> {
+    init(name: T) {
+        this.name = name
     }
     
-    func get() {
-        return this.value
+    func getName() {
+        return this.name
     }
 }
 
-let stringContainer = Container<String>("Hello")
-let intContainer = Container<Int>(42)
+let person = Person("jack")
 ```
 
-### Reactive Programming *(Beta)*
+### Reactive (Beta)
 
 ```js
 let counter = 0
 
 every(1000) {
     counter++
-    println("Counter: " + counter)
+    println(counter)
 }
 
-until(counter >= 5) {
-    println("Counter stopped at 5")
+until (counter >= 5) {
+    println("loop stop")
 }
 ```
 
@@ -362,240 +296,103 @@ until(counter >= 5) {
 
 ## Decorators
 
-Jackal provides powerful decorator metadata for function enhancement.
+### @main Decorator
 
-### `@main` — Entry Point
-
-Specifies the program's entry point in complex applications:
+Tells the Jackal interpreter where to start execution:
 
 ```js
 @main
 func main() {
-    println("Application started")
-    initialize()
-    run()
+    println("hello world")
 }
 ```
 
-### `@memoize` — Result Caching
+### @memoize Decorator
 
-Automatically cache function results for improved performance:
+Saves the result of every function call for caching:
 
 ```js
 @memoize
-func fibonacci(n) {
-    if (n <= 1) return n
-    return fibonacci(n - 1) + fibonacci(n - 2)
+func counter(n) {
+    let count = 1
+    for (let i = 1; i < n; i++) {
+        count = count * 2
+    }
+    return count
 }
-
-// First call computes, subsequent calls use cache
-println(fibonacci(40))  // Computed
-println(fibonacci(40))  // Cached
 ```
 
-### `@parallel` — Multi-threaded Execution
+### @parallel Decorator
 
-Execute functions on separate CPU cores using POSIX threads:
+Runs the function on a different core using POSIX Threads:
 
 ```js
 @parallel
-func processLargeDataset(data) {
-    let result = 0
-    for (item in data) {
-        result = result + compute(item)
+func counter(n) {
+    let count = 1
+    for (let i = 1; i < n; i++) {
+        count = count + 1
     }
-    return result
+    return count
 }
 ```
 
-### `@async` — Asynchronous Execution
+### @async Decorator
 
-Run functions in the background without blocking:
+Executes tasks in the background without blocking:
 
 ```js
 @async
-func fetchData(url) {
-    let response = httpGet(url)
-    return parseJSON(response)
+func count(n) {
+    let count = 0
+    for (let i = 0; i < n; i++) {
+        count++
+    }
+    return count
 }
-
-// Main thread continues while fetchData runs
-let dataPromise = fetchData("https://api.example.com/data")
 ```
 
-### `@override` — Explicit Method Override
+### @override Decorator
 
-Mark methods that intentionally override parent implementations:
+Explicitly marks method overrides:
 
 ```js
-class Animal {
-    func speak() {
-        println("Some sound")
-    }
+interface Greetable {
+    func greet();
 }
 
-class Dog : Animal {
+class Jack implements Greetable {
     @override
-    func speak() {
-        println("Woof!")
-    }
-}
-```
-
----
-
-## Examples
-
-### User Input
-
-```js
-@main
-func main() {
-    print("Enter your name: ")
-    let name = read()
-    println("Hello, " + name + "!")
-}
-```
-
-### Temperature Converter
-
-```js
-func celsiusToFahrenheit(celsius) {
-    return (celsius * 9/5) + 32
-}
-
-@main
-func main() {
-    print("Enter temperature in Celsius: ")
-    let celsius = read()
-    let fahrenheit = celsiusToFahrenheit(celsius)
-    println(celsius + "°C = " + fahrenheit + "°F")
-}
-```
-
-### Simple To-Do List
-
-```js
-let todos = []
-
-func addTodo(task) {
-    todos = todos + [task]
-    println("Added: " + task)
-}
-
-func listTodos() {
-    println("=== To-Do List ===")
-    for (i in 0 to todos.length) {
-        println((i + 1) + ". " + todos[i])
+    func greet() {
+        println("hello jackal")
     }
 }
 
-@main
-func main() {
-    addTodo("Learn Jackal")
-    addTodo("Build a project")
-    addTodo("Contribute to open source")
-    listTodos()
-}
+let jack = Jack();
+jack.greet();
 ```
 
 ---
 
 ## Contributing
 
-We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, improving documentation, or sharing ideas—your contribution matters.
+We welcome contributions from developers of all skill levels! 
 
 ### How to Contribute
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes**
-4. **Test thoroughly**
-5. **Commit with clear messages**: `git commit -m "Add amazing feature"`
-6. **Push to your branch**: `git push origin feature/amazing-feature`
-7. **Open a Pull Request**
-
-### Development Guidelines
-
-- Follow existing code style and conventions
-- Write clear, descriptive commit messages
-- Add tests for new features
-- Update documentation as needed
-- Keep PRs focused on a single feature or fix
-
-### Areas for Contribution
-
-- 🐛 Bug fixes and stability improvements
-- ✨ New language features
-- 📚 Documentation and examples
-- 🧪 Test coverage expansion
-- ⚡ Performance optimizations
-- 🌍 Internationalization
-
----
-
-## Documentation
-
-Comprehensive documentation is available on our [website](https://jackal-intro-page-qhqv.vercel.app).
-
-### Topics Covered
-
-- Language specification
-- Standard library reference
-- Advanced tutorials
-- Contribution guidelines
-- Architecture deep-dive
-
----
-
-## Roadmap
-
-### Current Focus (v1.0)
-
-- ✅ Core language features
-- ✅ Object-oriented programming
-- ✅ Basic standard library
-- 🚧 Type annotations system
-- 🚧 Generic programming
-- 🚧 Package manager
-
-### Future Plans (v2.0+)
-
-- Module system
-- Foreign Function Interface (FFI)
-- JIT compilation
-- Standard library expansion
-- IDE tooling support
-- REPL environment
-
----
-
-## Community
-
-Join our growing community of Jackal developers:
-
-- **Website**: [jackal-intro-page-qhqv.vercel.app](https://jackal-intro-page-qhqv.vercel.app)
-- **GitHub**: [github.com/alegarsio/Jackal-Projects](https://github.com/alegarsio/Jackal-Projects)
-- **Issues**: Report bugs and request features
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Commit your changes: `git commit -m "Add amazing feature"`
+5. Push to your branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
 ---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
-
-## Acknowledgments
-
-Built with passion by the open source community. Special thanks to all contributors who help make Jackal better every day.
-
----
-
-<div align="center">
 
 **Made with ❤️ by the Jackal Community**
-
-⭐ Star this repo if you find it useful!
-
-</div>
