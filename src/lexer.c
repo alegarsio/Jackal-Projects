@@ -164,6 +164,8 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_OBSERVE;
         else if (strcmp(tk.text, "on") == 0)
             tk.kind = TOKEN_ON;
+        else if (strcmp(tk.text,"struct") == 0)
+            tk.kind = TOKEN_STRUCT;
         else if (strcmp(tk.text, "object") == 0)
             tk.kind = TOKEN_OBJECT;
         else if (strcmp(tk.text, "of") == 0)

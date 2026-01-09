@@ -97,7 +97,7 @@ typedef enum {
 
     TOKEN_EVERY,
     TOKEN_UNTIL,
-    
+    TOKEN_STRUCT,
     TOKEN_OBSERVE, 
     TOKEN_ON,
     TOKEN_TYPE,
@@ -174,6 +174,15 @@ typedef struct Enum Enum;
  */
 typedef struct Value (*NativeFn)(int argCount, struct Value* args);
 
+typedef struct {
+    char name[100];
+    char **field_names; // Array of strings
+    int field_count;
+} StructDefinition;
+typedef struct {
+    StructDefinition *definition;
+    struct Value *values; 
+} StructInstance;
 
 /**
  * @typedef @struct FUNC
@@ -271,7 +280,9 @@ typedef enum {
     VAL_CONTINUE,
     VAL_LINKEDLIST,
     VAL_INTERFACE,
-    VAL_SOCKET
+    VAL_SOCKET,
+    VAL_STRUCT_DEF,     
+    VAL_STRUCT_INSTANCE 
 } ValueType;
 
 typedef struct GCObject {
@@ -299,6 +310,8 @@ typedef struct Value {
         LinkedList* list;
         Enum* enum_obj;
         FILE* file;
+        StructDefinition *struct_def;       
+        StructInstance *struct_instance;
 
     } as;
     struct GCObject* gc_info;
