@@ -113,6 +113,8 @@ typedef enum {
     TOKEN_TO,
     TOKEN_STEP,
     TOKEN_SUPER,
+    TOKEN_TO_UNDERSCORE,
+    TOKEN_RANGE
     
 } TokenKind;
 

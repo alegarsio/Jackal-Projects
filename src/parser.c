@@ -584,7 +584,7 @@ static Node *parse_addition(Parser *P)
 static Node *parse_range(Parser *P)
 {
     Node *left = parse_addition(P);
-    if (P->current.kind == TOKEN_TO)
+    if (P->current.kind == TOKEN_DOT_DOT || P->current.kind == TOKEN_TO)
     {
         next(P);
         Node *n = new_node(NODE_RANGE_EXPR);

@@ -210,6 +210,12 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_IMPLEMENTS;
         else if (strcmp(tk.text, "to") == 0)
             tk.kind = TOKEN_TO;
+
+        // else if (strcmp(tk.text,"..") == 0){
+        //     tk.kind = TOKEN_RANGE;
+        // }
+
+        
         else
             tk.kind = TOKEN_IDENT;
 
@@ -307,7 +313,7 @@ Token lexer_next(Lexer *L)
         tk.kind = TOKEN_LPAREN;
         strcpy(tk.text, "(");
         break;
-
+  
     case ')':
         tk.kind = TOKEN_RPAREN;
         strcpy(tk.text, ")");
