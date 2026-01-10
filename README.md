@@ -118,6 +118,12 @@ for (i in 1 to 100) {
 }
 ```
 
+```js
+for(i in 1 .. 10){
+    println(i)
+}
+```
+
 Range based loop with step:
 
 ```js
