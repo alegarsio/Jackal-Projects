@@ -75,6 +75,7 @@ let a = "jack"
 let age = 19
 println("name" + a + 19.toString())
 ```
+
 ### New Print 
 In the new jackal update we bring new feature to the print function
 ```js
@@ -87,7 +88,20 @@ let a = "jack"
 let age = 19
 println("name", a,age)
 ```
+### Type Safe (In Development)
 
+```js
+let a: Int = 10
+```
+```js
+let b: Float = 2.0
+```
+```js
+let c: String = "hello"
+```
+```js
+let d: Number = 20
+```
 ### User Input
 
 ```js
@@ -128,8 +142,11 @@ func square(n) =  n * n
 ### Destructor
 
 ```js
+
 let [a, b] = [1, 2]
+
 println(a)
+
 println(b)
 ```
 
@@ -147,24 +164,7 @@ func main() {
 }
 ```
 
-### Type Safe (In Development)
 
-```js
-let a: Int = 10
-let b: Float = 20
-let c: String = "hello"
-let d: Number = 20
-```
-
-```js
-func add(a: Int, b: Int) {
-    return a + b
-}
-
-func add(a, b) -> Int {
-    return a + b
-}
-```
 
 ### For Loop
 
