@@ -198,6 +198,16 @@ Range based loop with step:
 for (i in 1 to 100 step 2) {
     println(i)
 }
+
+```
+### Struct
+
+```js
+struct Point(x, y, z)
+
+let p = Point(1, 2, 3)
+
+println(p.x)
 ```
 
 ### Class
@@ -217,14 +227,6 @@ let jack = Jack("Jack");
 jack.greet();
 ```
 
-### Struct
-
-```js
-struct Point(x, y, z)
-
-let p = Point(1, 2, 3)
-println(p.x)
-```
 
 ### Singleton
 
