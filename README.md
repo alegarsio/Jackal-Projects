@@ -106,8 +106,10 @@ let d: Number = 20
 
 ```js
 print("Hello ");
+
 let name = read();
-print("Hello, " + name + "!");
+
+print("Hello, ",name);
 ```
 
 ### Function
