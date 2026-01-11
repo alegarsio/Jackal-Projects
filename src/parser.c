@@ -1525,7 +1525,29 @@ Node *apply_pipeline(Node *left, Node *right)
 
     return right;
 }
+static Node *parse_with_stmt(Parser *P) {
+    Node *n = new_node(NODE_WITH);
+    next(P); 
 
+    if (P->current.kind != TOKEN_LPAREN) {
+        print_error("Expected '(' after with.");
+    }
+    next(P);
+
+    n->left = parse_expr(P);
+
+    if (P->current.kind == TOKEN_RPAREN) {
+        next(P);
+    }
+
+    if (P->current.kind != TOKEN_LBRACE) {
+        print_error("Expected '{' for with block, found '%s'.", P->current.text);
+    }
+
+    n->right = parse_block(P);
+
+    return n;
+}
 /**
  * @brief Parses a statement.
  * @param P Pointer to the Parser.
@@ -1582,6 +1604,10 @@ Node *parse_stmt(Parser *P)
     if (P->current.kind == TOKEN_THROW)
     {
         return parse_throw_stmt(P);
+    }
+
+    if (P->current.kind == TOKEN_WITH){
+        return parse_with_stmt(P);
     }
 
     if (P->current.kind == TOKEN_IMPORT)
@@ -1865,6 +1891,8 @@ static Node *parse_import_stmt(Parser *P)
 
     return n;
 }
+
+
 
 /**
  * @brief Parses an match statement.

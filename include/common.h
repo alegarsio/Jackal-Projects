@@ -115,7 +115,8 @@ typedef enum {
     TOKEN_SUPER,
     TOKEN_TO_UNDERSCORE,
     TOKEN_RANGE,
-    TOKEN_ANY
+    TOKEN_ANY,
+    TOKEN_WITH
     
 } TokenKind;
 

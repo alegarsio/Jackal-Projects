@@ -206,9 +206,10 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_THROW;
         else if (strcmp(tk.text, "in") == 0)
             tk.kind = TOKEN_IN;
-        else if (strcmp(tk.text,"any") == 0){
+        else if (strcmp(tk.text,"any") == 0)
             tk.kind = TOKEN_ANY;
-        }
+        else if (strcmp(tk.text,"with") == 0)
+            tk.kind = TOKEN_WITH;
         else if (strcmp(tk.text, "implements") == 0)
             tk.kind = TOKEN_IMPLEMENTS;
         else if (strcmp(tk.text, "to") == 0)

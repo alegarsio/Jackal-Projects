@@ -139,28 +139,40 @@ const char *get_value_type_name(Value val)
         return "unknown";
     }
 }
-static bool match_pattern(Value value, Value pattern) {
-    if (pattern.type == VAL_NIL) return true;
-    if (value.type != pattern.type) return false;
+static bool match_pattern(Value value, Value pattern)
+{
+    if (pattern.type == VAL_NIL)
+        return true;
+    if (value.type != pattern.type)
+        return false;
 
-    if (value.type == VAL_ARRAY) {
-        ValueArray* vArr = value.as.array;
-        ValueArray* pArr = pattern.as.array;
-        if (vArr->count != pArr->count) return false;
-        for (int i = 0; i < vArr->count; i++) {
-            if (!match_pattern(vArr->values[i], pArr->values[i])) return false;
+    if (value.type == VAL_ARRAY)
+    {
+        ValueArray *vArr = value.as.array;
+        ValueArray *pArr = pattern.as.array;
+        if (vArr->count != pArr->count)
+            return false;
+        for (int i = 0; i < vArr->count; i++)
+        {
+            if (!match_pattern(vArr->values[i], pArr->values[i]))
+                return false;
         }
         return true;
     }
 
-    if (value.type == VAL_MAP) {
-        HashMap* vMap = value.as.map;
-        HashMap* pMap = pattern.as.map;
-        for (int i = 0; i < pMap->capacity; i++) {
-            if (pMap->entries[i].key != NULL) {
+    if (value.type == VAL_MAP)
+    {
+        HashMap *vMap = value.as.map;
+        HashMap *pMap = pattern.as.map;
+        for (int i = 0; i < pMap->capacity; i++)
+        {
+            if (pMap->entries[i].key != NULL)
+            {
                 Value found;
-                if (!map_get(vMap, pMap->entries[i].key, &found)) return false;
-                if (!match_pattern(found, pMap->entries[i].value)) return false;
+                if (!map_get(vMap, pMap->entries[i].key, &found))
+                    return false;
+                if (!match_pattern(found, pMap->entries[i].value))
+                    return false;
             }
         }
         return true;
@@ -630,28 +642,74 @@ Value eval_node(Env *env, Node *n)
         return default_result;
     }
 
-    case NODE_MATCH_STMT: {
-    Value m_val = eval_node(env, n->left);
-    Node *c_node = n->right;
-    while (c_node) {
-        if (c_node->left != NULL) {
-            Value pat = eval_node(env, c_node->left);
-            if (match_pattern(m_val, pat)) {
+    case NODE_MATCH_STMT:
+    {
+        Value m_val = eval_node(env, n->left);
+        Node *c_node = n->right;
+        while (c_node)
+        {
+            if (c_node->left != NULL)
+            {
+                Value pat = eval_node(env, c_node->left);
+                if (match_pattern(m_val, pat))
+                {
+                    free_value(pat);
+                    Value res = eval_node(env, c_node->right);
+                    free_value(m_val);
+                    return res;
+                }
                 free_value(pat);
-                Value res = eval_node(env, c_node->right);
-                free_value(m_val);
-                return res;
             }
-            free_value(pat);
-        } else {
-            free_value(m_val);
-            return eval_node(env, c_node->right);
+            else
+            {
+                free_value(m_val);
+                return eval_node(env, c_node->right);
+            }
+            c_node = c_node->next;
         }
-        c_node = c_node->next;
+        free_value(m_val);
+        return (Value){VAL_NIL, {0}};
     }
-    free_value(m_val);
-    return (Value){VAL_NIL, {0}};
-}
+
+    case NODE_WITH:
+    {
+        Value obj = eval_node(env, n->left);
+        Env *with_env = env_new(env);
+
+        if (obj.type == VAL_INSTANCE)
+        {
+            Var *v = obj.as.instance->fields->vars;
+            while (v)
+            {
+                set_var(with_env, v->name, v->value, false, "");
+                v = v->next;
+            }
+        }
+        else if (obj.type == VAL_MAP)
+        {
+            HashMap *map = obj.as.map;
+            for (int i = 0; i < map->capacity; i++)
+            {
+                if (map->entries[i].key != NULL)
+                {
+                    set_var(with_env, map->entries[i].key, map->entries[i].value, false, "");
+                }
+            }
+        }
+
+        set_var(with_env, "it", obj, true, "");
+
+        Value result = eval_node(with_env, n->right);
+
+        if (obj.type == VAL_FILE && obj.as.file != NULL)
+        {
+            fclose(obj.as.file);
+        }
+
+        env_free(with_env);
+        free_value(obj);
+        return result;
+    }
 
     case NODE_ARRAY_LITERAL:
     {
@@ -839,24 +897,24 @@ Value eval_node(Env *env, Node *n)
         Value obj = eval_node(env, n->left);
 
         if (obj.type == VAL_STRUCT_INSTANCE)
-    {
-        StructInstance *s_inst = obj.as.struct_instance;
-        StructDefinition *s_def = s_inst->definition;
-
-        for (int i = 0; i < s_def->field_count; i++)
         {
-            if (s_def->field_names[i] != NULL && strcmp(s_def->field_names[i], n->name) == 0)
+            StructInstance *s_inst = obj.as.struct_instance;
+            StructDefinition *s_def = s_inst->definition;
+
+            for (int i = 0; i < s_def->field_count; i++)
             {
-                
-                return copy_value(s_inst->values[i]);
+                if (s_def->field_names[i] != NULL && strcmp(s_def->field_names[i], n->name) == 0)
+                {
+
+                    return copy_value(s_inst->values[i]);
+                }
             }
+
+            char msg[128];
+            snprintf(msg, sizeof(msg), "Property '%s' not found in struct '%s'.", n->name, s_def->name);
+            print_error(msg);
+            return (Value){VAL_NIL, {0}};
         }
-        
-        char msg[128];
-        snprintf(msg, sizeof(msg), "Property '%s' not found in struct '%s'.", n->name, s_def->name);
-        print_error(msg);
-        return (Value){VAL_NIL, {0}};
-    }
 
         else if (obj.type == VAL_MAP)
         {
@@ -1302,57 +1360,64 @@ Value eval_node(Env *env, Node *n)
         return (Value){VAL_NIL, {0}};
     }
 
-   case NODE_STRUCT_DEF:
-{
-    StructDefinition *s_def = malloc(sizeof(StructDefinition));
-    if (!s_def) {
-        print_error("Fatal: Out of memory during struct definition.");
+    case NODE_STRUCT_DEF:
+    {
+        StructDefinition *s_def = malloc(sizeof(StructDefinition));
+        if (!s_def)
+        {
+            print_error("Fatal: Out of memory during struct definition.");
+            return (Value){VAL_NIL, {0}};
+        }
+
+        strcpy(s_def->name, n->name);
+        s_def->computed_body = n->left;
+
+        int total_count = 0;
+
+        Node *temp = n->right;
+        while (temp)
+        {
+            total_count++;
+            temp = temp->next;
+        }
+
+        Node *body_node = n->left;
+        while (body_node)
+        {
+            if (body_node->kind == NODE_VARDECL)
+            {
+                total_count++;
+            }
+            body_node = body_node->next;
+        }
+
+        s_def->field_count = total_count;
+        s_def->field_names = malloc(sizeof(char *) * total_count);
+
+        int idx = 0;
+
+        Node *field_node = n->right;
+        while (field_node)
+        {
+            s_def->field_names[idx++] = strdup(field_node->name);
+            field_node = field_node->next;
+        }
+
+        body_node = n->left;
+        while (body_node)
+        {
+            if (body_node->kind == NODE_VARDECL)
+            {
+                s_def->field_names[idx++] = strdup(body_node->name);
+            }
+            body_node = body_node->next;
+        }
+
+        Value s_val = (Value){VAL_STRUCT_DEF, {.struct_def = s_def}};
+        set_var(env, n->name, s_val, true, "");
+
         return (Value){VAL_NIL, {0}};
     }
-
-    strcpy(s_def->name, n->name);
-    s_def->computed_body = n->left; 
-
-    int total_count = 0;
-    
-    Node *temp = n->right;
-    while (temp) {
-        total_count++;
-        temp = temp->next;
-    }
-
-    Node *body_node = n->left;
-    while (body_node) {
-        if (body_node->kind == NODE_VARDECL) {
-            total_count++;
-        }
-        body_node = body_node->next;
-    }
-
-    s_def->field_count = total_count;
-    s_def->field_names = malloc(sizeof(char*) * total_count);
-
-    int idx = 0;
-
-    Node *field_node = n->right;
-    while (field_node) {
-        s_def->field_names[idx++] = strdup(field_node->name);
-        field_node = field_node->next;
-    }
-
-    body_node = n->left;
-    while (body_node) {
-        if (body_node->kind == NODE_VARDECL) {
-            s_def->field_names[idx++] = strdup(body_node->name);
-        }
-        body_node = body_node->next;
-    }
-
-    Value s_val = (Value){VAL_STRUCT_DEF, {.struct_def = s_def}};
-    set_var(env, n->name, s_val, true, "");
-
-    return (Value){VAL_NIL, {0}};
-}
     case NODE_CLASS_DEF:
     {
         Class *class_obj = malloc(sizeof(Class));
@@ -1819,59 +1884,60 @@ Value eval_node(Env *env, Node *n)
             return instance_val;
         }
 
-       if (callee.type == VAL_STRUCT_DEF)
-{
-    StructDefinition *s_def = callee.as.struct_def;
-    StructInstance *s_inst = malloc(sizeof(StructInstance));
-    s_inst->definition = s_def;
-    s_inst->values = malloc(sizeof(Value) * s_def->field_count);
-
-    for (int i = 0; i < s_def->field_count; i++) {
-        s_inst->values[i] = (Value){VAL_NIL, {0}};
-    }
-    
-    Env *temp_env = env_new(env);
-    Node *arg_node = n->right; 
-
-    for (int i = 0; i < s_def->field_count; i++) 
-    {
-        if (arg_node != NULL) 
+        if (callee.type == VAL_STRUCT_DEF)
         {
-            Value val = eval_node(env, arg_node);
-            s_inst->values[i] = copy_value(val);
-            set_var(temp_env, s_def->field_names[i], val, false, "");
-            arg_node = arg_node->next;
-        }
-    }
+            StructDefinition *s_def = callee.as.struct_def;
+            StructInstance *s_inst = malloc(sizeof(StructInstance));
+            s_inst->definition = s_def;
+            s_inst->values = malloc(sizeof(Value) * s_def->field_count);
 
-    if (s_def->computed_body != NULL)
-    {
-        Node *stmt = s_def->computed_body;
-        while (stmt)
-        {
-            if (stmt->kind == NODE_VARDECL) 
+            for (int i = 0; i < s_def->field_count; i++)
             {
-                eval_node(temp_env, stmt);
-                Var *v = find_var(temp_env, stmt->name);
-                if (v) 
+                s_inst->values[i] = (Value){VAL_NIL, {0}};
+            }
+
+            Env *temp_env = env_new(env);
+            Node *arg_node = n->right;
+
+            for (int i = 0; i < s_def->field_count; i++)
+            {
+                if (arg_node != NULL)
                 {
-                    for (int j = 0; j < s_def->field_count; j++) 
-                    {
-                        if (strcmp(s_def->field_names[j], stmt->name) == 0) 
-                        {
-                            s_inst->values[j] = copy_value(v->value);
-                            break;
-                        }
-                    }
+                    Value val = eval_node(env, arg_node);
+                    s_inst->values[i] = copy_value(val);
+                    set_var(temp_env, s_def->field_names[i], val, false, "");
+                    arg_node = arg_node->next;
                 }
             }
-            stmt = stmt->next;
-        }
-    }
 
-    env_free(temp_env);
-    return (Value){VAL_STRUCT_INSTANCE, {.struct_instance = s_inst}};
-}
+            if (s_def->computed_body != NULL)
+            {
+                Node *stmt = s_def->computed_body;
+                while (stmt)
+                {
+                    if (stmt->kind == NODE_VARDECL)
+                    {
+                        eval_node(temp_env, stmt);
+                        Var *v = find_var(temp_env, stmt->name);
+                        if (v)
+                        {
+                            for (int j = 0; j < s_def->field_count; j++)
+                            {
+                                if (strcmp(s_def->field_names[j], stmt->name) == 0)
+                                {
+                                    s_inst->values[j] = copy_value(v->value);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    stmt = stmt->next;
+                }
+            }
+
+            env_free(temp_env);
+            return (Value){VAL_STRUCT_INSTANCE, {.struct_instance = s_inst}};
+        }
         if (callee.type == VAL_FUNCTION)
         {
 

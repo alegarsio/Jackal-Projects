@@ -63,7 +63,8 @@ typedef enum {
     NODE_FOR_EACH,
     NODE_RANGE_EXPR,
     NODE_DESTRUCTURE,
-    NODE_STRUCT_DEF
+    NODE_STRUCT_DEF,
+    NODE_WITH
 } NodeKind;
 
 /**
