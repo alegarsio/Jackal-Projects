@@ -60,6 +60,33 @@ Create a file with a `.jackal` extension and run it:
 
 ## Language Guide
 
+### Print 
+
+Old Print
+
+```js
+let a = "jack"
+println("name" + a)
+```
+
+```js
+let a = "jack"
+let age = 19
+println("name" + a + 19.toString())
+```
+New Print
+
+```js
+let a = "jack"
+println("name", a)
+```
+```js
+let a = "jack"
+let age = 19
+println("name", a,age)
+```
+
+
 ### Destructor
 
 ```js
