@@ -160,10 +160,10 @@ println(b)
 ```
 
 ```js
-@main
-func main() {
-    "Hello world" |> println()
-}
+func square(n : Int) -> Int =  n * n
+
+square(12) |> println()
+
 ```
 
 
