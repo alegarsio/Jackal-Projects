@@ -266,6 +266,14 @@ match (score) {
     any => println("Not in the list");
 }
 ```
+```js
+let pattern = [1,2,3,4]
+
+match(pattern){
+    [1,2,3,4] => println("Ok")
+    any => println("Not Ok")
+}
+```
 
 ```js
 let data = {"items": [1,2,3], "name": "Jack"}
