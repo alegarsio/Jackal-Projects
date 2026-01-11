@@ -72,7 +72,9 @@ println("name" + a)
 
 ```js
 let a = "jack"
+
 let age = 19
+
 println("name" + a + 19.toString())
 ```
 
@@ -80,12 +82,15 @@ println("name" + a + 19.toString())
 In the new jackal update we bring new feature to the print function
 ```js
 let a = "jack"
+
 println("name", a)
 ```
 
 ```js
 let a = "jack"
+
 let age = 19
+
 println("name", a,age)
 ```
 ### Type Safe (In Development)
