@@ -263,8 +263,18 @@ let score = 90;
 match (score) {
     90 => println("Passed");
     75 => println("Ok");
-    default => println("Not in the list");
+    any => println("Not in the list");
 }
+```
+
+```js
+let data = {"items": [1,2,3], "name": "Jack"}
+
+match(data) {
+    {"items": [1,2,3], "name": "Jack"} => println("Perfect match")
+    any => println("not ok")
+}
+
 ```
 
 ### Generic (Beta)

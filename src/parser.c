@@ -1892,7 +1892,7 @@ static Node *parse_match_stmt(Parser *P) {
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
         Node *case_node = new_node(NODE_MATCH_CASE);
 
-        if (P->current.kind == TOKEN_DEFAULT) {
+        if (P->current.kind == TOKEN_DEFAULT || P->current.kind == TOKEN_ANY) {
             next(P);
             case_node->left = NULL;
         } else {
