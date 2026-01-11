@@ -139,7 +139,36 @@ const char *get_value_type_name(Value val)
         return "unknown";
     }
 }
+static bool match_pattern(Value value, Value pattern) {
+    if (pattern.type == VAL_NIL) return true;
+    if (value.type != pattern.type) return false;
 
+    if (value.type == VAL_ARRAY) {
+        ValueArray* vArr = value.as.array;
+        ValueArray* pArr = pattern.as.array;
+        if (vArr->count != pArr->count) return false;
+        for (int i = 0; i < vArr->count; i++) {
+            if (!match_pattern(vArr->values[i], pArr->values[i])) return false;
+        }
+        return true;
+    }
+
+    if (value.type == VAL_MAP) {
+        HashMap* vMap = value.as.map;
+        HashMap* pMap = pattern.as.map;
+        for (int i = 0; i < pMap->capacity; i++) {
+            if (pMap->entries[i].key != NULL) {
+                Value found;
+                if (!map_get(vMap, pMap->entries[i].key, &found)) return false;
+                if (!match_pattern(found, pMap->entries[i].value)) return false;
+            }
+        }
+        return true;
+    }
+
+    Value eq = eval_equals(value, pattern);
+    return eq.as.number == 1.0;
+}
 static bool is_type_alias_match(const char *expected_type, Value actual_val)
 {
     if (actual_val.type == VAL_NUMBER)
@@ -601,44 +630,28 @@ Value eval_node(Env *env, Node *n)
         return default_result;
     }
 
-    case NODE_MATCH_STMT:
-    {
-        Value match_val = eval_node(env, n->left);
-        bool matched = false;
-
-        Node *case_node = n->right;
-        while (case_node)
-        {
-            if (case_node->left != NULL)
-            {
-                Value case_val = eval_node(env, case_node->left);
-
-                Value is_eq = eval_equals(match_val, case_val);
-
-                if (is_eq.as.number == 1.0)
-                {
-                    matched = true;
-                    free_value(case_val);
-                    Value result = eval_node(env, case_node->right);
-                    free_value(match_val);
-                    return result;
-                }
-                free_value(case_val);
+    case NODE_MATCH_STMT: {
+    Value m_val = eval_node(env, n->left);
+    Node *c_node = n->right;
+    while (c_node) {
+        if (c_node->left != NULL) {
+            Value pat = eval_node(env, c_node->left);
+            if (match_pattern(m_val, pat)) {
+                free_value(pat);
+                Value res = eval_node(env, c_node->right);
+                free_value(m_val);
+                return res;
             }
-            else
-            {
-                if (!matched)
-                {
-                    free_value(match_val);
-                    return eval_node(env, case_node->right);
-                }
-            }
-            case_node = case_node->next;
+            free_value(pat);
+        } else {
+            free_value(m_val);
+            return eval_node(env, c_node->right);
         }
-
-        free_value(match_val);
-        return (Value){.type = VAL_NIL, .as = {0}};
+        c_node = c_node->next;
     }
+    free_value(m_val);
+    return (Value){VAL_NIL, {0}};
+}
 
     case NODE_ARRAY_LITERAL:
     {

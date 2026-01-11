@@ -1871,67 +1871,54 @@ static Node *parse_import_stmt(Parser *P)
  * @param P Pointer to the Parser.
  * @return Pointer to the parsed Node.
  */
-static Node *parse_match_stmt(Parser *P)
-{
+static Node *parse_match_stmt(Parser *P) {
     Node *n = new_node(NODE_MATCH_STMT);
     next(P);
 
-    if (P->current.kind != TOKEN_LPAREN)
-        print_error("Expected '(' after 'match'.");
-    next(P);
-    n->left = parse_expr(P);
-    if (P->current.kind != TOKEN_RPAREN)
-        print_error("Expected ')' after match expression.");
+    if (P->current.kind != TOKEN_LPAREN) print_error("Expected '(' after match.");
     next(P);
 
-    if (P->current.kind != TOKEN_LBRACE)
-        print_error("Expected '{' before match cases.");
+    n->left = parse_expr(P);
+
+    if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after match expression.");
+    next(P);
+
+    if (P->current.kind != TOKEN_LBRACE) print_error("Expected '{' before match cases.");
     next(P);
 
     Node *cases_head = NULL;
     Node *cases_current = NULL;
 
-    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
-    {
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
         Node *case_node = new_node(NODE_MATCH_CASE);
 
-        if (P->current.kind == TOKEN_DEFAULT)
-        {
+        if (P->current.kind == TOKEN_DEFAULT) {
             next(P);
             case_node->left = NULL;
-        }
-        else
-        {
+        } else {
             case_node->left = parse_expr(P);
         }
 
-        if (P->current.kind != TOKEN_ARROW)
-            print_error("Expected '=>' after match case.");
+        if (P->current.kind != TOKEN_ARROW) print_error("Expected '=>' after case pattern.");
         next(P);
 
-        if (P->current.kind == TOKEN_LBRACE)
-        {
-            case_node->right = parse_block(P);
-        }
-        else
-        {
-            case_node->right = parse_stmt(P);
-        }
+        case_node->right = (P->current.kind == TOKEN_LBRACE) ? parse_block(P) : parse_stmt(P);
 
-        if (cases_head == NULL)
-        {
+        if (cases_head == NULL) {
             cases_head = case_node;
             cases_current = case_node;
-        }
-        else
-        {
+        } else {
             cases_current->next = case_node;
             cases_current = case_node;
         }
+
+        // Menambahkan logika untuk mengonsumsi titik koma atau koma opsional
+        while (P->current.kind == TOKEN_SEMI || P->current.kind == TOKEN_COMMA) {
+            next(P);
+        }
     }
 
-    if (P->current.kind != TOKEN_RBRACE)
-        print_error("Expected '}' after match cases.");
+    if (P->current.kind != TOKEN_RBRACE) print_error("Expected '}' after match block.");
     next(P);
 
     n->right = cases_head;
