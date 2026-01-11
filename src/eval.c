@@ -896,6 +896,10 @@ Value eval_node(Env *env, Node *n)
     {
         Value obj = eval_node(env, n->left);
 
+        if (obj.type == VAL_NIL) {
+            return (Value){.type = VAL_NIL, .as = {.number = 0}};
+        }
+
         if (obj.type == VAL_STRUCT_INSTANCE)
         {
             StructInstance *s_inst = obj.as.struct_instance;

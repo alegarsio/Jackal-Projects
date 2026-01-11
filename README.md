@@ -4,7 +4,6 @@
 
 **A lightweight, elegant programming language for the open source community**
 
-
 [![New Website](https://img.shields.io/badge/website-jackal--lang-blue)](https://jackal-new-documentation.vercel.app/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![Built with C](https://img.shields.io/badge/built%20with-C-orange.svg)](https://en.wikipedia.org/wiki/C_(programming_language))
