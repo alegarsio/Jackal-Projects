@@ -938,7 +938,18 @@ static Node *parse_func_def(Parser *P)
     }
 
     n->left = params_head;
-    n->right = parse_block(P);
+
+    if (P->current.kind == TOKEN_ASSIGN)
+    {
+        next(P);
+        Node *ret_node = new_node(NODE_RETURN_STMT);
+        ret_node->left = parse_expr(P);
+        n->right = ret_node;
+    }
+    else
+    {
+        n->right = parse_block(P);
+    }
 
     return n;
 }

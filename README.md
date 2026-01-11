@@ -81,10 +81,39 @@ In the new jackal update we bring new feature to the print function
 let a = "jack"
 println("name", a)
 ```
+
 ```js
 let a = "jack"
 let age = 19
 println("name", a,age)
+```
+
+### User Input
+
+```js
+print("Hello ");
+let name = read();
+print("Hello, " + name + "!");
+```
+
+### Function
+
+```js
+func add(a,b){
+    return a + b
+}
+```
+
+```js
+func add(a : Int , b : Int){
+    return a + b
+}
+```
+
+```js
+func add(a : Int , b : Int) -> Int{
+    return a + b
+}
 ```
 
 
@@ -95,6 +124,7 @@ let [a, b] = [1, 2]
 println(a)
 println(b)
 ```
+
 
 ### Pipe Operator (Beta)
 
@@ -275,13 +305,6 @@ let data = {
 println(data["name"])
 ```
 
-### User Input
-
-```js
-print("Hello ");
-let name = read();
-print("Hello, " + name + "!");
-```
 
 ### Pattern Matching
 
