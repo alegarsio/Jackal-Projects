@@ -116,6 +116,14 @@ func add(a : Int , b : Int) -> Int{
 }
 ```
 
+```js
+func square(n : Int) -> Int =  n * n
+```
+
+```js
+func square(n) =  n * n
+```
+
 
 ### Destructor
 
