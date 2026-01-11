@@ -166,6 +166,17 @@ square(12) |> println()
 
 ```
 
+```js
+func square(n : Int) -> Int =  n * n
+
+func mul(a,b) -> Int = a * b
+
+let result = square(12)
+
+square(12) * mul(1,2) |> println()
+
+```
+
 
 
 ### For Loop
