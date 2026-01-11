@@ -62,7 +62,7 @@ Create a file with a `.jackal` extension and run it:
 
 ### Print 
 
-Old Print
+### Old Print
 
 ```js
 let a = "jack"
@@ -74,8 +74,8 @@ let a = "jack"
 let age = 19
 println("name" + a + 19.toString())
 ```
-New Print
-
+### New Print 
+In the new jackal update we bring new feature to the print function
 ```js
 let a = "jack"
 println("name", a)
