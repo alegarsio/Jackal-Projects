@@ -1,6 +1,6 @@
 <div align="center">
 
-# Jackal
+# The Jackal Scripting Language
 
 **A lightweight, elegant programming language for the open source community**
 
