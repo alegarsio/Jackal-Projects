@@ -312,6 +312,27 @@ match(data) {
 }
 
 ```
+### With 
+
+```js
+let user = {"name": "Jackal", "version": 1};
+
+with (user) {
+    if (version == 1){
+        println("ok")
+    }
+}
+```
+```js
+
+let user = {"name": "Jackal", "version": 1};
+
+with (user) {
+    println(name)
+    println(version)
+}
+```
+
 
 ### Generic (Beta)
 
