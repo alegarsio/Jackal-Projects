@@ -243,6 +243,25 @@ jack.greet();
 ```
 
 
+### Private Access Modifier
+
+```js
+interface Greetable {
+    func greet();
+}
+
+class Jack , Greetable {
+    @override
+    private func greet() {
+        println("hello jackal")
+    }
+}
+
+let jack = Jack();
+jack.greet(); // Error 
+```
+
+
 ### Singleton
 
 ```js
