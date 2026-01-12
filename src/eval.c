@@ -139,6 +139,24 @@ const char *get_value_type_name(Value val)
         return "unknown";
     }
 }
+
+static bool check_template_match(Value val, const char *expected_template_type)
+{
+    if (expected_template_type == NULL || strlen(expected_template_type) == 0 || strcmp(expected_template_type, "T") == 0)
+    {
+        return true;
+    }
+
+    const char *actual_type_name = get_value_type_name(val);
+
+    if (strcmp(expected_template_type, "Number") == 0)
+    {
+        return (strcmp(actual_type_name, "Int") == 0 || strcmp(actual_type_name, "Float") == 0);
+    }
+
+    return strcmp(actual_type_name, expected_template_type) == 0;
+}
+
 static bool match_pattern(Value value, Value pattern)
 {
     if (pattern.type == VAL_NIL)
@@ -896,7 +914,8 @@ Value eval_node(Env *env, Node *n)
     {
         Value obj = eval_node(env, n->left);
 
-        if (obj.type == VAL_NIL) {
+        if (obj.type == VAL_NIL)
+        {
             return (Value){.type = VAL_NIL, .as = {.number = 0}};
         }
 
@@ -1847,33 +1866,70 @@ Value eval_node(Env *env, Node *n)
 
         if (callee.type == VAL_CLASS)
         {
+            // if (n->template_types)
+            // {
+            //     printf("[DEBUG] Template Detected: %s\n", n->template_types->name);
+            // }
+            // else
+            // {
+            //     printf("[DEBUG] No Template Detected in Call\n");
+            // }
+
             Instance *inst = malloc(sizeof(Instance));
             inst->class_val = malloc(sizeof(Value));
             *inst->class_val = callee;
             inst->fields = env_new(NULL);
 
-            Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
+            if (n->template_types != NULL)
+            {
+                strcpy(inst->template_type, n->template_types->name);
+            }
 
+            Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
             Var *init_method = find_method(callee.as.class_obj, "init");
+
             if (init_method)
             {
                 Func *func = init_method->value.as.function;
-
-                if (n->arity != func->arity)
-                {
-                    print_error("Incorrect number of arguments for init().");
-                    return (Value){.type = VAL_NIL, .as = {0}};
-                }
-
                 Env *call_env = env_new(func->env);
                 set_var(call_env, "this", instance_val, true, "");
 
                 Node *arg_node = n->right;
                 Node *param_node = func->params_head;
+
                 for (int i = 0; i < n->arity; i++)
                 {
                     Value arg_val = eval_node(env, arg_node);
-                    set_var(call_env, param_node->name, arg_val, false, "");
+                    const char *actual_type = get_value_type_name(arg_val);
+
+                    // printf("[DEBUG] Param: %s, Expected Type: %s, Actual Type: %s\n",
+                    //        param_node->name, param_node->type_name, actual_type);
+
+                    if (param_node->type_name != NULL && strcmp(param_node->type_name, "T") == 0)
+                    {
+                        if (n->template_types != NULL)
+                        {
+                            const char *target_type = n->template_types->name;
+
+                            if (strcmp(target_type, actual_type) != 0)
+                            {
+
+                                bool is_num_match = (strcmp(target_type, "Number") == 0 &&
+                                                     (strcmp(actual_type, "Int") == 0 || strcmp(actual_type, "Float") == 0));
+
+                                if (!is_num_match)
+                                {
+                                    printf("[ERROR] TYPE MISMATCH TRIGGERED!\n");
+                                    print_error("Cannot pass %s to %s<%s>", actual_type, callee.as.class_obj->name, target_type);
+                                    free_value(arg_val);
+                                    env_free(call_env);
+                                    return (Value){VAL_NIL, {0}};
+                                }
+                            }
+                        }
+                    }
+
+                    set_var(call_env, param_node->name, arg_val, false, param_node->type_name);
                     free_value(arg_val);
                     arg_node = arg_node->next;
                     param_node = param_node->next;
@@ -1882,12 +1938,10 @@ Value eval_node(Env *env, Node *n)
                 Value init_result = eval_node(call_env, func->body_head);
                 free_value(init_result);
                 env_free(call_env);
-
                 return instance_val;
             }
             return instance_val;
         }
-
         if (callee.type == VAL_STRUCT_DEF)
         {
             StructDefinition *s_def = callee.as.struct_def;

@@ -474,17 +474,26 @@ static Node *parse_postfix(Parser *P)
 
     while (1)
     {
-
         if (node != NULL && node->kind == NODE_IDENT && P->current.kind == TOKEN_LESS)
         {
             Node *template_args = parse_template_declaration(P);
-
             if (template_args != NULL)
             {
                 node->template_types = template_args;
-
-                continue;
+               
             }
+        }
+
+        if (P->current.kind == TOKEN_LPAREN)
+        {
+            Node *prev_template = node->template_types; 
+            next(P);
+            node = parse_func_call(P, node);
+            
+            if (node->kind == NODE_FUNC_CALL) {
+                node->template_types = prev_template;
+            }
+            continue; 
         }
 
         else if (P->current.kind == TOKEN_LBRACKET)
@@ -499,12 +508,6 @@ static Node *parse_postfix(Parser *P)
             node = access_node;
         }
 
-        if (P->current.kind == TOKEN_LPAREN)
-        {
-            next(P);
-            node = parse_func_call(P, node);
-        }
-
         else if (P->current.kind == TOKEN_DOT)
         {
             next(P);
@@ -516,6 +519,7 @@ static Node *parse_postfix(Parser *P)
             next(P);
             node = get_node;
         }
+        
         else if (P->current.kind == TOKEN_PLUS_PLUS)
         {
             next(P);
