@@ -200,6 +200,8 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_ENUM;
         else if (strcmp(tk.text, "try") == 0)
             tk.kind = TOKEN_TRY;
+        else if (strcmp(tk.text,"trait") == 0)
+            tk.kind = TOKEN_TRAIT;
         else if (strcmp(tk.text, "catch") == 0)
             tk.kind = TOKEN_CATCH;
         else if (strcmp(tk.text, "throw") == 0)

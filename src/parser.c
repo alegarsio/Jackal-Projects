@@ -1606,7 +1606,7 @@ Node *parse_stmt(Parser *P)
         return parse_continue_stmt(P);
     }
 
-    if (P->current.kind == TOKEN_INTERFACE)
+    if (P->current.kind == TOKEN_INTERFACE || P->current.kind == TOKEN_TRAIT)
     {
         return parse_interface_def(P);
     }

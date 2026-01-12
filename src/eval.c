@@ -1919,7 +1919,6 @@ Value eval_node(Env *env, Node *n)
 
                                 if (!is_num_match)
                                 {
-                                    printf("[ERROR] TYPE MISMATCH TRIGGERED!\n");
                                     print_error("Cannot pass %s to %s<%s>", actual_type, callee.as.class_obj->name, target_type);
                                     free_value(arg_val);
                                     env_free(call_env);
