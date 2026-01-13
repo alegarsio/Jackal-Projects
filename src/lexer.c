@@ -215,8 +215,12 @@ Token lexer_next(Lexer *L)
         else if (strcmp(tk.text,"namespace") == 0 )
             tk.kind = TOKEN_NAMESPACE;
         
+        else if (strcmp(tk.text,"using") == 0 )
+            tk.kind = TOKEN_USING;
+        
         else if (strcmp(tk.text, "implements") == 0)
             tk.kind = TOKEN_IMPLEMENTS;
+
         else if (strcmp(tk.text, "to") == 0)
             tk.kind = TOKEN_TO;
 
