@@ -871,25 +871,42 @@ Value eval_node(Env *env, Node *n)
 
     case NODE_ASSIGN:
     {
-        Value val = eval_node(env, n->left);
+        // 1. Cari variabel di environment
         Var *v = find_var(env, n->name);
 
-        if (v && v->expected_type[0] != '\0')
+        if (v == NULL)
+        {
+            fprintf(stderr, "Runtime Error: Variable '%s' is not defined.\n", n->name);
+            exit(1);
+        }
+
+        // 2. CEK FINAL TERLEBIH DAHULU (Garis Pertahanan Pertama)
+        if (v->is_final)
+        {
+            fprintf(stderr, "Fatal Error: Variable '%s' is marked @final and cannot be modified.\n", n->name);
+            exit(1);
+        }
+
+        // 3. Evaluasi nilai baru yang ingin dimasukkan
+        Value val = eval_node(env, n->right);
+
+        // 4. Cek kesesuaian Tipe Data (Type Guard)
+        if (v->expected_type[0] != '\0')
         {
             const char *actual_type = get_value_type_name(val);
             if (strcmp(v->expected_type, actual_type) != 0)
             {
-                print_error("Cannot reassign '%s' to variable of type '%s'", actual_type, v->expected_type);
+                print_error("Type Mismatch: Cannot assign '%s' to variable '%s' of type '%s'",
+                            actual_type, v->name, v->expected_type);
                 free_value(val);
                 return (Value){VAL_NIL, {0}};
             }
         }
 
-        if (v)
-        {
-            free_value(v->value);
-            v->value = copy_value(val);
-        }
+        // 5. Update nilai jika semua pengecekan lolos
+        free_value(v->value);
+        v->value = copy_value(val);
+
         return val;
     }
 
@@ -1251,6 +1268,8 @@ Value eval_node(Env *env, Node *n)
                 while (var_node && i < arr->count)
                 {
                     set_var(env, var_node->name, arr->values[i], false, "");
+                    Var *v = find_var(env, var_node->name);
+                    if (v) v->is_final = n->is_final;
                     var_node = var_node->next;
                     i++;
                 }
@@ -1270,6 +1289,8 @@ Value eval_node(Env *env, Node *n)
                     {
                         set_var(env, var_node->name, (Value){VAL_NIL, {0}}, false, "");
                     }
+                    Var *v = find_var(env, var_node->name);
+                    if (v) v->is_final = n->is_final;
                     var_node = var_node->next;
                 }
             }
@@ -1288,6 +1309,8 @@ Value eval_node(Env *env, Node *n)
                     {
                         set_var(env, var_node->name, (Value){VAL_NIL, {0}}, false, "");
                     }
+                    Var *v = find_var(env, var_node->name);
+                    if (v) v->is_final = n->is_final;
                     var_node = var_node->next;
                 }
             }
@@ -1301,6 +1324,8 @@ Value eval_node(Env *env, Node *n)
             if (map_get(current_executing_func->static_vars, n->name, &existing_val))
             {
                 set_var(env, n->name, existing_val, false, n->type_name);
+                Var *v = find_var(env, n->name);
+                if (v) v->is_final = n->is_final;
                 free_value(val);
                 return (Value){VAL_NIL, {0}};
             }
@@ -1315,6 +1340,8 @@ Value eval_node(Env *env, Node *n)
 
             map_set(current_executing_func->static_vars, n->name, val);
             set_var(env, n->name, val, false, n->type_name);
+            Var *v = find_var(env, n->name);
+            if (v) v->is_final = n->is_final;
             return (Value){VAL_NIL, {0}};
         }
 
@@ -1327,6 +1354,11 @@ Value eval_node(Env *env, Node *n)
         }
 
         set_var(env, n->name, val, false, n->type_name);
+        Var *v = find_var(env, n->name);
+        if (v)
+        {
+            v->is_final = n->is_final;
+        }
         return (Value){VAL_NIL, {0}};
     }
 
@@ -1443,52 +1475,56 @@ Value eval_node(Env *env, Node *n)
     }
     case NODE_CLASS_DEF:
     {
-        Class *class_obj = malloc(sizeof(Class));
-        strcpy(class_obj->name, n->name);
-        class_obj->methods = env_new(env);
-        class_obj->superclass = NULL;
-        class_obj->interface = NULL;
-
         if (strlen(n->super_name) > 0)
         {
             Var *super_var = find_var(env, n->super_name);
             if (!super_var || super_var->value.type != VAL_CLASS)
             {
                 print_error("Superclass '%s' not found or invalid.", n->super_name);
-                env_free(class_obj->methods);
-                free(class_obj);
                 return (Value){.type = VAL_NIL, .as = {0}};
             }
+
+            if (super_var->is_final)
+            {
+                print_error("Fatal Error: Cannot inherit from @final class '%s'.", n->super_name);
+                exit(1);
+            }
+        }
+
+        Class *class_obj = malloc(sizeof(Class));
+        strcpy(class_obj->name, n->name);
+        class_obj->methods = env_new(env);
+        class_obj->superclass = NULL;
+        class_obj->interface = NULL;
+        class_obj->is_record = n->is_record;
+
+        if (strlen(n->super_name) > 0)
+        {
+            Var *super_var = find_var(env, n->super_name);
             class_obj->superclass = super_var->value.as.class_obj;
         }
 
         if (strlen(n->interface_name) > 0)
         {
             Var *iface_var = find_var(env, n->interface_name);
-            if (!iface_var || iface_var->value.type != VAL_INTERFACE)
+            if (iface_var && iface_var->value.type == VAL_INTERFACE)
             {
-                print_error("Interface '%s' not found or invalid.", n->interface_name);
-                env_free(class_obj->methods);
-                free(class_obj);
-                return (Value){.type = VAL_NIL, .as = {0}};
+                class_obj->interface = iface_var->value.as.interface_obj;
             }
-            class_obj->interface = iface_var->value.as.interface_obj;
         }
 
         if (n->is_record)
         {
-            class_obj->is_record = true;
-
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
             set_var(env, n->name, class_val, true, "");
-
+            Var *v_class = find_var(env, n->name);
+            if (v_class) v_class->is_final = n->is_final;
             return (Value){.type = VAL_NIL, .as = {0}};
         }
 
         if (n->is_singleton)
         {
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
-
             Instance *inst = malloc(sizeof(Instance));
             inst->class_val = malloc(sizeof(Value));
             *inst->class_val = class_val;
@@ -1511,7 +1547,8 @@ Value eval_node(Env *env, Node *n)
 
             Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
             set_var(env, n->name, instance_val, true, "");
-
+            Var *v_class = find_var(env, n->name);
+            if (v_class) v_class->is_final = n->is_final;
             return (Value){.type = VAL_NIL, .as = {0}};
         }
 
@@ -1537,7 +1574,6 @@ Value eval_node(Env *env, Node *n)
                         found_in_parent = true;
                     }
                 }
-
                 if (!found_in_parent && class_obj->interface != NULL)
                 {
                     if (find_var(class_obj->interface->methods, check_node->name) != NULL)
@@ -1545,11 +1581,9 @@ Value eval_node(Env *env, Node *n)
                         found_in_parent = true;
                     }
                 }
-
                 if (!found_in_parent)
                 {
-                    print_error("Method '%s' marked @override but does not override or implement any method from a superclass or interface.",
-                                check_node->name);
+                    print_error("Method '%s' marked @override but does not override any method.", check_node->name);
                 }
             }
             check_node = check_node->next;
@@ -1561,20 +1595,24 @@ Value eval_node(Env *env, Node *n)
             Var *required_method = iface->methods->vars;
             while (required_method)
             {
-
                 Var *implemented = find_method(class_obj, required_method->name);
                 if (!implemented)
                 {
-                    char buffer[128];
-                    snprintf(buffer, sizeof(buffer), "Class '%s' must implement method '%s' from interface '%s'.",
-                             class_obj->name, required_method->name, iface->name);
-                    print_error(buffer);
+                    print_error("Class '%s' must implement method '%s' from interface '%s'.", class_obj->name, required_method->name, iface->name);
                 }
                 required_method = required_method->next;
             }
         }
+
         Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
         set_var(env, n->name, class_val, true, "");
+        
+        Var *v_class = find_var(env, n->name);
+        if (v_class)
+        {
+            v_class->is_final = n->is_final;
+        }
+
         return (Value){.type = VAL_NIL, .as = {0}};
     }
 
