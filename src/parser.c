@@ -1632,7 +1632,9 @@ Node *parse_stmt(Parser *P)
 
     if (P->current.kind == TOKEN_CLASS || P->current.kind == TOKEN_RECORD || P->current.kind == TOKEN_OBJECT)
     {
-        return parse_class_def(P);
+        Node *n = parse_class_def(P);
+        n->is_final = meta_node.is_final; 
+        return n;
     }
 
     if (P->current.kind == TOKEN_STRUCT){
@@ -1643,7 +1645,7 @@ Node *parse_stmt(Parser *P)
     {
         next(P);
         Node *n = parse_func_def(P);
-
+        n->is_final = meta_node.is_final;
         n->is_platform_specific = meta_node.is_platform_specific;
         if (meta_node.is_platform_specific && meta_node.target_os != NULL)
         {
@@ -1660,6 +1662,7 @@ Node *parse_stmt(Parser *P)
         n->is_override = meta_node.is_override;
         n->is_deprecated = meta_node.is_deprecated;
         n->is_platform_specific = meta_node.is_platform_specific;
+        n->is_final = meta_node.is_final;
 
         meta_node.is_platform_specific = false;
 
@@ -1668,6 +1671,7 @@ Node *parse_stmt(Parser *P)
 
             n->target_os = strdup(meta_node.target_os);
         }
+        
         else
         {
             n->target_os = NULL;
@@ -1706,6 +1710,8 @@ Node *parse_stmt(Parser *P)
     bool is_const = (P->current.kind == TOKEN_CONST);
     next(P);
 
+    Node *n = NULL; // Kita siapkan pointer untuk menampung hasil
+
     if (P->current.kind == TOKEN_LBRACKET) 
     {
         next(P);
@@ -1735,13 +1741,10 @@ Node *parse_stmt(Parser *P)
 
         if (P->current.kind == TOKEN_ASSIGN) next(P);
 
-        Node *n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+        n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
         n->left = destructure_node;
         destructure_node->left = head;
         n->right = parse_expr(P);
-
-        if (P->current.kind == TOKEN_SEMI) next(P);
-        return n;
     } 
     else if (P->current.kind == TOKEN_LBRACE) 
     {
@@ -1773,17 +1776,14 @@ Node *parse_stmt(Parser *P)
 
         if (P->current.kind == TOKEN_ASSIGN) next(P);
 
-        Node *n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+        n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
         n->left = destructure_node;
         destructure_node->left = head;
         n->right = parse_expr(P);
-
-        if (P->current.kind == TOKEN_SEMI) next(P);
-        return n;
     }
     else 
     {
-        Node *n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+        n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
         strcpy(n->name, P->current.text);
         next(P);
 
@@ -1797,10 +1797,15 @@ Node *parse_stmt(Parser *P)
 
         if (P->current.kind == TOKEN_ASSIGN) next(P);
         n->right = parse_expr(P);
-
-        if (P->current.kind == TOKEN_SEMI) next(P);
-        return n;
     }
+
+    // --- TEMPAT MENANDAI FINAL ---
+    if (n != NULL) {
+        n->is_final = meta_node.is_final; // meta_node didapat dari parse_stmt sebelumnya
+    }
+
+    if (P->current.kind == TOKEN_SEMI) next(P);
+    return n;
 }
 
     // if (P->current.kind == TOKEN_LET)
@@ -1862,42 +1867,6 @@ Node *parse_stmt(Parser *P)
     if (P->current.kind == TOKEN_SEMI)
         next(P);
     return expr;
-}
-/***
- * Part for new feature namespace 
- */
-static Node *parse_namespace(Parser *P) {
-    next(P); 
-    Node *n = new_node(NODE_NAMESPACES);
-    
-    char full_path[256] = "";
-    while (P->current.kind == TOKEN_IDENT) {
-        strcat(full_path, P->current.text);
-        next(P);
-        if (P->current.kind == TOKEN_DOT) {
-            strcat(full_path, ".");
-            next(P);
-        } else break;
-    }
-    strcpy(n->name, full_path);
-    return n;
-}
-
-static Node *parse_using(Parser *P) {
-    next(P); 
-    Node *n = new_node(NODE_USING);
-    
-    char full_path[256] = "";
-    while (P->current.kind == TOKEN_IDENT) {
-        strcat(full_path, P->current.text);
-        next(P);
-        if (P->current.kind == TOKEN_DOT) {
-            strcat(full_path, ".");
-            next(P);
-        } else break;
-    }
-    strcpy(n->name, full_path);
-    return n;
 }
 
 /**
@@ -2176,7 +2145,7 @@ static Node *parse_enum_def(Parser *P)
             if (P->current.kind != TOKEN_NUMBER)
                 print_error("Enum value must be a number.");
             entry->value = P->current.number;
-            currentValue = (int)P->current.number + 1; 
+            currentValue = (int)P->current.number + 1; // Update counter
             next(P);
         }
         else
@@ -2384,6 +2353,7 @@ static void parse_annotations(Parser *P, Node *n)
     n->is_static = false;
     n->is_platform_specific = false;
     n->is_main = false;
+    n->is_final = false;
 
     while (P->current.kind == TOKEN_AT)
     {
@@ -2443,6 +2413,10 @@ static void parse_annotations(Parser *P, Node *n)
         if (strcmp(P->current.text, "main") == 0)
         {
             n->is_main = true;
+        }
+
+        if (strcmp(P->current.text, "final") == 0) {
+            n->is_final = true; 
         }
 
         else if (strcmp(P->current.text, "async") == 0)
