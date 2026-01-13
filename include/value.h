@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include<cjson/cJSON.h>
 
-
 typedef struct {
     double* data;      
     int* shape;      
@@ -40,6 +39,7 @@ typedef struct {
     char* key;
     Value value;
 } Entry;
+
 
 /**
  * @typedef @struct HASHMAP

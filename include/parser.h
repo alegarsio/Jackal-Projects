@@ -65,7 +65,7 @@ typedef enum {
     NODE_DESTRUCTURE,
     NODE_STRUCT_DEF,
     NODE_WITH,
-    NODE_NAMESPACE
+    NODE_NAMESPACES
 } NodeKind;
 
 /**
