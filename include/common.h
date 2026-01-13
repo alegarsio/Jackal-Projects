@@ -117,7 +117,8 @@ typedef enum {
     TOKEN_RANGE,
     TOKEN_ANY,
     TOKEN_WITH,
-    TOKEN_TRAIT
+    TOKEN_TRAIT,
+    TOKEN_NAMESPACE
     
 } TokenKind;
 
