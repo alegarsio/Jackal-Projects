@@ -118,7 +118,8 @@ typedef enum {
     TOKEN_ANY,
     TOKEN_WITH,
     TOKEN_TRAIT,
-    TOKEN_NAMESPACE
+    TOKEN_NAMESPACE,
+    TOKEN_USING
     
 } TokenKind;
 
@@ -289,7 +290,8 @@ typedef enum {
     VAL_INTERFACE,
     VAL_SOCKET,
     VAL_STRUCT_DEF,     
-    VAL_STRUCT_INSTANCE 
+    VAL_STRUCT_INSTANCE ,
+    VAL_NAMESPACE
 } ValueType;
 
 typedef struct GCObject {
