@@ -1578,6 +1578,12 @@ Node *parse_stmt(Parser *P)
         parse_annotations(P, &meta_node);
     }
 
+    if (P->current.kind == TOKEN_NAMESPACE) {
+        return parse_namespace(P);
+    }
+    if (P->current.kind == TOKEN_USING) {
+        return parse_using(P);
+    }
     if (P->current.kind == TOKEN_IF)
     {
         return parse_if_stmt(P);
@@ -1869,6 +1875,42 @@ Node *parse_stmt(Parser *P)
     return expr;
 }
 
+static Node *parse_namespace(Parser *P) {
+    next(P);
+    if (P->current.kind != TOKEN_IDENT) {
+        print_error("Expected identifier after 'namespace'");
+    }
+    Node *n = new_node(NODE_NAMESPACES);
+    strcpy(n->name, P->current.text);
+    next(P);
+    if (P->current.kind != TOKEN_LBRACE) {
+        print_error("Expected '{' for namespace body");
+    }
+    next(P);
+    n->left = NULL;
+    Node *last = NULL;
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+        Node *stmt = parse_stmt(P);
+        if (stmt) {
+            if (!n->left) n->left = stmt;
+            else last->next = stmt;
+            last = stmt;
+        }
+    }
+    next(P);
+    return n;
+}
+
+static Node *parse_using(Parser *P) {
+    next(P);
+    if (P->current.kind != TOKEN_IDENT) {
+        print_error("Expected identifier after 'using'");
+    }
+    Node *n = new_node(NODE_USING);
+    strcpy(n->name, P->current.text);
+    if (P->current.kind == TOKEN_SEMI) next(P);
+    return n;
+}
 /**
  * @brief Parses an import statement.
  * @param P Pointer to the Parser.

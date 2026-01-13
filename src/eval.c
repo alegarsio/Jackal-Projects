@@ -871,26 +871,22 @@ Value eval_node(Env *env, Node *n)
 
     case NODE_ASSIGN:
     {
-        // 1. Cari variabel di environment
         Var *v = find_var(env, n->name);
 
         if (v == NULL)
         {
-            fprintf(stderr, "Runtime Error: Variable '%s' is not defined.\n", n->name);
-            exit(1);
+            print_error("Runtime Error: Variable '%s' is not defined.", n->name);
+            return (Value){VAL_NIL, {0}};
         }
 
-        // 2. CEK FINAL TERLEBIH DAHULU (Garis Pertahanan Pertama)
-        if (v->is_final)
+        if (v->is_final || v->is_const)
         {
-            fprintf(stderr, "Fatal Error: Variable '%s' is marked @final and cannot be modified.\n", n->name);
-            exit(1);
+            print_error("Fatal Error: Variable '%s' is marked @final or const and cannot be modified.", n->name);
+            return (Value){VAL_NIL, {0}};
         }
 
-        // 3. Evaluasi nilai baru yang ingin dimasukkan
-        Value val = eval_node(env, n->right);
+        Value val = eval_node(env, n->left);
 
-        // 4. Cek kesesuaian Tipe Data (Type Guard)
         if (v->expected_type[0] != '\0')
         {
             const char *actual_type = get_value_type_name(val);
@@ -903,11 +899,10 @@ Value eval_node(Env *env, Node *n)
             }
         }
 
-        // 5. Update nilai jika semua pengecekan lolos
         free_value(v->value);
         v->value = copy_value(val);
 
-        return val;
+        return v->value;
     }
 
     case NODE_CONSTDECL:
@@ -1269,7 +1264,8 @@ Value eval_node(Env *env, Node *n)
                 {
                     set_var(env, var_node->name, arr->values[i], false, "");
                     Var *v = find_var(env, var_node->name);
-                    if (v) v->is_final = n->is_final;
+                    if (v)
+                        v->is_final = n->is_final;
                     var_node = var_node->next;
                     i++;
                 }
@@ -1290,7 +1286,8 @@ Value eval_node(Env *env, Node *n)
                         set_var(env, var_node->name, (Value){VAL_NIL, {0}}, false, "");
                     }
                     Var *v = find_var(env, var_node->name);
-                    if (v) v->is_final = n->is_final;
+                    if (v)
+                        v->is_final = n->is_final;
                     var_node = var_node->next;
                 }
             }
@@ -1310,7 +1307,8 @@ Value eval_node(Env *env, Node *n)
                         set_var(env, var_node->name, (Value){VAL_NIL, {0}}, false, "");
                     }
                     Var *v = find_var(env, var_node->name);
-                    if (v) v->is_final = n->is_final;
+                    if (v)
+                        v->is_final = n->is_final;
                     var_node = var_node->next;
                 }
             }
@@ -1325,7 +1323,8 @@ Value eval_node(Env *env, Node *n)
             {
                 set_var(env, n->name, existing_val, false, n->type_name);
                 Var *v = find_var(env, n->name);
-                if (v) v->is_final = n->is_final;
+                if (v)
+                    v->is_final = n->is_final;
                 free_value(val);
                 return (Value){VAL_NIL, {0}};
             }
@@ -1341,7 +1340,8 @@ Value eval_node(Env *env, Node *n)
             map_set(current_executing_func->static_vars, n->name, val);
             set_var(env, n->name, val, false, n->type_name);
             Var *v = find_var(env, n->name);
-            if (v) v->is_final = n->is_final;
+            if (v)
+                v->is_final = n->is_final;
             return (Value){VAL_NIL, {0}};
         }
 
@@ -1518,7 +1518,8 @@ Value eval_node(Env *env, Node *n)
             Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
             set_var(env, n->name, class_val, true, "");
             Var *v_class = find_var(env, n->name);
-            if (v_class) v_class->is_final = n->is_final;
+            if (v_class)
+                v_class->is_final = n->is_final;
             return (Value){.type = VAL_NIL, .as = {0}};
         }
 
@@ -1548,7 +1549,8 @@ Value eval_node(Env *env, Node *n)
             Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
             set_var(env, n->name, instance_val, true, "");
             Var *v_class = find_var(env, n->name);
-            if (v_class) v_class->is_final = n->is_final;
+            if (v_class)
+                v_class->is_final = n->is_final;
             return (Value){.type = VAL_NIL, .as = {0}};
         }
 
@@ -1606,7 +1608,7 @@ Value eval_node(Env *env, Node *n)
 
         Value class_val = (Value){VAL_CLASS, {.class_obj = class_obj}};
         set_var(env, n->name, class_val, true, "");
-        
+
         Var *v_class = find_var(env, n->name);
         if (v_class)
         {
@@ -1678,6 +1680,54 @@ Value eval_node(Env *env, Node *n)
         }
 
         return (Value){.type = VAL_NIL, .as = {0}};
+    }
+
+    case NODE_NAMESPACES:
+    {
+        Env *ns_env = env_new(NULL);
+        Node *stmt = n->left;
+        while (stmt) {
+            eval_node(ns_env, stmt);
+            stmt = stmt->next;
+        }
+        
+        HashMap *ns_map = malloc(sizeof(HashMap));
+        ns_map->count = 0;
+        ns_map->capacity = 16;
+        ns_map->entries = calloc(ns_map->capacity, sizeof(Entry));
+        
+        Var *v = ns_env->vars;
+        while (v) {
+            map_set(ns_map, v->name, v->value);
+            v = v->next;
+        }
+        
+        Value ns_val;
+        ns_val.type = VAL_NAMESPACE;
+        ns_val.as.map = ns_map;
+        
+        set_var(env, n->name, ns_val, true, "namespace");
+        
+        env_free(ns_env);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    case NODE_USING:
+    {
+        Var *ns_var = find_var(env, n->name);
+        if (!ns_var || ns_var->value.type != VAL_NAMESPACE) {
+            print_error("Namespace '%s' not found", n->name);
+            return (Value){VAL_NIL, {0}};
+        }
+        
+        HashMap *ns_map = ns_var->value.as.map;
+        for (int i = 0; i < ns_map->capacity; i++) {
+            if (ns_map->entries[i].key != NULL) {
+                Value val = copy_value(ns_map->entries[i].value);
+                set_var(env, ns_map->entries[i].key, val, false, "");
+            }
+        }
+        return (Value){VAL_NIL, {0}};
     }
 
     case NODE_FUNC_CALL:

@@ -154,3 +154,8 @@ Node *parse(const char *source);
 
 
 Node *new_node(NodeKind kind);
+
+
+static Node *parse_namespace(Parser *P);
+
+static Node *parse_using(Parser *P);
