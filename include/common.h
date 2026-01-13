@@ -183,7 +183,7 @@ typedef struct Value (*NativeFn)(int argCount, struct Value* args);
 
 typedef struct {
     char name[100];
-    char **field_names; // Array of strings
+    char **field_names;
     int field_count;
     struct Node *computed_body;
 } StructDefinition;
@@ -213,6 +213,7 @@ typedef struct Func {
     bool is_platform_specific;
     char* target_os;
     bool is_async;
+    bool is_final;
 } Func;
 
 struct Value;
@@ -336,6 +337,7 @@ typedef struct Var {
     char name[64];
     Value value;
     bool is_const;
+    bool is_final;
     struct Var* next;
     char expected_type[64];
 } Var;
