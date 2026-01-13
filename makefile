@@ -31,7 +31,6 @@ SRC = src/common.c \
       src/eval.c \
       src/vm/debug.c \
       src/compiler/compiler.c \
-      src/vm/vm.c \
       src/vm/chunk.c \
 	  src/socket/net_utils.c \
 	  src/native/native_registry.c \

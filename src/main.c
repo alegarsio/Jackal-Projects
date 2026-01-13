@@ -1068,7 +1068,7 @@ int main(int argc, char **argv)
 
     if (has_extension(filename, ".jlo"))
     {
-        run_binary(filename);
+        // run_binary(filename);
     }
     else
     {

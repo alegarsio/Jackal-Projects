@@ -1863,6 +1863,42 @@ Node *parse_stmt(Parser *P)
         next(P);
     return expr;
 }
+/***
+ * Part for new feature namespace 
+ */
+static Node *parse_namespace(Parser *P) {
+    next(P); 
+    Node *n = new_node(NODE_NAMESPACES);
+    
+    char full_path[256] = "";
+    while (P->current.kind == TOKEN_IDENT) {
+        strcat(full_path, P->current.text);
+        next(P);
+        if (P->current.kind == TOKEN_DOT) {
+            strcat(full_path, ".");
+            next(P);
+        } else break;
+    }
+    strcpy(n->name, full_path);
+    return n;
+}
+
+static Node *parse_using(Parser *P) {
+    next(P); 
+    Node *n = new_node(NODE_USING);
+    
+    char full_path[256] = "";
+    while (P->current.kind == TOKEN_IDENT) {
+        strcat(full_path, P->current.text);
+        next(P);
+        if (P->current.kind == TOKEN_DOT) {
+            strcat(full_path, ".");
+            next(P);
+        } else break;
+    }
+    strcpy(n->name, full_path);
+    return n;
+}
 
 /**
  * @brief Parses an import statement.
@@ -2140,7 +2176,7 @@ static Node *parse_enum_def(Parser *P)
             if (P->current.kind != TOKEN_NUMBER)
                 print_error("Enum value must be a number.");
             entry->value = P->current.number;
-            currentValue = (int)P->current.number + 1; // Update counter
+            currentValue = (int)P->current.number + 1; 
             next(P);
         }
         else

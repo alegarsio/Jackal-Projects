@@ -321,7 +321,7 @@ typedef struct Value {
         FILE* file;
         StructDefinition *struct_def;       
         StructInstance *struct_instance;
-
+        struct Env* env;
     } as;
     struct GCObject* gc_info;
 } Value;
