@@ -64,7 +64,8 @@ typedef enum {
     NODE_RANGE_EXPR,
     NODE_DESTRUCTURE,
     NODE_STRUCT_DEF,
-    NODE_WITH
+    NODE_WITH,
+    NODE_NAMESPACE
 } NodeKind;
 
 /**
@@ -93,7 +94,7 @@ typedef struct Node {
     bool is_memoize;
     bool is_paralel;
     bool is_static;
-    // bool is_data;
+    
     char* deprecated_message;
 
     struct Node* super_template_types;
