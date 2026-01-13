@@ -22,12 +22,18 @@ Env* env_new(Env* outer) {
  * @return A pointer to the Var if found, otherwise NULL.
  */
 Var* find_var(Env* env, const char* name) {
+    if (env == NULL || name == NULL) return NULL;
+
     for (Var* v = env->vars; v; v = v->next) {
-        if (strcmp(v->name, name) == 0) return v;
+        if (v->name != NULL && strcmp(v->name, name) == 0) {
+            return v;
+        }
     }
-    if (env->outer) {
+
+    if (env->outer != NULL && env->outer != env) {
         return find_var(env->outer, name);
     }
+
     return NULL;
 }
 /**
