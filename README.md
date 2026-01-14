@@ -268,6 +268,22 @@ let p = Point(1, 2, 3)
 println(p.x)
 ```
 
+### Constructor
+
+```js
+init(node){
+    this.node = node
+}
+```
+```js
+init(node) = this.node = node
+```
+```js
+init(node : Int) -> Int = this.node = node 
+```
+
+
+
 ### Class
 
 ```js
