@@ -34,3 +34,4 @@ void env_free(Env* env);
 
 Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args);
 
+const char *get_value_type_name(Value val);
