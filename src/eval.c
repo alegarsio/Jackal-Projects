@@ -250,15 +250,10 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
     if (func->is_platform_specific && func->target_os != NULL)
     {
         const char *current_os = get_platform_name();
-
         if (strcmp(func->target_os, current_os) != 0)
         {
-
-            if (strcmp(func->target_os, "unix") == 0 &&
-                (strcmp(current_os, "macos") == 0 || strcmp(current_os, "linux") == 0))
-            {
-            }
-            else
+            if (!(strcmp(func->target_os, "unix") == 0 &&
+                  (strcmp(current_os, "macos") == 0 || strcmp(current_os, "linux") == 0)))
             {
                 return (Value){VAL_NIL, {0}};
             }
@@ -267,20 +262,15 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
 
     if (func->is_async)
     {
-
         pthread_t thread;
         AsyncData *data = malloc(sizeof(AsyncData));
         data->func = func;
         data->arg_count = arg_count;
         data->args = args;
-
         pthread_create(&thread, NULL, async_wrapper, data);
         pthread_detach(thread);
-
         return (Value){VAL_NIL, {0}};
     }
-
-    // Func *func = func_val.as.function;
 
     if (arg_count != func->arity)
     {
@@ -307,7 +297,6 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
     {
         char key[64];
         snprintf(key, sizeof(key), "%g", args[0].as.number);
-
         Value cached_res;
         if (map_get(func->cache, key, &cached_res))
         {
@@ -333,10 +322,8 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         ThreadArgs *t_args = malloc(sizeof(ThreadArgs));
         t_args->env = call_env;
         t_args->body = func->body_head;
-
         pthread_create(&thread, NULL, parallel_wrapper, t_args);
         pthread_join(thread, NULL);
-
         result = t_args->result;
         free(t_args);
     }
@@ -347,23 +334,58 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
 
     current_executing_func = previous_func;
 
+    Value actual_return = result;
+    if (result.type == VAL_RETURN)
+    {
+        actual_return = *result.as.return_val;
+    }
+
+    if (func->return_type[0] != '\0')
+    {
+        const char *actual_type_name = get_value_type_name(actual_return);
+
+        bool type_matches = false;
+        if (strcmp(func->return_type, "Array") == 0 && actual_return.type == VAL_ARRAY)
+        {
+            type_matches = true;
+        }
+        else if (strcmp(func->return_type, actual_type_name) == 0)
+        {
+            type_matches = true;
+        }
+        else if (actual_return.type == VAL_NUMBER)
+        {
+            if (strcmp(func->return_type, "Int") == 0 || strcmp(func->return_type, "Float") == 0 || strcmp(func->return_type, "Number") == 0)
+            {
+                type_matches = is_type_alias_match(func->return_type, actual_return);
+            }
+        }
+
+        if (!type_matches)
+        {
+            print_error("Type Mismatch: Function expected return type '%s' but got '%s'.", func->return_type, actual_type_name);
+            if (result.type == VAL_RETURN)
+                free(result.as.return_val);
+            env_free(call_env);
+            return (Value){VAL_NIL, {0}};
+        }
+    }
+
     if (func->is_memoized && arg_count > 0)
     {
         char key[64];
         snprintf(key, sizeof(key), "%g", args[0].as.number);
-        map_set(func->cache, key, result);
+        map_set(func->cache, key, actual_return);
     }
 
     env_free(call_env);
 
     if (result.type == VAL_RETURN)
     {
-        Value actual_return = *result.as.return_val;
         free(result.as.return_val);
-        return actual_return;
     }
 
-    return result;
+    return actual_return;
 }
 /**
  * @brief Recursively searches for a method in a class and its superclasses.
@@ -1023,6 +1045,12 @@ Value eval_node(Env *env, Node *n)
 
         Node *lvalue = n->left;
 
+        if (lvalue == NULL)
+        {
+            print_error("Runtime Error: Invalid left-hand side in assignment.");
+            return (Value){VAL_NIL, {0}};
+        }
+
         if (lvalue->kind == NODE_IDENT)
         {
 
@@ -1252,6 +1280,22 @@ Value eval_node(Env *env, Node *n)
     case NODE_VARDECL:
     {
         Value val = eval_node(env, n->right);
+
+        if (val.type == VAL_ARRAY && n->template_types != NULL)
+        {
+            strcpy(val.as.array->element_type, n->template_types->name);
+
+            for (int i = 0; i < val.as.array->count; i++)
+            {
+                if (!check_template_match(val.as.array->values[i], n->template_types->name))
+                {
+                    print_error("Type Mismatch: Initial element at index %d does not match Array<%s>",
+                                i, n->template_types->name);
+                    free_value(val);
+                    return (Value){VAL_NIL, {0}};
+                }
+            }
+        }
 
         if (n->left && n->left->kind == NODE_DESTRUCTURE)
         {
@@ -1621,6 +1665,9 @@ Value eval_node(Env *env, Node *n)
     case NODE_FUNC_DEF:
     {
         Func *func = malloc(sizeof(Func));
+        if (!func)
+            return (Value){VAL_NIL, {0}};
+
         strcpy(func->return_type, n->return_type);
         func->params_head = n->left;
         func->body_head = n->right;
@@ -1630,9 +1677,12 @@ Value eval_node(Env *env, Node *n)
         func->is_deprecated = n->is_deprecated;
         func->is_memoized = n->is_memoize;
         func->is_async = n->is_async;
+        func->is_final = n->is_final;
+        func->is_parallel = n->is_paralel;
+
+        func->deprecated_message = n->deprecated_message ? strdup(n->deprecated_message) : NULL;
 
         func->is_platform_specific = n->is_platform_specific;
-
         if (n->is_platform_specific && n->target_os != NULL)
         {
             func->target_os = strdup(n->target_os);
@@ -1644,32 +1694,6 @@ Value eval_node(Env *env, Node *n)
 
         func->static_vars = map_new();
 
-        n->left = NULL;
-        n->right = NULL;
-
-        Value func_val = (Value){VAL_FUNCTION, {.function = func}};
-        set_var(env, n->name, func_val, true, "");
-
-        if (n->is_main)
-        {
-
-            struct Var *name_var = find_var(env, "__name__");
-
-            if (name_var && name_var->value.type == VAL_STRING &&
-                strcmp(name_var->value.as.string, "main") == 0)
-            {
-
-                Value args[0];
-                call_jackal_function(env, func_val, 0, args);
-            }
-        }
-
-        if (n->target_os != NULL)
-        {
-            func->target_os = strdup(n->target_os);
-            func->target_os = NULL;
-        }
-
         if (func->is_memoized)
         {
             func->cache = map_new();
@@ -1679,52 +1703,100 @@ Value eval_node(Env *env, Node *n)
             func->cache = NULL;
         }
 
-        return (Value){.type = VAL_NIL, .as = {0}};
-    }
+        n->left = NULL;
+        n->right = NULL;
 
+        Value func_val = (Value){VAL_FUNCTION, {.function = func}};
+        set_var(env, n->name, func_val, true, "");
+
+        if (n->is_main)
+        {
+            struct Var *name_var = find_var(env, "__name__");
+            if (name_var && name_var->value.type == VAL_STRING && strcmp(name_var->value.as.string, "main") == 0)
+            {
+                Value args[0];
+                call_jackal_function(env, func_val, 0, args);
+            }
+        }
+
+        return (Value){VAL_NIL, {0}};
+    }
     case NODE_NAMESPACES:
     {
         Env *ns_env = env_new(NULL);
         Node *stmt = n->left;
-        while (stmt) {
+        while (stmt)
+        {
             eval_node(ns_env, stmt);
             stmt = stmt->next;
         }
-        
+
         HashMap *ns_map = malloc(sizeof(HashMap));
         ns_map->count = 0;
         ns_map->capacity = 16;
         ns_map->entries = calloc(ns_map->capacity, sizeof(Entry));
-        
+
         Var *v = ns_env->vars;
-        while (v) {
+        while (v)
+        {
             map_set(ns_map, v->name, v->value);
             v = v->next;
         }
-        
+
         Value ns_val;
         ns_val.type = VAL_NAMESPACE;
         ns_val.as.map = ns_map;
-        
+
         set_var(env, n->name, ns_val, true, "namespace");
-        
+
         env_free(ns_env);
         return (Value){VAL_NIL, {0}};
     }
 
     case NODE_USING:
     {
-        Var *ns_var = find_var(env, n->name);
-        if (!ns_var || ns_var->value.type != VAL_NAMESPACE) {
-            print_error("Namespace '%s' not found", n->name);
-            return (Value){VAL_NIL, {0}};
+        Node *target = n->left;
+
+        if (target != NULL)
+        {
+            while (target)
+            {
+                Var *ns_var = find_var(env, target->name);
+                if (ns_var && ns_var->value.type == VAL_NAMESPACE)
+                {
+                    HashMap *ns_map = ns_var->value.as.map;
+                    for (int i = 0; i < ns_map->capacity; i++)
+                    {
+                        if (ns_map->entries[i].key != NULL)
+                        {
+                            set_var(env, ns_map->entries[i].key, ns_map->entries[i].value, false, "");
+                        }
+                    }
+                }
+                else
+                {
+                    print_error("Namespace '%s' not found", target->name);
+                }
+                target = target->next;
+            }
         }
-        
-        HashMap *ns_map = ns_var->value.as.map;
-        for (int i = 0; i < ns_map->capacity; i++) {
-            if (ns_map->entries[i].key != NULL) {
-                Value val = copy_value(ns_map->entries[i].value);
-                set_var(env, ns_map->entries[i].key, val, false, "");
+        else
+        {
+            Var *ns_var = find_var(env, n->name);
+            if (ns_var && ns_var->value.type == VAL_NAMESPACE)
+            {
+                HashMap *ns_map = ns_var->value.as.map;
+                for (int i = 0; i < ns_map->capacity; i++)
+                {
+                    if (ns_map->entries[i].key != NULL)
+                    {
+                        set_var(env, ns_map->entries[i].key, ns_map->entries[i].value, false, "");
+                    }
+                }
+            }
+            else
+            {
+                print_error("Namespace '%s' not found", n->name);
             }
         }
         return (Value){VAL_NIL, {0}};
