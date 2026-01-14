@@ -116,6 +116,45 @@ let name = read();
 print("Hello, ",name);
 ```
 
+### Array
+
+```js
+let data = ["jack", "john", "davin", "ale"];
+
+for (let i = 0; i < 4; i++) {
+    print(data[i]);
+}
+
+for (i in data) {
+    print(data[i])
+}
+```
+
+Nested arrays:
+
+```js
+let data = [
+    [1, 2],
+    [3, 4],
+    [5, 6]
+]
+
+for (i in data) {
+    println(i)
+}
+```
+
+### Map
+
+```js
+let data = {
+    "id": 1,
+    "name": "ale"
+}
+
+println(data["name"])
+```
+
 ### Function
 
 ```js
@@ -275,6 +314,7 @@ Person.name = "jack"
 println(Person.getName())
 ```
 
+
 ### Inheritance
 
 ```js
@@ -310,47 +350,20 @@ class Jack implements Greetable {
 
 let jack = Jack();
 jack.greet();
-```
 
-### Array
+```
+### Namespace
 
 ```js
-let data = ["jack", "john", "davin", "ale"];
-
-for (let i = 0; i < 4; i++) {
-    print(data[i]);
-}
-
-for (i in data) {
-    print(data[i])
+namespace Math{
+    func add(f,x) -> Int = f + x 
 }
 ```
-
-Nested arrays:
 
 ```js
-let data = [
-    [1, 2],
-    [3, 4],
-    [5, 6]
-]
-
-for (i in data) {
-    println(i)
-}
+using Math
+println(add(1,2))
 ```
-
-### Map
-
-```js
-let data = {
-    "id": 1,
-    "name": "ale"
-}
-
-println(data["name"])
-```
-
 
 ### Pattern Matching
 
