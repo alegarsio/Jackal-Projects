@@ -480,20 +480,20 @@ static Node *parse_postfix(Parser *P)
             if (template_args != NULL)
             {
                 node->template_types = template_args;
-               
             }
         }
 
         if (P->current.kind == TOKEN_LPAREN)
         {
-            Node *prev_template = node->template_types; 
+            Node *prev_template = node->template_types;
             next(P);
             node = parse_func_call(P, node);
-            
-            if (node->kind == NODE_FUNC_CALL) {
+
+            if (node->kind == NODE_FUNC_CALL)
+            {
                 node->template_types = prev_template;
             }
-            continue; 
+            continue;
         }
 
         else if (P->current.kind == TOKEN_LBRACKET)
@@ -519,7 +519,7 @@ static Node *parse_postfix(Parser *P)
             next(P);
             node = get_node;
         }
-        
+
         else if (P->current.kind == TOKEN_PLUS_PLUS)
         {
             next(P);
@@ -717,12 +717,18 @@ static Node *parse_assignment(Parser *P)
         next(P);
         Node *value = parse_assignment(P);
 
+        if (value == NULL)
+        {
+            print_error("Error: Expected expression after '='.");
+            return node;
+        }
+
         if (node->kind == NODE_IDENT)
         {
             Node *assign_node = new_node(NODE_ASSIGN);
             strcpy(assign_node->name, node->name);
-            assign_node->left = value;
-            free_node(node);
+            assign_node->left = node;   
+            assign_node->right = value; 
             return assign_node;
         }
 
@@ -743,7 +749,8 @@ static Node *parse_assignment(Parser *P)
         }
 
         print_error("Invalid assignment target.");
-        free_node(value);
+        if (value)
+            free_node(value);
     }
     return node;
 }
@@ -933,6 +940,11 @@ static Node *parse_func_def(Parser *P)
         {
             strcpy(n->return_type, P->current.text);
             next(P);
+
+            if (P->current.kind == TOKEN_LESS)
+            {
+                n->template_types = parse_template_declaration(P);
+            }
         }
     }
     else
@@ -976,8 +988,10 @@ static Node *parse_struct_def(Parser *P)
                 Node *field_node = new_node(NODE_IDENT);
                 strcpy(field_node->name, P->current.text);
                 next(P);
-                if (fields_head == NULL) fields_head = field_node;
-                else fields_current->next = field_node;
+                if (fields_head == NULL)
+                    fields_head = field_node;
+                else
+                    fields_current->next = field_node;
                 fields_current = field_node;
             } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
         }
@@ -994,8 +1008,10 @@ static Node *parse_struct_def(Parser *P)
         while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
         {
             Node *stmt = parse_stmt(P);
-            if (body_head == NULL) body_head = stmt;
-            else body_current->next = stmt;
+            if (body_head == NULL)
+                body_head = stmt;
+            else
+                body_current->next = stmt;
             body_current = stmt;
         }
         n->left = body_head;
@@ -1019,9 +1035,10 @@ static Node *parse_class_def(Parser *P)
         n->is_singleton = true;
         n->is_record = false;
     }
-    if (P -> current.kind == TOKEN_RECORD){
-        n -> is_record = true;
-        n -> is_singleton = false;
+    if (P->current.kind == TOKEN_RECORD)
+    {
+        n->is_record = true;
+        n->is_singleton = false;
     }
 
     next(P);
@@ -1138,8 +1155,7 @@ static Node *parse_class_def(Parser *P)
     {
         if (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_COLON)
         {
-            
-            
+
             if (n->super_name[0] != '\0')
             {
                 print_error("Class can only extend one superclass.");
@@ -1539,22 +1555,26 @@ Node *apply_pipeline(Node *left, Node *right)
 
     return right;
 }
-static Node *parse_with_stmt(Parser *P) {
+static Node *parse_with_stmt(Parser *P)
+{
     Node *n = new_node(NODE_WITH);
-    next(P); 
+    next(P);
 
-    if (P->current.kind != TOKEN_LPAREN) {
+    if (P->current.kind != TOKEN_LPAREN)
+    {
         print_error("Expected '(' after with.");
     }
     next(P);
 
     n->left = parse_expr(P);
 
-    if (P->current.kind == TOKEN_RPAREN) {
+    if (P->current.kind == TOKEN_RPAREN)
+    {
         next(P);
     }
 
-    if (P->current.kind != TOKEN_LBRACE) {
+    if (P->current.kind != TOKEN_LBRACE)
+    {
         print_error("Expected '{' for with block, found '%s'.", P->current.text);
     }
 
@@ -1577,10 +1597,12 @@ Node *parse_stmt(Parser *P)
         parse_annotations(P, &meta_node);
     }
 
-    if (P->current.kind == TOKEN_NAMESPACE) {
+    if (P->current.kind == TOKEN_NAMESPACE)
+    {
         return parse_namespace(P);
     }
-    if (P->current.kind == TOKEN_USING) {
+    if (P->current.kind == TOKEN_USING)
+    {
         return parse_using(P);
     }
     if (P->current.kind == TOKEN_IF)
@@ -1626,7 +1648,8 @@ Node *parse_stmt(Parser *P)
         return parse_throw_stmt(P);
     }
 
-    if (P->current.kind == TOKEN_WITH){
+    if (P->current.kind == TOKEN_WITH)
+    {
         return parse_with_stmt(P);
     }
 
@@ -1638,11 +1661,12 @@ Node *parse_stmt(Parser *P)
     if (P->current.kind == TOKEN_CLASS || P->current.kind == TOKEN_RECORD || P->current.kind == TOKEN_OBJECT)
     {
         Node *n = parse_class_def(P);
-        n->is_final = meta_node.is_final; 
+        n->is_final = meta_node.is_final;
         return n;
     }
 
-    if (P->current.kind == TOKEN_STRUCT){
+    if (P->current.kind == TOKEN_STRUCT)
+    {
         return parse_struct_def(P);
     }
 
@@ -1676,7 +1700,7 @@ Node *parse_stmt(Parser *P)
 
             n->target_os = strdup(meta_node.target_os);
         }
-        
+
         else
         {
             n->target_os = NULL;
@@ -1710,134 +1734,147 @@ Node *parse_stmt(Parser *P)
         return parse_enum_def(P);
     }
 
-   if (P->current.kind == TOKEN_LET || P->current.kind == TOKEN_CONST)
-{
-    bool is_const = (P->current.kind == TOKEN_CONST);
-    next(P);
-
-    Node *n = NULL;
-
-    if (P->current.kind == TOKEN_LBRACKET) 
+    if (P->current.kind == TOKEN_LET || P->current.kind == TOKEN_CONST)
     {
-        next(P);
-        Node *destructure_node = new_node(NODE_DESTRUCTURE);
-        Node *head = NULL;
-        Node *current = NULL;
-
-        while (P->current.kind != TOKEN_RBRACKET) 
-        {
-            if (P->current.kind == TOKEN_IDENT) 
-            {
-                Node *var_node = new_node(NODE_IDENT);
-                strcpy(var_node->name, P->current.text);
-                next(P);
-
-                if (head == NULL) {
-                    head = var_node;
-                    current = var_node;
-                } else {
-                    current->next = var_node;
-                    current = var_node;
-                }
-            }
-            if (P->current.kind == TOKEN_COMMA) next(P);
-        }
+        bool is_const = (P->current.kind == TOKEN_CONST);
         next(P);
 
-        if (P->current.kind == TOKEN_ASSIGN) next(P);
+        Node *n = NULL;
 
-        n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
-        n->left = destructure_node;
-        destructure_node->left = head;
-        n->right = parse_expr(P);
-    } 
-    else if (P->current.kind == TOKEN_LBRACE) 
-    {
-        next(P);
-        Node *destructure_node = new_node(NODE_DESTRUCTURE);
-        destructure_node->is_record = true; 
-        Node *head = NULL;
-        Node *current = NULL;
-
-        while (P->current.kind != TOKEN_RBRACE) 
-        {
-            if (P->current.kind == TOKEN_IDENT) 
-            {
-                Node *var_node = new_node(NODE_IDENT);
-                strcpy(var_node->name, P->current.text);
-                next(P);
-
-                if (head == NULL) {
-                    head = var_node;
-                    current = var_node;
-                } else {
-                    current->next = var_node;
-                    current = var_node;
-                }
-            }
-            if (P->current.kind == TOKEN_COMMA) next(P);
-        }
-        next(P);
-
-        if (P->current.kind == TOKEN_ASSIGN) next(P);
-
-        n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
-        n->left = destructure_node;
-        destructure_node->left = head;
-        n->right = parse_expr(P);
-    }
-    else 
-    {
-        n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
-        strcpy(n->name, P->current.text);
-        next(P);
-
-        n->type_name[0] = '\0';
-        if (P->current.kind == TOKEN_COLON) 
+        if (P->current.kind == TOKEN_LBRACKET)
         {
             next(P);
-            
-            // Logika baru untuk menangani Array<Type>
-            if (P->current.kind == TOKEN_IDENT && strcmp(P->current.text, "Array") == 0) 
+            Node *destructure_node = new_node(NODE_DESTRUCTURE);
+            Node *head = NULL;
+            Node *current = NULL;
+
+            while (P->current.kind != TOKEN_RBRACKET)
             {
-                strcpy(n->type_name, "Array");
-                next(P);
-                
-                if (P->current.kind == TOKEN_LESS) 
+                if (P->current.kind == TOKEN_IDENT)
                 {
+                    Node *var_node = new_node(NODE_IDENT);
+                    strcpy(var_node->name, P->current.text);
                     next(P);
-                    if (P->current.kind == TOKEN_IDENT) 
+
+                    if (head == NULL)
                     {
-                        Node *template_type = new_node(NODE_IDENT);
-                        strcpy(template_type->name, P->current.text);
-                        n->template_types = template_type;
-                        next(P);
+                        head = var_node;
+                        current = var_node;
                     }
-                    
-                    if (P->current.kind == TOKEN_GREATER) 
+                    else
                     {
-                        next(P);
+                        current->next = var_node;
+                        current = var_node;
                     }
                 }
-            } 
-            else if (P->current.kind == TOKEN_IDENT) 
-            {
-                strcpy(n->type_name, P->current.text);
-                next(P);
+                if (P->current.kind == TOKEN_COMMA)
+                    next(P);
             }
+            next(P);
+
+            if (P->current.kind == TOKEN_ASSIGN)
+                next(P);
+
+            n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+            n->left = destructure_node;
+            destructure_node->left = head;
+            n->right = parse_expr(P);
+        }
+        else if (P->current.kind == TOKEN_LBRACE)
+        {
+            next(P);
+            Node *destructure_node = new_node(NODE_DESTRUCTURE);
+            destructure_node->is_record = true;
+            Node *head = NULL;
+            Node *current = NULL;
+
+            while (P->current.kind != TOKEN_RBRACE)
+            {
+                if (P->current.kind == TOKEN_IDENT)
+                {
+                    Node *var_node = new_node(NODE_IDENT);
+                    strcpy(var_node->name, P->current.text);
+                    next(P);
+
+                    if (head == NULL)
+                    {
+                        head = var_node;
+                        current = var_node;
+                    }
+                    else
+                    {
+                        current->next = var_node;
+                        current = var_node;
+                    }
+                }
+                if (P->current.kind == TOKEN_COMMA)
+                    next(P);
+            }
+            next(P);
+
+            if (P->current.kind == TOKEN_ASSIGN)
+                next(P);
+
+            n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+            n->left = destructure_node;
+            destructure_node->left = head;
+            n->right = parse_expr(P);
+        }
+        else
+        {
+            n = new_node(is_const ? NODE_CONSTDECL : NODE_VARDECL);
+            strcpy(n->name, P->current.text);
+            next(P);
+
+            n->type_name[0] = '\0';
+            if (P->current.kind == TOKEN_COLON)
+            {
+                next(P);
+
+                // Logika baru untuk menangani Array<Type>
+                if (P->current.kind == TOKEN_IDENT && strcmp(P->current.text, "Array") == 0)
+                {
+                    strcpy(n->type_name, "Array");
+                    next(P);
+
+                    if (P->current.kind == TOKEN_LESS)
+                    {
+                        next(P);
+                        if (P->current.kind == TOKEN_IDENT)
+                        {
+                            Node *template_type = new_node(NODE_IDENT);
+                            strcpy(template_type->name, P->current.text);
+                            n->template_types = template_type;
+                            next(P);
+                        }
+
+                        if (P->current.kind == TOKEN_GREATER)
+                        {
+                            next(P);
+                        }
+                    }
+                }
+                else if (P->current.kind == TOKEN_IDENT)
+                {
+                    strcpy(n->type_name, P->current.text);
+                    next(P);
+                }
+            }
+
+            if (P->current.kind == TOKEN_ASSIGN)
+                next(P);
+            n->right = parse_expr(P);
         }
 
-        if (P->current.kind == TOKEN_ASSIGN) next(P);
-        n->right = parse_expr(P);
-    }
+        if (n != NULL)
+        {
+            n->is_final = meta_node.is_final;
+        }
 
-    if (n != NULL) {
-        n->is_final = meta_node.is_final;
+        if (P->current.kind == TOKEN_SEMI)
+            next(P);
+        return n;
     }
-
-    if (P->current.kind == TOKEN_SEMI) next(P);
-    return n;
-}
 
     // if (P->current.kind == TOKEN_LET)
     // {
@@ -1900,25 +1937,32 @@ Node *parse_stmt(Parser *P)
     return expr;
 }
 
-static Node *parse_namespace(Parser *P) {
+static Node *parse_namespace(Parser *P)
+{
     next(P);
-    if (P->current.kind != TOKEN_IDENT) {
+    if (P->current.kind != TOKEN_IDENT)
+    {
         print_error("Expected identifier after 'namespace'");
     }
     Node *n = new_node(NODE_NAMESPACES);
     strcpy(n->name, P->current.text);
     next(P);
-    if (P->current.kind != TOKEN_LBRACE) {
+    if (P->current.kind != TOKEN_LBRACE)
+    {
         print_error("Expected '{' for namespace body");
     }
     next(P);
     n->left = NULL;
     Node *last = NULL;
-    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
+    {
         Node *stmt = parse_stmt(P);
-        if (stmt) {
-            if (!n->left) n->left = stmt;
-            else last->next = stmt;
+        if (stmt)
+        {
+            if (!n->left)
+                n->left = stmt;
+            else
+                last->next = stmt;
             last = stmt;
         }
     }
@@ -1926,52 +1970,65 @@ static Node *parse_namespace(Parser *P) {
     return n;
 }
 
-static Node *parse_using(Parser *P) {
+static Node *parse_using(Parser *P)
+{
     next(P);
     Node *n = new_node(NODE_USING);
-    
-    if (P->current.kind == TOKEN_LPAREN) {
+
+    if (P->current.kind == TOKEN_LPAREN)
+    {
         next(P);
         Node *head = NULL;
         Node *current = NULL;
-        
-        while (P->current.kind != TOKEN_RPAREN && P->current.kind != TOKEN_END) {
-            if (P->current.kind != TOKEN_IDENT) {
+
+        while (P->current.kind != TOKEN_RPAREN && P->current.kind != TOKEN_END)
+        {
+            if (P->current.kind != TOKEN_IDENT)
+            {
                 print_error("Expected identifier in using list");
                 break;
             }
-            
+
             Node *ident_node = new_node(NODE_IDENT);
             strcpy(ident_node->name, P->current.text);
-            
-            if (!head) {
+
+            if (!head)
+            {
                 head = ident_node;
                 current = head;
-            } else {
+            }
+            else
+            {
                 current->next = ident_node;
                 current = ident_node;
             }
-            
+
             next(P);
-            if (P->current.kind == TOKEN_COMMA) {
+            if (P->current.kind == TOKEN_COMMA)
+            {
                 next(P);
             }
         }
-        
-        if (P->current.kind != TOKEN_RPAREN) {
+
+        if (P->current.kind != TOKEN_RPAREN)
+        {
             print_error("Expected ')' after using list");
         }
         next(P);
         n->left = head;
-    } else {
-        if (P->current.kind != TOKEN_IDENT) {
+    }
+    else
+    {
+        if (P->current.kind != TOKEN_IDENT)
+        {
             print_error("Expected identifier after 'using'");
         }
         strcpy(n->name, P->current.text);
         next(P);
     }
-    
-    if (P->current.kind == TOKEN_SEMI) next(P);
+
+    if (P->current.kind == TOKEN_SEMI)
+        next(P);
     return n;
 }
 /**
@@ -2017,61 +2074,73 @@ static Node *parse_import_stmt(Parser *P)
     return n;
 }
 
-
-
 /**
  * @brief Parses an match statement.
  * @param P Pointer to the Parser.
  * @return Pointer to the parsed Node.
  */
-static Node *parse_match_stmt(Parser *P) {
+static Node *parse_match_stmt(Parser *P)
+{
     Node *n = new_node(NODE_MATCH_STMT);
     next(P);
 
-    if (P->current.kind != TOKEN_LPAREN) print_error("Expected '(' after match.");
+    if (P->current.kind != TOKEN_LPAREN)
+        print_error("Expected '(' after match.");
     next(P);
 
     n->left = parse_expr(P);
 
-    if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after match expression.");
+    if (P->current.kind != TOKEN_RPAREN)
+        print_error("Expected ')' after match expression.");
     next(P);
 
-    if (P->current.kind != TOKEN_LBRACE) print_error("Expected '{' before match cases.");
+    if (P->current.kind != TOKEN_LBRACE)
+        print_error("Expected '{' before match cases.");
     next(P);
 
     Node *cases_head = NULL;
     Node *cases_current = NULL;
 
-    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
+    {
         Node *case_node = new_node(NODE_MATCH_CASE);
 
-        if (P->current.kind == TOKEN_DEFAULT || P->current.kind == TOKEN_ANY) {
+        if (P->current.kind == TOKEN_DEFAULT || P->current.kind == TOKEN_ANY)
+        {
             next(P);
             case_node->left = NULL;
-        } else {
+        }
+        else
+        {
             case_node->left = parse_expr(P);
         }
 
-        if (P->current.kind != TOKEN_ARROW) print_error("Expected '=>' after case pattern.");
+        if (P->current.kind != TOKEN_ARROW)
+            print_error("Expected '=>' after case pattern.");
         next(P);
 
         case_node->right = (P->current.kind == TOKEN_LBRACE) ? parse_block(P) : parse_stmt(P);
 
-        if (cases_head == NULL) {
+        if (cases_head == NULL)
+        {
             cases_head = case_node;
             cases_current = case_node;
-        } else {
+        }
+        else
+        {
             cases_current->next = case_node;
             cases_current = case_node;
         }
 
         // Menambahkan logika untuk mengonsumsi titik koma atau koma opsional
-        while (P->current.kind == TOKEN_SEMI || P->current.kind == TOKEN_COMMA) {
+        while (P->current.kind == TOKEN_SEMI || P->current.kind == TOKEN_COMMA)
+        {
             next(P);
         }
     }
 
-    if (P->current.kind != TOKEN_RBRACE) print_error("Expected '}' after match block.");
+    if (P->current.kind != TOKEN_RBRACE)
+        print_error("Expected '}' after match block.");
     next(P);
 
     n->right = cases_head;
@@ -2520,8 +2589,9 @@ static void parse_annotations(Parser *P, Node *n)
             n->is_main = true;
         }
 
-        else if (strcmp(P->current.text, "final") == 0) {
-            n->is_final = true; 
+        else if (strcmp(P->current.text, "final") == 0)
+        {
+            n->is_final = true;
         }
 
         else if (strcmp(P->current.text, "async") == 0)
