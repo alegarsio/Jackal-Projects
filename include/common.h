@@ -227,6 +227,7 @@ typedef struct {
     int capacity;
     int count;
     struct Value* values;
+    char element_type[64];
 } ValueArray;
 
 /**
