@@ -48,6 +48,7 @@ ValueArray *array_new(void)
     arr->capacity = 8;
     arr->count = 0;
     arr->values = malloc(sizeof(Value) * arr->capacity);
+    arr->element_type[0] = '\0';
     
     for (int i = 0; i < arr->capacity; i++) {
         arr->values[i].gc_info = NULL;
@@ -78,6 +79,19 @@ ValueArray* get_minor(ValueArray* matrix, int col_to_remove) {
  */
 void array_append(ValueArray *arr, Value val)
 {
+    if (arr->element_type[0] != '\0') {
+        const char* val_type = get_value_type_name(val);
+        if (strcmp(arr->element_type, "int") == 0 || strcmp(arr->element_type, "number") == 0) {
+            if (val.type != VAL_NUMBER) {
+                print_error("Type Mismatch: Array<%s> cannot accept %s", arr->element_type, val_type);
+                return;
+            }
+        } else if (strcmp(arr->element_type, val_type) != 0) {
+            print_error("Type Mismatch: Array<%s> cannot accept %s", arr->element_type, val_type);
+            return;
+        }
+    }
+
     if (arr->count >= arr->capacity)
     {
         arr->capacity *= 2;
@@ -85,6 +99,7 @@ void array_append(ValueArray *arr, Value val)
     }
     arr->values[arr->count++] = val;
 }
+
 /**
  * Frees the memory associated with a ValueArray.
  * @param arr The ValueArray to be freed.
