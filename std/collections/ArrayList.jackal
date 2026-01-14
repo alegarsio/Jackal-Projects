@@ -7,7 +7,7 @@ import std.stream;
  * This library is part of std/collections library
  * @param [T] for generic implementation
 **/
-class ArrayList <T> implements List{
+class ArrayList <T> , List{
 
     init() {
         this.data = [];
