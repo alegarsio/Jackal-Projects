@@ -106,6 +106,10 @@ let c: String = "hello"
 ```js
 let d: Number = 20
 ```
+```js
+let d: Array<Int> = [1,2,3,4]
+let d: Array<String> = ["jack","davin","ale"]
+```
 ### User Input
 
 ```js
