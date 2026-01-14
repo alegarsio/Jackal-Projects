@@ -279,7 +279,7 @@ init(node){
 init(node) = this.node = node
 ```
 ```js
-init(node : Int) -> Int = this.node = node 
+init(node : Int)  = this.node = node 
 ```
 
 
