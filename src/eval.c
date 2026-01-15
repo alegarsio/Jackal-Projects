@@ -2025,82 +2025,92 @@ Value eval_node(Env *env, Node *n)
         Value callee = eval_node(env, n->left);
 
         if (callee.type == VAL_CLASS)
+{
+    Instance *inst = malloc(sizeof(Instance));
+    inst->class_val = malloc(sizeof(Value));
+    *inst->class_val = callee;
+    inst->fields = env_new(NULL);
+
+    // Simpan tipe konkrit yang diminta (misal: "Int") ke instance
+    if (n->template_types != NULL)
+    {
+        strncpy(inst->template_type, n->template_types->name, sizeof(inst->template_type) - 1);
+    }
+    else {
+        inst->template_type[0] = '\0';
+    }
+
+    Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
+    Var *init_method = find_method(callee.as.class_obj, "init");
+
+    if (init_method)
+    {
+        Func *func = init_method->value.as.function;
+        Env *call_env = env_new(func->env);
+        set_var(call_env, "this", instance_val, true, "");
+
+        Node *arg_node = n->right;
+        Node *param_node = func->params_head;
+        
+        const char* class_placeholder = callee.as.class_obj->type_name;
+
+        for (int i = 0; i < n->arity; i++)
         {
-            // if (n->template_types)
-            // {
-            //     printf("[DEBUG] Template Detected: %s\n", n->template_types->name);
-            // }
-            // else
-            // {
-            //     printf("[DEBUG] No Template Detected in Call\n");
-            // }
+            if (param_node == NULL) break;
 
-            Instance *inst = malloc(sizeof(Instance));
-            inst->class_val = malloc(sizeof(Value));
-            *inst->class_val = callee;
-            inst->fields = env_new(NULL);
+            Value arg_val = eval_node(env, arg_node);
+            const char *actual_type_name = get_value_type_name(arg_val);
+            const char *expected_type = param_node->type_name;
 
-            if (n->template_types != NULL)
+            if (expected_type != NULL && class_placeholder[0] != '\0' && 
+                strcmp(expected_type, class_placeholder) == 0)
             {
-                strcpy(inst->template_type, n->template_types->name);
+                expected_type = inst->template_type;
             }
 
-            Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
-            Var *init_method = find_method(callee.as.class_obj, "init");
-
-            if (init_method)
+            if (expected_type != NULL && expected_type[0] != '\0')
             {
-                Func *func = init_method->value.as.function;
-                Env *call_env = env_new(func->env);
-                set_var(call_env, "this", instance_val, true, "");
-
-                Node *arg_node = n->right;
-                Node *param_node = func->params_head;
-
-                for (int i = 0; i < n->arity; i++)
-                {
-                    Value arg_val = eval_node(env, arg_node);
-                    const char *actual_type = get_value_type_name(arg_val);
-
-                    // printf("[DEBUG] Param: %s, Expected Type: %s, Actual Type: %s\n",
-                    //        param_node->name, param_node->type_name, actual_type);
-
-                    if (param_node->type_name != NULL && strcmp(param_node->type_name, "T") == 0)
-                    {
-                        if (n->template_types != NULL)
-                        {
-                            const char *target_type = n->template_types->name;
-
-                            if (strcmp(target_type, actual_type) != 0)
-                            {
-
-                                bool is_num_match = (strcmp(target_type, "Number") == 0 &&
-                                                     (strcmp(actual_type, "Int") == 0 || strcmp(actual_type, "Float") == 0));
-
-                                if (!is_num_match)
-                                {
-                                    print_error("Cannot pass %s to %s<%s>", actual_type, callee.as.class_obj->name, target_type);
-                                    free_value(arg_val);
-                                    env_free(call_env);
-                                    return (Value){VAL_NIL, {0}};
-                                }
-                            }
-                        }
-                    }
-
-                    set_var(call_env, param_node->name, arg_val, false, param_node->type_name);
-                    free_value(arg_val);
-                    arg_node = arg_node->next;
-                    param_node = param_node->next;
+                bool is_match = false;
+                
+                if (strcmp(expected_type, actual_type_name) == 0) {
+                    is_match = true;
+                } else if (is_type_alias_match(expected_type, arg_val)) {
+                    is_match = true;
                 }
 
-                Value init_result = eval_node(call_env, func->body_head);
-                free_value(init_result);
-                env_free(call_env);
-                return instance_val;
+                if (!is_match)
+                {
+                    print_error("Type Mismatch: Parameter '%s' in class %s expects %s, but got %s", 
+                                param_node->name, callee.as.class_obj->name, expected_type, actual_type_name);
+                    
+                    free_value(arg_val);
+                    env_free(call_env);
+                    return (Value){VAL_NIL, {0}};
+                }
             }
-            return instance_val;
+
+            set_var(call_env, param_node->name, arg_val, false, expected_type);
+            
+            free_value(arg_val);
+            arg_node = arg_node->next;
+            param_node = param_node->next;
         }
+
+        Value init_result = eval_node(call_env, func->body_head);
+        
+        if (init_result.type == VAL_RETURN) {
+            free_value(*init_result.as.return_val);
+            free(init_result.as.return_val);
+        } else {
+            free_value(init_result);
+        }
+        
+        env_free(call_env);
+        return instance_val;
+    }
+    
+    return instance_val;
+}
         if (callee.type == VAL_STRUCT_DEF)
         {
             StructDefinition *s_def = callee.as.struct_def;
