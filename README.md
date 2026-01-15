@@ -1,7 +1,6 @@
 <div align="center">
 
 # The Jackal Scripting Language
-
 **A lightweight, elegant programming language for the open source community**
 
 [![New Website](https://img.shields.io/badge/website-jackal--lang-blue)](https://jackal-new-documentation.vercel.app/)

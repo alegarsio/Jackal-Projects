@@ -239,6 +239,7 @@ struct Class {
     struct Env* methods;
     Class* superclass;   
     Interface* interface;  
+    char type_name[64];
     bool is_record;  
 };
 
@@ -257,7 +258,7 @@ struct Enum {
  */
 struct Interface {
     char name[64];
-    struct Env* methods; // Hanya menyimpan nama method (Value-nya bisa NIL atau dummy)
+    struct Env* methods; 
 };
 
 /**
