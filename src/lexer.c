@@ -220,6 +220,9 @@ Token lexer_next(Lexer *L)
         else if (strcmp(tk.text,"using") == 0)
             tk.kind = TOKEN_USING;
 
+        else if (strcmp(tk.text, "or") == 0){
+            tk.kind = TOKEN_OR;
+        }
         
         else if (strcmp(tk.text, "implements") == 0)
             tk.kind = TOKEN_IMPLEMENTS;
