@@ -122,7 +122,7 @@ typedef enum {
     TOKEN_USING,
     TOKEN_FINAL,
     TOKEN_OR,
-    
+    TOKEN_IS
     
 } TokenKind;
 
