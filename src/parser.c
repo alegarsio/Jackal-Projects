@@ -637,7 +637,7 @@ static Node *parse_comparison(Parser *P)
 static Node *parse_equality(Parser *P)
 {
     Node *left = parse_comparison(P);
-    while (P->current.kind == TOKEN_EQUAL_EQUAL || P->current.kind == TOKEN_BANG_EQUAL)
+    while (P->current.kind == TOKEN_EQUAL_EQUAL || P->current.kind == TOKEN_BANG_EQUAL )
     {
         Node *n = new_node(NODE_BINOP);
         n->op = P->current.kind;
@@ -839,7 +839,15 @@ static Node *parse_if_stmt(Parser *P)
 
     n->right = new_node(NODE_IDENT);
 
-    n->right->left = parse_block(P);
+    if (P->current.kind == TOKEN_LBRACE)
+    {
+        n->right->left = parse_block(P);
+    }
+    else
+    {
+        n->right->left = parse_stmt(P);
+    }
+
     n->right->right = NULL;
 
     if (P->current.kind == TOKEN_ELSE)
@@ -852,14 +860,19 @@ static Node *parse_if_stmt(Parser *P)
         }
         else
         {
-            n->right->right = parse_block(P);
+            if (P->current.kind == TOKEN_LBRACE)
+            {
+                n->right->right = parse_block(P);
+            }
+            else
+            {
+                n->right->right = parse_stmt(P);
+            }
         }
     }
 
     return n;
-}
-
-/**
+}/**
  *
  */
 static Node *parse_func_def(Parser *P)
