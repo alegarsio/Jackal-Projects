@@ -120,7 +120,9 @@ typedef enum {
     TOKEN_TRAIT,
     TOKEN_NAMESPACE,
     TOKEN_USING,
-    TOKEN_FINAL
+    TOKEN_FINAL,
+    TOKEN_OR,
+    
     
 } TokenKind;
 
