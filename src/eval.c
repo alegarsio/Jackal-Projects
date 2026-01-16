@@ -1142,7 +1142,7 @@ Value eval_node(Env *env, Node *n)
          * Token (||)
          * Or
          */
-        if (n->op == TOKEN_PIPE_PIPE)
+        if (n->op == TOKEN_PIPE_PIPE || n->op == TOKEN_OR)
         {
             Value left = eval_node(env, n->left);
             if (is_value_truthy(left))
