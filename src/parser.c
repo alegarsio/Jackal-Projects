@@ -2476,7 +2476,7 @@ static Node *parse_logical_or(Parser *P)
 {
     Node *left = parse_logical_and(P);
 
-    while (P->current.kind == TOKEN_PIPE_PIPE)
+    while (P->current.kind == TOKEN_PIPE_PIPE || P->current.kind == TOKEN_OR)
     {
         Node *n = new_node(NODE_BINOP);
         n->op = P->current.kind;
