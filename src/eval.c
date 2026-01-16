@@ -1138,6 +1138,9 @@ Value eval_node(Env *env, Node *n)
     case NODE_BINOP:
     {
 
+        Value left = eval_node(env, n->left);
+        Value right = eval_node(env, n->right);
+
         /**
          * Token (||)
          * Or
@@ -1167,9 +1170,6 @@ Value eval_node(Env *env, Node *n)
             free_value(left);
             return eval_node(env, n->right);
         }
-
-        Value left = eval_node(env, n->left);
-        Value right = eval_node(env, n->right);
 
         switch (n->op)
         {
@@ -1230,7 +1230,11 @@ Value eval_node(Env *env, Node *n)
             {
                 return (Value){VAL_NUMBER, {.number = (left.as.number > right.as.number) ? 1.0 : 0.0}};
             }
-            print_error("Operands must be numbers for '>'.");
+            if (is_string(left, right))
+            {
+                return (Value){VAL_NUMBER, {.number = (strcmp(left.as.string, right.as.string) > 0) ? 1.0 : 0.0}};
+            }
+            print_error("Operands must be numbers or strings for '>'.");
             break;
         case TOKEN_GREATER_EQUAL:
             if (is_number(left, right))
@@ -1244,7 +1248,11 @@ Value eval_node(Env *env, Node *n)
             {
                 return (Value){VAL_NUMBER, {.number = (left.as.number < right.as.number) ? 1.0 : 0.0}};
             }
-            print_error("Operands must be numbers for '<'.");
+            if (is_string(left, right))
+            {
+                return (Value){VAL_NUMBER, {.number = (strcmp(left.as.string, right.as.string) < 0) ? 1.0 : 0.0}};
+            }
+            print_error("Operands must be numbers or strings for '<'.");
             break;
         case TOKEN_LESS_EQUAL:
             if (is_number(left, right))
