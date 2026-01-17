@@ -1,5 +1,3 @@
-
-
 #include "eval.h"
 #include "value.h"
 #include "env.h"
@@ -992,6 +990,8 @@ Value eval_node(Env *env, Node *n)
             print_error("Undefined enum constant.");
             return (Value){VAL_NIL, {0}};
         }
+
+        
 
         Var *field = find_var(obj.as.instance->fields, n->name);
         if (field)
@@ -2179,108 +2179,100 @@ Value eval_node(Env *env, Node *n)
             return (Value){VAL_STRUCT_INSTANCE, {.struct_instance = s_inst}};
         }
         if (callee.type == VAL_FUNCTION)
+{
+    Func *func = callee.as.function;
+    Env *call_env = env_new(func->env);
+    Node *arg = n->right;
+    Node *param = func->params_head;
+
+    const char *expected_type = NULL;
+    const char *actual_type = NULL;
+    Value v = (Value){VAL_NIL, {0}};
+
+    for (int i = 0; i < n->arity; i++)
+    {
+        v = eval_node(env, arg);
+
+        if (param->type_name[0] != '\0')
         {
+            expected_type = param->type_name;
+            actual_type = get_value_type_name(v);
 
-            Func *func = callee.as.function;
-            Env *call_env = env_new(func->env);
-            Node *arg = n->right;
-            Node *param = func->params_head;
+            bool is_match = false;
 
-            const char *expected_type = NULL;
-            const char *actual_type = NULL;
-            Value v = (Value){VAL_NIL, {0}};
-
-            for (int i = 0; i < n->arity; i++)
-            {
-                v = eval_node(env, arg);
-
-                if (param->type_name[0] != '\0')
-                {
-                    expected_type = param->type_name;
-                    actual_type = get_value_type_name(v);
-
-                    if (strcmp(expected_type, actual_type) != 0)
-                    {
-                        if (v.type == VAL_INSTANCE)
-                        {
-
-                            Var *expected_class_var = find_var(env, expected_type);
-
-                            if (expected_class_var && expected_class_var->value.type == VAL_CLASS)
-                            {
-
-                                Class *expected_class = expected_class_var->value.as.class_obj;
-                                Class *actual_class = v.as.instance->class_val->as.class_obj;
-
-                                bool is_match = false;
-                                Class *current_class = actual_class;
-                                while (current_class)
-                                {
-                                    if (strcmp(current_class->name, expected_class->name) == 0)
-                                    {
-                                        is_match = true;
-                                        break;
-                                    }
-                                    current_class = current_class->superclass;
-                                }
-
-                                if (!is_match)
-                                {
-                                    goto type_mismatch_error;
-                                }
-                            }
-                            else
-                            {
-                                goto type_mismatch_error;
-                            }
+            // Logika baru untuk mendukung pengecekan Array<T>
+            if (strcmp(expected_type, "Array") == 0 && v.type == VAL_ARRAY) {
+                // Jika parameter hanya menulis "Array" tanpa spesifik tipe elemen
+                is_match = true;
+            } 
+            else if (strcmp(expected_type, actual_type) == 0) {
+                is_match = true;
+            }
+            // Pengecekan inheritance untuk Instance
+            else if (v.type == VAL_INSTANCE) {
+                Var *expected_class_var = find_var(env, expected_type);
+                if (expected_class_var && expected_class_var->value.type == VAL_CLASS) {
+                    Class *expected_class = expected_class_var->value.as.class_obj;
+                    Class *current_class = v.as.instance->class_val->as.class_obj;
+                    while (current_class) {
+                        if (strcmp(current_class->name, expected_class->name) == 0) {
+                            is_match = true;
+                            break;
                         }
-                        else
-                        {
-                            goto type_mismatch_error;
-                        }
+                        current_class = current_class->superclass;
                     }
                 }
-
-                set_var(call_env, param->name, v, false, "");
-                free_value(v);
-                arg = arg->next;
-                param = param->next;
             }
 
-            Value result = eval_node(call_env, func->body_head);
-            env_free(call_env);
+            if (!is_match) goto type_mismatch_error;
+        }
 
-            Value final_result = (Value){VAL_NIL, {0}};
-            if (result.type == VAL_RETURN)
-            {
-                final_result = *result.as.return_val;
-                free(result.as.return_val);
-            }
+        set_var(call_env, param->name, v, false, "");
+        free_value(v);
+        arg = arg->next;
+        param = param->next;
+    }
 
-            if (func->return_type[0] != '\0')
-            {
-                expected_type = func->return_type;
-                actual_type = get_value_type_name(final_result);
+    Value result = eval_node(call_env, func->body_head);
+    env_free(call_env);
 
-                if (strcmp(expected_type, actual_type) != 0)
-                {
-                    print_error("Type Mismatch: Function expected return type '%s' but got '%s'.",
-                                expected_type, actual_type);
-                    free_value(final_result);
-                    return (Value){VAL_NIL, {0}};
-                }
-            }
+    Value final_result = (Value){VAL_NIL, {0}};
+    if (result.type == VAL_RETURN) {
+        final_result = *result.as.return_val;
+        free(result.as.return_val);
+    } else {
+        final_result = result;
+    }
 
-            return final_result;
+    // Pengecekan Return Type (Termasuk Array)
+    if (func->return_type[0] != '\0') {
+        expected_type = func->return_type;
+        actual_type = get_value_type_name(final_result);
 
-        type_mismatch_error:
-            print_error("Type Mismatch for parameter '%s'. Expected '%s' but got '%s'.",
-                        param->name, expected_type, actual_type);
+        bool return_match = false;
+        if (strcmp(expected_type, "Array") == 0 && final_result.type == VAL_ARRAY) {
+            return_match = true;
+        } else if (strcmp(expected_type, actual_type) == 0) {
+            return_match = true;
+        }
 
-            free_value(v);
-            env_free(call_env);
+        if (!return_match) {
+            print_error("Type Mismatch: Function expected return type '%s' but got '%s'.",
+                        expected_type, actual_type);
+            free_value(final_result);
             return (Value){VAL_NIL, {0}};
         }
+    }
+
+    return final_result;
+
+type_mismatch_error:
+    print_error("Type Mismatch for parameter '%s'. Expected '%s' but got '%s'.",
+                param->name, expected_type, actual_type);
+    free_value(v);
+    env_free(call_env);
+    return (Value){VAL_NIL, {0}};
+}
 
         if (callee.type == VAL_NATIVE)
         {
