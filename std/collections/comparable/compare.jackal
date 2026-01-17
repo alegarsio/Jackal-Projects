@@ -1,0 +1,17 @@
+import std.collections.Abstract.compareTo
+
+class Comparable<T>, CompareTo{
+
+    init(a : T , b : T){
+        this.a = a
+        this.b = b
+    }
+
+    @override 
+    func compare() -> Int{
+        if (this.a > this.b)
+            return 1
+        return -1 
+    }
+
+}
