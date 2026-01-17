@@ -911,12 +911,29 @@ static Node *parse_func_def(Parser *P)
                 if (P->current.kind != TOKEN_IDENT)
                 {
                     print_error("Expected type name after ':'.");
-                    param_node->type_name[0] = '\0';
                 }
                 else
                 {
-                    strcpy(param_node->type_name, P->current.text);
+                    char full_type[64];
+                    strcpy(full_type, P->current.text);
                     next(P);
+
+                    if (P->current.kind == TOKEN_LESS)
+                    {
+                        strcat(full_type, "<");
+                        next(P);
+                        if (P->current.kind == TOKEN_IDENT)
+                        {
+                            strcat(full_type, P->current.text);
+                            next(P);
+                        }
+                        if (P->current.kind == TOKEN_GREATER)
+                        {
+                            strcat(full_type, ">");
+                            next(P);
+                        }
+                    }
+                    strcpy(param_node->type_name, full_type);
                 }
             }
             else
@@ -947,17 +964,29 @@ static Node *parse_func_def(Parser *P)
         if (P->current.kind != TOKEN_IDENT)
         {
             print_error("Expected type name after '->'.");
-            n->return_type[0] = '\0';
         }
         else
         {
-            strcpy(n->return_type, P->current.text);
+            char full_ret_type[64];
+            strcpy(full_ret_type, P->current.text);
             next(P);
 
             if (P->current.kind == TOKEN_LESS)
             {
-                n->template_types = parse_template_declaration(P);
+                strcat(full_ret_type, "<");
+                next(P);
+                if (P->current.kind == TOKEN_IDENT)
+                {
+                    strcat(full_ret_type, P->current.text);
+                    next(P);
+                }
+                if (P->current.kind == TOKEN_GREATER)
+                {
+                    strcat(full_ret_type, ">");
+                    next(P);
+                }
             }
+            strcpy(n->return_type, full_ret_type);
         }
     }
     else
@@ -976,7 +1005,14 @@ static Node *parse_func_def(Parser *P)
     }
     else
     {
-        n->right = parse_block(P);
+        if (P->current.kind == TOKEN_LBRACE)
+        {
+            n->right = parse_block(P);
+        }
+        else
+        {
+            n->right = parse_stmt(P);
+        }
     }
 
     return n;
@@ -1039,7 +1075,6 @@ static Node *parse_struct_def(Parser *P)
  */
 static Node *parse_class_def(Parser *P)
 {
-
     Node *n = new_node(NODE_CLASS_DEF);
     Node *template_check = parse_template_declaration(P);
 
@@ -1048,7 +1083,7 @@ static Node *parse_class_def(Parser *P)
         n->is_singleton = true;
         n->is_record = false;
     }
-    if (P->current.kind == TOKEN_RECORD)
+    else if (P->current.kind == TOKEN_RECORD)
     {
         n->is_record = true;
         n->is_singleton = false;
@@ -1057,7 +1092,7 @@ static Node *parse_class_def(Parser *P)
     next(P);
 
     if (P->current.kind != TOKEN_IDENT)
-        print_error("Expected class/record name.");
+        print_error("Expected class/record/object name.");
 
     strcpy(n->name, P->current.text);
     next(P);
@@ -1067,7 +1102,6 @@ static Node *parse_class_def(Parser *P)
     n->interface_name[0] = '\0';
 
     Node *interface_list_head = NULL;
-
     Node *fields_head = NULL;
     Node *fields_current = NULL;
 
@@ -1079,8 +1113,11 @@ static Node *parse_class_def(Parser *P)
         {
             do
             {
+                if (P->current.kind == TOKEN_LET)
+                    next(P);
+
                 if (P->current.kind != TOKEN_IDENT)
-                    print_error("Expected field name in definition.");
+                    print_error("Expected field name in record/class definition.");
 
                 Node *field_node = new_node(NODE_IDENT);
                 strcpy(field_node->name, P->current.text);
@@ -1090,13 +1127,32 @@ static Node *parse_class_def(Parser *P)
                 if (P->current.kind == TOKEN_COLON)
                 {
                     next(P);
-                    if (P->current.kind != TOKEN_IDENT)
-                        print_error("Expected type name after ':'.");
-                    else
+                    char full_type[64] = "";
+                    strcpy(full_type, P->current.text);
+                    next(P);
+
+                    if (P->current.kind == TOKEN_LESS)
                     {
-                        strcpy(field_node->type_name, P->current.text);
+                        strcat(full_type, "<");
                         next(P);
+                        if (P->current.kind == TOKEN_IDENT)
+                        {
+                            strcat(full_type, P->current.text);
+                            next(P);
+                        }
+                        if (P->current.kind == TOKEN_GREATER)
+                        {
+                            strcat(full_type, ">");
+                            next(P);
+                        }
                     }
+                    strcpy(field_node->type_name, full_type);
+                }
+
+                if (P->current.kind == TOKEN_ASSIGN)
+                {
+                    next(P);
+                    field_node->left = parse_expr(P);
                 }
 
                 if (fields_head == NULL)
@@ -1113,7 +1169,7 @@ static Node *parse_class_def(Parser *P)
         }
 
         if (P->current.kind != TOKEN_RPAREN)
-            print_error("Expected ')' after parameters.");
+            print_error("Expected ')' after record parameters.");
         next(P);
 
         n->right = fields_head;
@@ -1121,22 +1177,15 @@ static Node *parse_class_def(Parser *P)
 
     if (n->is_record)
     {
-        if (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS)
-        {
-            print_error("Record cannot extend or implement other types.");
-        }
         if (P->current.kind == TOKEN_LBRACE)
         {
-            print_error("Record definition cannot have a body or methods.");
-
+            print_error("Record cannot have a body {}. Fields must be defined in ().");
+            next(P);
             while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
-            {
                 next(P);
-            }
             if (P->current.kind == TOKEN_RBRACE)
                 next(P);
         }
-
         n->left = NULL;
         return n;
     }
@@ -1145,20 +1194,11 @@ static Node *parse_class_def(Parser *P)
     {
         if (template_check != NULL)
         {
-            print_error("Error: Object (Singleton) cannot have template type parameters.");
-
+            print_error("Object cannot have template type parameters.");
             free_node(template_check);
             return NULL;
         }
-
-        if (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_IMPLEMENTS)
-        {
-            print_error("Error: Object cannot extend or implement other types.");
-        }
-        n->super_name[0] = '\0';
-        n->interface_name[0] = '\0';
     }
-
     else
     {
         n->template_types = template_check;
@@ -1168,71 +1208,38 @@ static Node *parse_class_def(Parser *P)
     {
         if (P->current.kind == TOKEN_EXTENDS || P->current.kind == TOKEN_COLON)
         {
-
-            if (n->super_name[0] != '\0')
-            {
-                print_error("Class can only extend one superclass.");
-            }
             next(P);
-            if (P->current.kind != TOKEN_IDENT)
-            {
-                print_error("Expected superclass name after 'extends'.");
-            }
             strcpy(n->super_name, P->current.text);
             next(P);
-
             Node *super_template_args = parse_template_declaration(P);
             if (super_template_args != NULL)
-            {
                 n->super_template_types = super_template_args;
-            }
         }
         else if (P->current.kind == TOKEN_IMPLEMENTS || P->current.kind == TOKEN_COMMA)
         {
-            if (interface_list_head != NULL)
-            {
-                print_error("Interface implementation already defined.");
-            }
             next(P);
-
             if (P->current.kind == TOKEN_LPAREN)
             {
                 next(P);
-
                 Node *current_list = NULL;
-
                 do
                 {
-                    if (P->current.kind != TOKEN_IDENT)
-                        print_error("Expected interface name after 'implements (' or comma.");
-
                     Node *interface_node = new_node(NODE_IDENT);
                     strcpy(interface_node->name, P->current.text);
-
                     interface_node->next = interface_list_head;
                     current_list = interface_node;
-
                     next(P);
-
                 } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
-
-                if (P->current.kind != TOKEN_RPAREN)
-                    print_error("Expected ')' after multiple interface list.");
-                next(P);
-
+                next(P); 
                 interface_list_head = current_list;
             }
             else
             {
-                if (P->current.kind != TOKEN_IDENT)
-                    print_error("Expected interface name after 'implements'.");
-
                 strcpy(n->interface_name, P->current.text);
-
                 Node *interface_node = new_node(NODE_IDENT);
                 strcpy(interface_node->name, P->current.text);
+                interface_node->next = interface_list_head;
                 interface_list_head = interface_node;
-
                 next(P);
             }
         }
@@ -1241,72 +1248,40 @@ static Node *parse_class_def(Parser *P)
     n->next = interface_list_head;
 
     if (P->current.kind != TOKEN_LBRACE)
-        print_error("Expected '{' before class body.");
-    next(P);
+        return n;
 
-    Node *methods_head = NULL;
-    Node *methods_current = NULL;
+    next(P);
+    Node *body_head = NULL;
+    Node *body_current = NULL;
 
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
     {
-        Node meta_node = {0};
-        parse_annotations(P, &meta_node);
-        bool is_private = false;
-
-        if (P->current.kind == TOKEN_PRIVATE)
+        if (P->current.kind == TOKEN_LET)
         {
-            is_private = true;
-            next(P);
-        }
-        bool is_constructor = false;
-        if (P->current.kind == TOKEN_IDENT && strcmp(P->current.text, "init") == 0)
-        {
-            is_constructor = true;
-        }
-
-        if (n->is_singleton && is_constructor)
-        {
-            print_error("Object cannot define 'init()', use initialization parameters (or remove the parameters).");
-            Node *temp_method = parse_func_def(P);
-            free_node(temp_method);
+            Node *var_decl = parse_stmt(P);
+            if (body_head == NULL) { body_head = var_decl; body_current = var_decl; }
+            else { body_current->next = var_decl; body_current = var_decl; }
             continue;
         }
 
-        if (P->current.kind != TOKEN_FUNCTION && !is_constructor)
+        bool is_constructor = (P->current.kind == TOKEN_IDENT && strcmp(P->current.text, "init") == 0);
+        if (P->current.kind == TOKEN_FUNCTION || is_constructor)
         {
-            print_error("Expected 'function' keyword or constructor 'init' declaration.");
-            next(P);
-            continue;
-        }
-
-        if (!is_constructor)
-        {
-            next(P);
-        }
-
-        Node *method = parse_func_def(P);
-
-        method->is_private = is_private;
-        method->is_override = meta_node.is_override;
-        method->is_deprecated = meta_node.is_deprecated;
-
-        if (methods_head == NULL)
-        {
-            methods_head = method;
-            methods_current = method;
+            if (!is_constructor) next(P);
+            Node *method = parse_func_def(P);
+            if (body_head == NULL) { body_head = method; body_current = method; }
+            else { body_current->next = method; body_current = method; }
         }
         else
         {
-            methods_current->next = method;
-            methods_current = method;
+            next(P);
         }
     }
 
-    if (P->current.kind != TOKEN_RBRACE)
-        print_error("Expected '}' after class body.");
-    next(P);
+    if (P->current.kind == TOKEN_RBRACE)
+        next(P);
 
-    n->left = methods_head;
+    n->left = body_head;
     return n;
 }
 /**
@@ -1402,7 +1377,14 @@ static Node *parse_for_stmt(Parser *P)
                 print_error("Expected ')' after for-each clauses.");
             next(P);
 
-            iteration_node->super_template_types = parse_block(P);
+            if (P->current.kind == TOKEN_LBRACE)
+            {
+                iteration_node->super_template_types = parse_block(P);
+            }
+            else
+            {
+                iteration_node->super_template_types = parse_stmt(P);
+            }
             return iteration_node;
         }
         *P = saved_P;
@@ -1430,7 +1412,15 @@ static Node *parse_for_stmt(Parser *P)
     if (P->current.kind == TOKEN_RPAREN)
         next(P);
 
-    n->right->right->right = parse_block(P);
+    if (P->current.kind == TOKEN_LBRACE)
+    {
+        n->right->right->right = parse_block(P);
+    }
+    else
+    {
+        n->right->right->right = parse_stmt(P);
+    }
+    
     return n;
 }
 static Node *parse_for_in_stmt(Parser *P)
