@@ -1,0 +1,3 @@
+import std.collections.Pair.StaticPair
+
+class Pair<K,V> : StaticPair<K,V> {}
