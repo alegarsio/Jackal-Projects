@@ -8,10 +8,6 @@ class Comparable<T>, CompareTo{
     }
 
     @override 
-    func compare() -> Int{
-        if (this.a > this.b)
-            return 1
-        return -1 
-    }
+    func compare() -> Int = this.a > this.b or -1
 
 }
