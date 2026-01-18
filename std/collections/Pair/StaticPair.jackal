@@ -1,0 +1,14 @@
+class StaticPair<K,V>{
+
+    init(key : K , value : V){
+        this.key = key
+        this.value = value
+    }
+
+    func key() -> K = this.key
+
+    func value() -> V = this.value
+
+    func merge() -> Array = [this.key , this.value]
+
+}
