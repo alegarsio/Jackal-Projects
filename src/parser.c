@@ -378,6 +378,10 @@ static Node *parse_primary(Parser *P)
         return parse_array_literal(P);
     }
 
+    if (P->current.kind == TOKEN_AS)
+    {
+
+    }
     if (P->current.kind == TOKEN_LBRACE)
     {
         return parse_map_literal(P);
@@ -408,6 +412,7 @@ static Node *parse_primary(Parser *P)
     }
     return NULL;
 }
+
 static Node *parse_template_declaration(Parser *P)
 {
     if (P->current.kind != TOKEN_LESS)
@@ -712,6 +717,22 @@ static Node *parse_assignment(Parser *P)
      */
     Node *node = parse_pipeline(P);
 
+    if (P->current.kind == TOKEN_AS) {
+        next(P);
+        Node *cast_node = new_node(NODE_BINOP);
+        cast_node->op = TOKEN_AS;
+        cast_node->left = node;
+
+        if (P->current.kind == TOKEN_IDENT) {
+            strncpy(cast_node->type_name, P->current.text, 63);
+            cast_node->type_name[63] = '\0';
+            next(P);
+        } else {
+            print_error("Error: Expected type name after 'as'.");
+        }
+        return cast_node;
+    }
+    
     if (P->current.kind == TOKEN_ASSIGN)
     {
         next(P);
@@ -731,6 +752,22 @@ static Node *parse_assignment(Parser *P)
             assign_node->right = value; 
             return assign_node;
         }
+
+        if (P->current.kind == TOKEN_AS) {
+        next(P);
+        Node *cast_node = new_node(NODE_BINOP);
+        cast_node->op = TOKEN_AS;
+        cast_node->left = node;
+
+        if (P->current.kind == TOKEN_IDENT) {
+            strncpy(cast_node->type_name, P->current.text, 63);
+            cast_node->type_name[63] = '\0';
+            next(P);
+        } else {
+            print_error("Error: Expected type name after 'as'.");
+        }
+        return cast_node;
+    }
 
         if (node->kind == NODE_ARRAY_ACCESS)
         {
