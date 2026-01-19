@@ -66,7 +66,8 @@ typedef enum {
     NODE_STRUCT_DEF,
     NODE_WITH,
     NODE_NAMESPACES,
-    NODE_USING
+    NODE_USING,
+    NODE_EXTENSION
 } NodeKind;
 
 /**
@@ -96,6 +97,7 @@ typedef struct Node {
     bool is_paralel;
     bool is_static;
     bool is_final;
+    bool is_macro;
     
     char* deprecated_message;
 
@@ -159,3 +161,5 @@ Node *new_node(NodeKind kind);
 static Node *parse_namespace(Parser *P);
 
 static Node *parse_using(Parser *P);
+
+static Node *parse_extension_def(Parser *P);
