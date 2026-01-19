@@ -122,7 +122,10 @@ typedef enum {
     TOKEN_USING,
     TOKEN_FINAL,
     TOKEN_OR,
-    TOKEN_IS
+    TOKEN_IS,
+    TOKEN_EXTEND,
+    TOKEN_AS
+
     
 } TokenKind;
 
@@ -217,6 +220,7 @@ typedef struct Func {
     char* target_os;
     bool is_async;
     bool is_final;
+    bool is_extension;
 } Func;
 
 struct Value;
@@ -328,6 +332,7 @@ typedef struct Value {
         StructDefinition *struct_def;       
         StructInstance *struct_instance;
         struct Env* env;
+        
     } as;
     struct GCObject* gc_info;
 } Value;
