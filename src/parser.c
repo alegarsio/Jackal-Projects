@@ -1362,9 +1362,12 @@ static Node *parse_for_stmt(Parser *P)
 {
     next(P);
 
-    if (P->current.kind != TOKEN_LPAREN)
-        print_error("Expected '(' after 'for'.");
-    next(P);
+    bool has_paren = false;
+    if (P->current.kind == TOKEN_LPAREN)
+    {
+        has_paren = true;
+        next(P);
+    }
 
     if (P->current.kind == TOKEN_IDENT)
     {
@@ -1373,9 +1376,10 @@ static Node *parse_for_stmt(Parser *P)
 
         if (iteration_node != NULL)
         {
-            if (P->current.kind != TOKEN_RPAREN)
-                print_error("Expected ')' after for-each clauses.");
-            next(P);
+            if (has_paren && P->current.kind == TOKEN_RPAREN)
+            {
+                next(P);
+            }
 
             if (P->current.kind == TOKEN_LBRACE)
             {
@@ -1409,8 +1413,11 @@ static Node *parse_for_stmt(Parser *P)
 
     n->right->right = new_node(NODE_IDENT);
     n->right->right->left = parse_expr(P);
-    if (P->current.kind == TOKEN_RPAREN)
+
+    if (has_paren && P->current.kind == TOKEN_RPAREN)
+    {
         next(P);
+    }
 
     if (P->current.kind == TOKEN_LBRACE)
     {
@@ -1626,6 +1633,10 @@ Node *parse_stmt(Parser *P)
         return parse_match_stmt(P);
     }
 
+    if (P->current.kind == TOKEN_EXTEND){
+        return parse_extension_def(P);
+    }
+
     if (P->current.kind == TOKEN_BREAK)
     {
         return parse_break_stmt(P);
@@ -1834,7 +1845,6 @@ Node *parse_stmt(Parser *P)
             {
                 next(P);
 
-                // Logika baru untuk menangani Array<Type>
                 if (P->current.kind == TOKEN_IDENT && strcmp(P->current.text, "Array") == 0)
                 {
                     strcpy(n->type_name, "Array");
@@ -1940,6 +1950,45 @@ Node *parse_stmt(Parser *P)
     return expr;
 }
 
+
+static Node *parse_extension_def(Parser *P) {
+    next(P);
+    if (P->current.kind != TOKEN_IDENT) {
+        print_error("Expected type name after 'extend'.");
+    }
+
+    Node *n = new_node(NODE_EXTENSION);
+    strcpy(n->name, P->current.text);
+    next(P);
+
+    if (P->current.kind != TOKEN_LBRACE) {
+        print_error("Expected '{' after extension target.");
+    }
+    next(P);
+    
+    Node *func_head = NULL;
+    Node *func_curr = NULL;
+
+    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
+        if (P->current.kind == TOKEN_FUNCTION) {
+            next(P);
+            Node *f = parse_func_def(P);
+            if (func_head == NULL) {
+                func_head = f;
+                func_curr = f;
+            } else {
+                func_curr->next = f;
+                func_curr = f;
+            }
+        } else {
+            next(P);
+        }
+    }
+
+    if (P->current.kind == TOKEN_RBRACE) next(P);
+    n->left = func_head;
+    return n;
+}
 static Node *parse_namespace(Parser *P)
 {
     next(P);
