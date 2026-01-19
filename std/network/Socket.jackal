@@ -1,68 +1,42 @@
-class Socket {
-    
-    init(port) {
-        this.port = port;
-        this.fd = -1; 
+class BasicSocket {
+
+    init(proto,sock_type) {
+        this.fd = -1;
+        this.proto = proto
+        this.sock_type = sock_type
     }
 
-    func listen() {
+    func listen(port : Number, host : String) -> Int {
         if (this.fd != -1) {
-            print "Warning: Socket is already listening. Close it first.";
             return this.fd;
         }
-        
-        let fd = __net_listen(this.port);
-        
-        if (fd == -1) {
-            print "Error: Failed to listen on port ";
+
+        let s = socket_create(this.proto, this.sock_type);
+
+        if (s == -1) {
             return -1;
         }
-        
-        this.fd = fd; 
+
+        let b = socket_bind(s, host, port);
+        if (b == -1) {
+            socket_close(s);
+            return -1;
+        }
+
+        let l = socket_listen(s, 5);
+        if (l == -1) {
+            socket_close(s);
+            return -1;
+        }
+
+        this.fd = s;
         return this.fd;
     }
 
-    func accept() {
-        if (this.fd == -1) {
-            print "Error: Cannot accept; listener not active.";
-            return -1;
-        }
-        
-        let client_fd = __net_accept(this.fd);
-        
-        if (client_fd == -1) {
-            print "Error: Failed to accept connection.";
-            return -1;
-        }
-        
-        return client_fd;
-    }
-
-    func send(target_fd, data) {
-        let sent = __net_send(target_fd, data);
-        
-        if (sent == -1) {
-            print "Error: Failed to send data to FD ";
-        }
-        return sent;
-    }
-    
-    function close(target_fd) {
-        let fd_to_close = target_fd; 
-        
-        if (fd_to_close == nil) {
-            fd_to_close = this.fd;
-        }
-        
-        if (fd_to_close == -1) {
-            return 0; 
-        }
-
-        __net_close(fd_to_close);
-        
-        if (fd_to_close == this.fd) {
+    func close() {
+        if (this.fd != -1) {
+            socket_close(this.fd); 
             this.fd = -1;
         }
-        return 0;
     }
 }
