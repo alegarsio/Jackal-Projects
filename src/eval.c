@@ -680,7 +680,6 @@ Value eval_node(Env *env, Node *n)
         return default_result;
     }
 
-    
     case NODE_MATCH_STMT:
     {
         Value m_val = eval_node(env, n->left);
@@ -992,8 +991,6 @@ Value eval_node(Env *env, Node *n)
             return (Value){VAL_NIL, {0}};
         }
 
-        
-
         Var *field = find_var(obj.as.instance->fields, n->name);
         if (field)
         {
@@ -1157,34 +1154,36 @@ Value eval_node(Env *env, Node *n)
             return eval_node(env, n->right);
         }
 
+        if (n->op == TOKEN_AS)
+        {
+            Value val = eval_node(env, n->left);
+            const char *target_type = n->type_name;
 
-        if (n->op == TOKEN_AS) {
-        Value val = eval_node(env, n->left);
-        const char *target_type = n->type_name;
-
-        if (strcmp(target_type, "String") == 0) {
-            if (val.type == VAL_NUMBER) {
-                char *str = malloc(32);
-                snprintf(str, 32, "%g", val.as.number);
-                return (Value){VAL_STRING, {.string = str}};
+            if (strcmp(target_type, "String") == 0)
+            {
+                if (val.type == VAL_NUMBER)
+                {
+                    char *str = malloc(32);
+                    snprintf(str, 32, "%g", val.as.number);
+                    return (Value){VAL_STRING, {.string = str}};
+                }
+                return val;
             }
-            return val;
-        }
 
-        if (strcmp(target_type, "Number") == 0) {
-            if (val.type == VAL_STRING) {
-                double num = atof(val.as.string);
-                free_value(val);
-                return (Value){VAL_NUMBER, {.number = num}};
+            if (strcmp(target_type, "Number") == 0)
+            {
+                if (val.type == VAL_STRING)
+                {
+                    double num = atof(val.as.string);
+                    free_value(val);
+                    return (Value){VAL_NUMBER, {.number = num}};
+                }
+                return val;
             }
-            return val;
+
+            print_error("Runtime Error: Cannot cast to type %s", target_type);
+            return (Value){VAL_NIL, {0}};
         }
-
-        print_error("Runtime Error: Cannot cast to type %s", target_type);
-        return (Value){VAL_NIL, {0}};
-    }
-
-        
 
         /**
          * Token (&&)
@@ -1315,26 +1314,29 @@ Value eval_node(Env *env, Node *n)
         return (Value){.type = VAL_NIL, .as = {0}};
     }
 
-    case NODE_EXTENSION: {
-            Var *target_var = find_var(env, n->name);
-            if (target_var && target_var->value.type == VAL_CLASS) {
-                Class *klass = target_var->value.as.class_obj;
-                Node *method_node = n->left;
-                while (method_node) {
-                    Value method_val;
-                    method_val.type = VAL_FUNCTION;
-                    method_val.as.function = malloc(sizeof(Func));
-                    Func *f = method_val.as.function;
-                    memset(f, 0, sizeof(Func));
-                    f->params_head = method_node->left;
-                    f->body_head = method_node->right;
-                    f->env = env;
-                    set_var(klass->methods, method_node->name, method_val, false, "function");
-                    method_node = method_node->next;
-                }
+    case NODE_EXTENSION:
+    {
+        Var *target_var = find_var(env, n->name);
+        if (target_var && target_var->value.type == VAL_CLASS)
+        {
+            Class *klass = target_var->value.as.class_obj;
+            Node *method_node = n->left;
+            while (method_node)
+            {
+                Value method_val;
+                method_val.type = VAL_FUNCTION;
+                method_val.as.function = malloc(sizeof(Func));
+                Func *f = method_val.as.function;
+                memset(f, 0, sizeof(Func));
+                f->params_head = method_node->left;
+                f->body_head = method_node->right;
+                f->env = env;
+                set_var(klass->methods, method_node->name, method_val, false, "function");
+                method_node = method_node->next;
             }
-            return (Value){VAL_NIL, {0}};
         }
+        return (Value){VAL_NIL, {0}};
+    }
 
     case NODE_VARDECL:
     {
@@ -2030,7 +2032,7 @@ Value eval_node(Env *env, Node *n)
                 }
 
                 Func *func = method_var->value.as.function;
-                
+
                 if (func->is_private)
                 {
                     if (get_node->left->kind != NODE_THIS)
@@ -2085,24 +2087,36 @@ Value eval_node(Env *env, Node *n)
 
         if (callee.type == VAL_CLASS)
         {
+            Class *klass = callee.as.class_obj;
             Instance *inst = malloc(sizeof(Instance));
+            memset(inst, 0, sizeof(Instance));
             inst->class_val = malloc(sizeof(Value));
             *inst->class_val = callee;
             inst->fields = env_new(NULL);
 
-            if (n->template_types != NULL)
+            Node *t_node = n->template_types;
+            int t_idx = 0;
+            while (t_node && t_idx < 10)
             {
-                strncpy(inst->template_type, n->template_types->name, 63);
-                inst->template_type[63] = '\0';
+                strncpy(inst->templates.names[t_idx++], t_node->name, 63);
+                t_node = t_node->next;
             }
-            else
-            {
-                inst->template_type[0] = '\0';
-            }
+            inst->templates.count = t_idx;
 
             Value instance_val = (Value){VAL_INSTANCE, {.instance = inst}};
-            Var *init_method = find_method(callee.as.class_obj, "init");
 
+            Var *field_def = klass->methods->vars;
+            Node *arg_ptr = n->right;
+            while (arg_ptr && field_def)
+            {
+                Value arg_val = eval_node(env, arg_ptr);
+                set_var(inst->fields, field_def->name, arg_val, false, field_def->expected_type);
+                free_value(arg_val);
+                arg_ptr = arg_ptr->next;
+                field_def = field_def->next;
+            }
+
+            Var *init_method = find_method(klass, "init");
             if (init_method)
             {
                 Func *func = init_method->value.as.function;
@@ -2121,11 +2135,17 @@ Value eval_node(Env *env, Node *n)
                     const char *actual_type = get_value_type_name(arg_val);
                     const char *expected = param_node->type_name;
 
-                    if (expected != NULL && expected[0] >= 'A' && expected[0] <= 'Z')
+                    if (expected != NULL && strlen(expected) == 1 && expected[0] >= 'A' && expected[0] <= 'Z')
                     {
-                        if (inst->template_type[0] != '\0')
+                        int template_idx = 0;
+                        if (expected[0] == 'K')
+                            template_idx = 0;
+                        else if (expected[0] == 'V')
+                            template_idx = 1;
+
+                        if (template_idx < inst->templates.count)
                         {
-                            expected = inst->template_type;
+                            expected = inst->templates.names[template_idx];
                         }
                     }
 
@@ -2133,13 +2153,11 @@ Value eval_node(Env *env, Node *n)
                     {
                         bool is_match = false;
                         if (strcmp(expected, actual_type) == 0)
-                        {
                             is_match = true;
-                        }
                         else if (is_type_alias_match(expected, arg_val))
-                        {
                             is_match = true;
-                        }
+                        else if (arg_val.type == VAL_INSTANCE)
+                            is_match = true;
 
                         if (!is_match)
                         {
@@ -2152,14 +2170,12 @@ Value eval_node(Env *env, Node *n)
                     }
 
                     set_var(call_env, param_node->name, arg_val, false, expected);
-
                     free_value(arg_val);
                     arg_node = arg_node->next;
                     param_node = param_node->next;
                 }
 
                 Value init_result = eval_node(call_env, func->body_head);
-
                 if (init_result.type == VAL_RETURN)
                 {
                     free_value(*init_result.as.return_val);
@@ -2169,9 +2185,7 @@ Value eval_node(Env *env, Node *n)
                 {
                     free_value(init_result);
                 }
-
                 env_free(call_env);
-                return instance_val;
             }
             return instance_val;
         }
@@ -2230,98 +2244,113 @@ Value eval_node(Env *env, Node *n)
             return (Value){VAL_STRUCT_INSTANCE, {.struct_instance = s_inst}};
         }
         if (callee.type == VAL_FUNCTION)
-{
-    Func *func = callee.as.function;
-    Env *call_env = env_new(func->env);
-    Node *arg = n->right;
-    Node *param = func->params_head;
-
-    const char *expected_type = NULL;
-    const char *actual_type = NULL;
-    Value v = (Value){VAL_NIL, {0}};
-
-    for (int i = 0; i < n->arity; i++)
-    {
-        v = eval_node(env, arg);
-        
-        if (param->type_name[0] != '\0')
         {
-            expected_type = param->type_name;
-            actual_type = get_value_type_name(v);
+            Func *func = callee.as.function;
+            Env *call_env = env_new(func->env);
+            Node *arg = n->right;
+            Node *param = func->params_head;
 
-            bool is_match = false;
+            const char *expected_type = NULL;
+            const char *actual_type = NULL;
+            Value v = (Value){VAL_NIL, {0}};
 
-            if (strcmp(expected_type, "Array") == 0 && v.type == VAL_ARRAY) {
+            for (int i = 0; i < n->arity; i++)
+            {
+                v = eval_node(env, arg);
 
-                is_match = true;
-            } 
-            else if (strcmp(expected_type, actual_type) == 0) {
-                is_match = true;
-            }
-            else if (v.type == VAL_INSTANCE) {
-                Var *expected_class_var = find_var(env, expected_type);
-                if (expected_class_var && expected_class_var->value.type == VAL_CLASS) {
-                    Class *expected_class = expected_class_var->value.as.class_obj;
-                    Class *current_class = v.as.instance->class_val->as.class_obj;
-                    while (current_class) {
-                        if (strcmp(current_class->name, expected_class->name) == 0) {
-                            is_match = true;
-                            break;
-                        }
-                        current_class = current_class->superclass;
+                if (param->type_name[0] != '\0')
+                {
+                    expected_type = param->type_name;
+                    actual_type = get_value_type_name(v);
+
+                    bool is_match = false;
+
+                    if (strcmp(expected_type, "Array") == 0 && v.type == VAL_ARRAY)
+                    {
+
+                        is_match = true;
                     }
+                    else if (strcmp(expected_type, actual_type) == 0)
+                    {
+                        is_match = true;
+                    }
+                    else if (v.type == VAL_INSTANCE)
+                    {
+                        Var *expected_class_var = find_var(env, expected_type);
+                        if (expected_class_var && expected_class_var->value.type == VAL_CLASS)
+                        {
+                            Class *expected_class = expected_class_var->value.as.class_obj;
+                            Class *current_class = v.as.instance->class_val->as.class_obj;
+                            while (current_class)
+                            {
+                                if (strcmp(current_class->name, expected_class->name) == 0)
+                                {
+                                    is_match = true;
+                                    break;
+                                }
+                                current_class = current_class->superclass;
+                            }
+                        }
+                    }
+
+                    if (!is_match)
+                        goto type_mismatch_error;
+                }
+
+                set_var(call_env, param->name, v, false, "");
+                free_value(v);
+                arg = arg->next;
+                param = param->next;
+            }
+
+            Value result = eval_node(call_env, func->body_head);
+            env_free(call_env);
+
+            Value final_result = (Value){VAL_NIL, {0}};
+            if (result.type == VAL_RETURN)
+            {
+                final_result = *result.as.return_val;
+                free(result.as.return_val);
+            }
+            else
+            {
+                final_result = result;
+            }
+
+            // Pengecekan Return Type (Termasuk Array)
+            if (func->return_type[0] != '\0')
+            {
+                expected_type = func->return_type;
+                actual_type = get_value_type_name(final_result);
+
+                bool return_match = false;
+                if (strcmp(expected_type, "Array") == 0 && final_result.type == VAL_ARRAY)
+                {
+                    return_match = true;
+                }
+                else if (strcmp(expected_type, actual_type) == 0)
+                {
+                    return_match = true;
+                }
+
+                if (!return_match)
+                {
+                    print_error("Type Mismatch: Function expected return type '%s' but got '%s'.",
+                                expected_type, actual_type);
+                    free_value(final_result);
+                    return (Value){VAL_NIL, {0}};
                 }
             }
 
-            if (!is_match) goto type_mismatch_error;
-        }
+            return final_result;
 
-        set_var(call_env, param->name, v, false, "");
-        free_value(v);
-        arg = arg->next;
-        param = param->next;
-    }
-
-    Value result = eval_node(call_env, func->body_head);
-    env_free(call_env);
-
-    Value final_result = (Value){VAL_NIL, {0}};
-    if (result.type == VAL_RETURN) {
-        final_result = *result.as.return_val;
-        free(result.as.return_val);
-    } else {
-        final_result = result;
-    }
-
-    // Pengecekan Return Type (Termasuk Array)
-    if (func->return_type[0] != '\0') {
-        expected_type = func->return_type;
-        actual_type = get_value_type_name(final_result);
-
-        bool return_match = false;
-        if (strcmp(expected_type, "Array") == 0 && final_result.type == VAL_ARRAY) {
-            return_match = true;
-        } else if (strcmp(expected_type, actual_type) == 0) {
-            return_match = true;
-        }
-
-        if (!return_match) {
-            print_error("Type Mismatch: Function expected return type '%s' but got '%s'.",
-                        expected_type, actual_type);
-            free_value(final_result);
+        type_mismatch_error:
+            print_error("Type Mismatch for parameter '%s'. Expected '%s' but got '%s'.",
+                        param->name, expected_type, actual_type);
+            free_value(v);
+            env_free(call_env);
             return (Value){VAL_NIL, {0}};
         }
-    }
-
-    return final_result;
-
-type_mismatch_error:
-    print_error("Type Mismatch for parameter '%s'. Expected '%s' but got '%s'.",
-                param->name, expected_type, actual_type);
-    free_value(v);
-    env_free(call_env);
-    return (Value){VAL_NIL, {0}};
-}
 
         if (callee.type == VAL_NATIVE)
         {
