@@ -103,7 +103,7 @@ const char *get_value_type_name(Value val)
     switch (val.type)
     {
     case VAL_NIL:
-        return "nil";
+        return "None";
     case VAL_NUMBER:
         if (is_integer_value(val))
         {
@@ -680,6 +680,7 @@ Value eval_node(Env *env, Node *n)
         return default_result;
     }
 
+    
     case NODE_MATCH_STMT:
     {
         Value m_val = eval_node(env, n->left);
@@ -1156,6 +1157,35 @@ Value eval_node(Env *env, Node *n)
             return eval_node(env, n->right);
         }
 
+
+        if (n->op == TOKEN_AS) {
+        Value val = eval_node(env, n->left);
+        const char *target_type = n->type_name;
+
+        if (strcmp(target_type, "String") == 0) {
+            if (val.type == VAL_NUMBER) {
+                char *str = malloc(32);
+                snprintf(str, 32, "%g", val.as.number);
+                return (Value){VAL_STRING, {.string = str}};
+            }
+            return val;
+        }
+
+        if (strcmp(target_type, "Number") == 0) {
+            if (val.type == VAL_STRING) {
+                double num = atof(val.as.string);
+                free_value(val);
+                return (Value){VAL_NUMBER, {.number = num}};
+            }
+            return val;
+        }
+
+        print_error("Runtime Error: Cannot cast to type %s", target_type);
+        return (Value){VAL_NIL, {0}};
+    }
+
+        
+
         /**
          * Token (&&)
          * And
@@ -1284,6 +1314,27 @@ Value eval_node(Env *env, Node *n)
         free_value(right);
         return (Value){.type = VAL_NIL, .as = {0}};
     }
+
+    case NODE_EXTENSION: {
+            Var *target_var = find_var(env, n->name);
+            if (target_var && target_var->value.type == VAL_CLASS) {
+                Class *klass = target_var->value.as.class_obj;
+                Node *method_node = n->left;
+                while (method_node) {
+                    Value method_val;
+                    method_val.type = VAL_FUNCTION;
+                    method_val.as.function = malloc(sizeof(Func));
+                    Func *f = method_val.as.function;
+                    memset(f, 0, sizeof(Func));
+                    f->params_head = method_node->left;
+                    f->body_head = method_node->right;
+                    f->env = env;
+                    set_var(klass->methods, method_node->name, method_val, false, "function");
+                    method_node = method_node->next;
+                }
+            }
+            return (Value){VAL_NIL, {0}};
+        }
 
     case NODE_VARDECL:
     {
@@ -1979,7 +2030,7 @@ Value eval_node(Env *env, Node *n)
                 }
 
                 Func *func = method_var->value.as.function;
-
+                
                 if (func->is_private)
                 {
                     if (get_node->left->kind != NODE_THIS)
@@ -2192,7 +2243,7 @@ Value eval_node(Env *env, Node *n)
     for (int i = 0; i < n->arity; i++)
     {
         v = eval_node(env, arg);
-
+        
         if (param->type_name[0] != '\0')
         {
             expected_type = param->type_name;
@@ -2200,15 +2251,13 @@ Value eval_node(Env *env, Node *n)
 
             bool is_match = false;
 
-            // Logika baru untuk mendukung pengecekan Array<T>
             if (strcmp(expected_type, "Array") == 0 && v.type == VAL_ARRAY) {
-                // Jika parameter hanya menulis "Array" tanpa spesifik tipe elemen
+
                 is_match = true;
             } 
             else if (strcmp(expected_type, actual_type) == 0) {
                 is_match = true;
             }
-            // Pengecekan inheritance untuk Instance
             else if (v.type == VAL_INSTANCE) {
                 Var *expected_class_var = find_var(env, expected_type);
                 if (expected_class_var && expected_class_var->value.type == VAL_CLASS) {
