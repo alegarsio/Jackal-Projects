@@ -154,6 +154,12 @@ Token lexer_next(Lexer *L)
         //     tk.kind = TOKEN_TYPE;
         else if (strcmp(tk.text, "every") == 0)
             tk.kind = TOKEN_EVERY;
+        else if (strcmp(tk.text,"extend") == 0)
+            tk.kind = TOKEN_EXTEND;
+
+        else if (strcmp(tk.text,"as") == 0)
+            tk.kind = TOKEN_AS;
+            
         else if (strcmp(tk.text, "until") == 0)
             tk.kind = TOKEN_UNTIL;
         else if (strcmp(tk.text, "true") == 0)
