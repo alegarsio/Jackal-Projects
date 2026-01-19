@@ -1,0 +1,3 @@
+import std.network.Socket
+
+class Socket : BasicSocket {}
