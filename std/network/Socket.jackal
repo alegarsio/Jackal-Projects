@@ -6,7 +6,9 @@ class BasicSocket {
         this.sock_type = sock_type
     }
 
-    func listen(port : Number, host : String) -> Int {
+    
+
+    func listen(host: String, port : Number) -> Int {
         if (this.fd != -1) {
             return this.fd;
         }
@@ -33,16 +35,27 @@ class BasicSocket {
         return this.fd;
     }
 
+    func connect(host : String , port : Int) {
+        if (this.fd == -1) {
+            this.fd = socket_create(this.proto, this.sock_type);
+        }
+        
+        let target_ip = socket_resolve(host)
+        
+        
+        if (target_ip == nil) {
+            return -1;
+        }
+        return socket_connect(this.fd, target_ip, port);
+    }
+    
+
     func send(target_fd, data) {
         return socket_send(target_fd, data);
     }
     
-    func resolve(host : String) -> String{
-        return socket_resolve(host) or "Error";
-    }
 
-
-
+ 
     func receive(target_fd, size) {
         if (size == nil) {
             return socket_recv(target_fd, 4096);

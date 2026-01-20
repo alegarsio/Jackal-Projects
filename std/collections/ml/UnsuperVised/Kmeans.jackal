@@ -1,0 +1,38 @@
+class KMeans {
+    init(k, iterations) {
+        this.k = k
+        this.iter = iterations
+        this.centroids = nil
+        this.lastLoss = 0
+    }
+
+    func fit(dataOnly) {
+        this.centroids = __kmeans_fit(dataOnly, this.k, this.iter)
+        
+        this.lastLoss = __kmeans_loss(dataOnly, this.centroids)
+        
+        return this
+    }
+
+    func predict(newData) {
+        let results = []
+        if (this.centroids == nil) {
+            println("Error: Model must be fitted before prediction.")
+            return results
+        }
+
+        for (point in newData) {
+            let clusterId = __kmeans_predict(point, this.centroids)
+            results.push(clusterId)
+        }
+        return results
+    }
+
+    func getLoss() {
+        return this.lastLoss
+    }
+
+    func getCentroids() {
+        return this.centroids
+    }
+}

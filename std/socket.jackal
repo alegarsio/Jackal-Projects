@@ -1,6 +1,4 @@
 import std.network.Socket
-import std.network.Inet
-
 @final
 const AF_INET = 2
 @final
@@ -13,5 +11,8 @@ const LOCAL = "localhost"
 class Socket : BasicSocket {
     func gethostname() -> String = socket_get_local_ip() != nil or LOCAL
     func gethostbyname(host : String) -> String = socket_resolve(host) or throw "Error "
+    func htons(port : Number) -> Int = __net_htons(port) 
+    func aton(host : String) -> Int = __net_aton(host)
+    func ntoa(host : String) -> String = __net_ntoa(host)
 }
-class Inet : BasicInet{}
+

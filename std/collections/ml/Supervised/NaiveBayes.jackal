@@ -1,0 +1,29 @@
+import std.collections.ml.Data.DataSet
+
+class NaiveBayes {
+    init() {
+        this.modelPtr = nil;
+    }
+
+    func fit(dataSetObject : DataSet) {
+        this.modelPtr = __nb_fit(
+            dataSetObject.getData(),
+            dataSetObject.getLabels()
+        );
+        return this;
+    }
+
+    func predict(newData) {
+        let results = [];
+        for (point in newData) {
+            let label = __nb_predict(point, this.modelPtr);
+            results.push(label);
+        }
+        return results;
+    }
+
+    func evaluate(testDataSet) {
+        let predictions = this.predict(testDataSet.getData());
+        return __accuracy(predictions, testDataSet.getLabels());
+    }
+}

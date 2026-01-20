@@ -1,0 +1,49 @@
+import std.collections.ml.Data.DataSet
+
+
+class LogisticRegression {
+    init(learningRate, iterations) {
+        this.lr = learningRate
+        this.iter = iterations
+        this.weights = nil
+        this.bias = 0
+        this.modelData = nil
+    }
+
+    func fit(dataSetObject) {
+        let result = __logistic_fit(
+            dataSetObject.getData(), 
+            dataSetObject.getLabels(), 
+            this.lr, 
+            this.iter
+        )
+        
+        this.weights = result[0]
+        this.bias = result[1]
+        this.modelData = result
+        
+        return this
+    }
+
+    func predict(newData) {
+        let results = []
+        
+        for (point in newData) {
+            let label = __logistic_predict(point, this.modelData)
+            results.push(label)
+        }
+        
+        return results
+    }
+
+    func evaluate(testDataSet) {
+        let features = testDataSet.getData()
+        let actuals  = testDataSet.getLabels()
+       
+        let predictions = this.predict(features)
+
+        let score = __accuracy(predictions, actuals)
+
+        return score
+    }
+}
