@@ -46,6 +46,15 @@ Value native_net_aton(int arg_count, Value* args) {
     
     return (Value){VAL_NUMBER, {.number = (double)addr.s_addr}};
 }
+Value native_net_ntoa(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NIL, {0}};
+    
+    struct in_addr addr;
+    addr.s_addr = (uint32_t)args[0].as.number;
+    
+    char* ip_str = inet_ntoa(addr);
+    return (Value){VAL_STRING, {.string = strdup(ip_str)}};
+}
 
 Value native_socket_get_local_ip(int arg_count, Value* args) {
     char hostname[256];
@@ -137,6 +146,8 @@ Value native_socket_recv(int arg_count, Value* args) {
     Value res = (Value){VAL_STRING, {.string = buffer}};
     return res;
 }
+
+
 
 Value native_socket_listen(int arg_count, Value* args) {
     if (arg_count < 2) return (Value){VAL_NUMBER, {.number = -1}};
