@@ -13,6 +13,38 @@
         } \
     } while (0)
 
+char* net_resolve_host(const char* host) {
+    struct hostent *he;
+    struct in_addr **addr_list;
+
+    if ((he = gethostbyname(host)) == NULL) {
+        return NULL;
+    }
+
+    addr_list = (struct in_addr **)he->h_addr_list;
+    if (addr_list[0] != NULL) {
+        return inet_ntoa(*addr_list[0]);
+    }
+
+    return NULL;
+}
+
+Value native_socket_resolve(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char* host = args[0].as.string;
+    char* ip = net_resolve_host(host);
+
+    if (ip == NULL) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    char* res_str = strdup(ip);
+    return (Value){VAL_STRING, {.string = res_str}};
+}
+
 Value native_socket_create(int arg_count, Value* args) {
     if (arg_count < 2) return (Value){VAL_NIL, {0}};
     
@@ -34,6 +66,38 @@ Value native_socket_bind(int arg_count, Value* args) {
     }
     
     return (Value){VAL_NUMBER, {.number = (double)result}};
+}
+
+
+Value native_socket_send(int arg_count, Value* args) {
+    if (arg_count < 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_STRING) 
+        return (Value){VAL_NUMBER, {.number = -1}};
+
+    socket_t s = (socket_t)args[0].as.number;
+    const char* data = args[1].as.string;
+    
+    int sent = send(s, data, (int)strlen(data), 0);
+    return (Value){VAL_NUMBER, {.number = (double)sent}};
+}
+
+Value native_socket_recv(int arg_count, Value* args) {
+    if (arg_count < 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_NUMBER)
+        return (Value){VAL_NIL, {0}};
+
+    socket_t s = (socket_t)args[0].as.number;
+    int buffer_size = (int)args[1].as.number;
+    
+    char* buffer = malloc(buffer_size + 1);
+    int bytes_received = recv(s, buffer, buffer_size, 0);
+
+    if (bytes_received <= 0) {
+        free(buffer);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    buffer[bytes_received] = '\0';
+    Value res = (Value){VAL_STRING, {.string = buffer}};
+    return res;
 }
 
 Value native_socket_listen(int arg_count, Value* args) {
@@ -64,4 +128,7 @@ void register_socket_natives(Env* env) {
     SOCKET_REGISTER(env, "socket_bind", native_socket_bind);
     SOCKET_REGISTER(env, "socket_listen", native_socket_listen);
     SOCKET_REGISTER(env, "socket_close", native_socket_close);
+    SOCKET_REGISTER(env, "socket_send", native_socket_send);
+    SOCKET_REGISTER(env, "socket_recv", native_socket_recv);
+    SOCKET_REGISTER(env, "socket_resolve", native_socket_resolve);
 }
