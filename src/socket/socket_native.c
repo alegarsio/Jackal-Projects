@@ -29,6 +29,13 @@ char* net_resolve_host(const char* host) {
     return NULL;
 }
 
+Value native_net_htons(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NUMBER, {.number = 0}};
+    
+    uint16_t port = (uint16_t)args[0].as.number;
+    return (Value){VAL_NUMBER, {.number = (double)htons(port)}};
+}
+
 Value native_socket_get_local_ip(int arg_count, Value* args) {
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) == -1) {
@@ -161,5 +168,6 @@ void register_socket_natives(Env* env) {
     SOCKET_REGISTER(env, "socket_recv", native_socket_recv);
     SOCKET_REGISTER(env, "socket_resolve", native_socket_resolve);
     SOCKET_REGISTER(env, "socket_connect", native_socket_connect);
+    SOCKET_REGISTER(env, "__net_htons", native_net_htons);
     SOCKET_REGISTER(env, "socket_get_local_ip", native_socket_get_local_ip);
 }
