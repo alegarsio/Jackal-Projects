@@ -33,6 +33,23 @@ class BasicSocket {
         return this.fd;
     }
 
+    func send(target_fd, data) {
+        return socket_send(target_fd, data);
+    }
+    
+    func resolve(host : String) -> String{
+        return socket_resolve(host) or "Error";
+    }
+
+
+
+    func receive(target_fd, size) {
+        if (size == nil) {
+            return socket_recv(target_fd, 4096);
+        }
+        return socket_recv(target_fd, size);
+    }
+
     func close() {
         if (this.fd != -1) {
             socket_close(this.fd); 
