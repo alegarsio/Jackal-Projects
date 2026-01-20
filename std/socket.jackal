@@ -1,3 +1,15 @@
 import std.network.Socket
+import std.network.Inet
 
-class Socket : BasicSocket {}
+@final
+const AF_INET = 2
+@final
+const SOCK_STREAM = 1
+@final 
+const SOCK_DGRAM = 2
+@final
+const LOCAL = "localhost"
+
+class Socket : BasicSocket {
+    func gethostname() -> String = socket_get_local_ip() != nil or LOCAL
+}
