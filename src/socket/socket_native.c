@@ -36,6 +36,17 @@ Value native_net_htons(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = (double)htons(port)}};
 }
 
+Value native_net_aton(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL, {0}};
+    
+    const char* ip_str = args[0].as.string;
+    struct in_addr addr;
+    
+    if (inet_aton(ip_str, &addr) == 0) return (Value){VAL_NIL, {0}};
+    
+    return (Value){VAL_NUMBER, {.number = (double)addr.s_addr}};
+}
+
 Value native_socket_get_local_ip(int arg_count, Value* args) {
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) == -1) {
@@ -169,5 +180,6 @@ void register_socket_natives(Env* env) {
     SOCKET_REGISTER(env, "socket_resolve", native_socket_resolve);
     SOCKET_REGISTER(env, "socket_connect", native_socket_connect);
     SOCKET_REGISTER(env, "__net_htons", native_net_htons);
+    SOCKET_REGISTER(env, "__net_aton", native_net_aton);
     SOCKET_REGISTER(env, "socket_get_local_ip", native_socket_get_local_ip);
 }
