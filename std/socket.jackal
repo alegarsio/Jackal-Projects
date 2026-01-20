@@ -12,6 +12,6 @@ const LOCAL = "localhost"
 
 class Socket : BasicSocket {
     func gethostname() -> String = socket_get_local_ip() != nil or LOCAL
-    
-    func gethostbyname(host : String) -> String = socket_resolve(host) or throw "Can not connect" 
+    func gethostbyname(host : String) -> String = socket_resolve(host) or throw "Error "
 }
+class Inet : BasicInet{}
