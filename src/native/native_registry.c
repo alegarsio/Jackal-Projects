@@ -1,6 +1,6 @@
 #include "native/native_registry.h"
 #include "socket/socket_native.h"
-
+#include "String/string_native.h"
 /**
  * Register DEFAULT is now DEPRECATED
  */
@@ -116,4 +116,5 @@ void register_all_natives(Env* env) {
     SAFE_REGISTER(env, "File", builtin_file_open);
 
     register_socket_natives(env);
+    register_string_natives(env);
 }
