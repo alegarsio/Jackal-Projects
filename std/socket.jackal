@@ -1,18 +1,22 @@
 import std.network.Socket
-@final
+import std.network.err 
+
 const AF_INET = 2
-@final
 const SOCK_STREAM = 1
-@final 
 const SOCK_DGRAM = 2
-@final
 const LOCAL = "localhost"
 
+const FormatException = FormatInvalidException()
+const ConnectionException = ConnectionError()
+
+@final
 class Socket : BasicSocket {
-    func gethostname() -> String = socket_get_local_ip() != nil or LOCAL
-    func gethostbyname(host : String) -> String = socket_resolve(host) or throw "Error "
-    func htons(port : Number) -> Int = __net_htons(port) 
-    func aton(host : String) -> Int = __net_aton(host)
-    func ntoa(host : String) -> String = __net_ntoa(host)
+    func gethostname() -> String = socket_get_local_ip() != nil or LOCAL 
+    func gethostbyname(host : String) -> String = socket_resolve(host) or throw ConnectionException.NetworkConnectionError
+    func htons(port : Int) -> Int = __net_htons(port) or throw FormatException.InvalidPortFormat
+    func aton(host : String) -> Int = __net_aton(host) or throw FormatException.InvalidAddressFormat
+    func ntoa(host : String) -> String = __net_ntoa(host) or throw FormatException.InvalidBinary
+
 }
+
 
