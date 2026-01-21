@@ -102,11 +102,53 @@ Value native_string_contains(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = 0}};
 }
 
+Value native_string_replace(int arg_count, Value* args) {
+    if (arg_count < 3 || args[0].type != VAL_STRING || 
+        args[1].type != VAL_STRING || args[2].type != VAL_STRING) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char* str = args[0].as.string;
+    const char* old_sub = args[1].as.string;
+    const char* new_sub = args[2].as.string;
+
+    if (strlen(old_sub) == 0) return (Value){VAL_STRING, {.string = strdup(str)}};
+
+    char *result;
+    int i, count = 0;
+    size_t new_len = strlen(new_sub);
+    size_t old_len = strlen(old_sub);
+
+    for (i = 0; str[i] != '\0'; i++) {
+        if (strstr(&str[i], old_sub) == &str[i]) {
+            count++;
+            i += old_len - 1;
+        }
+    }
+
+    result = (char *)malloc(i + count * (new_len - old_len) + 1);
+    if (result == NULL) return (Value){VAL_NIL, {0}};
+
+    i = 0;
+    while (*str) {
+        if (strstr(str, old_sub) == str) {
+            strcpy(&result[i], new_sub);
+            i += new_len;
+            str += old_len;
+        } else {
+            result[i++] = *str++;
+        }
+    }
+    result[i] = '\0';
+
+    return (Value){VAL_STRING, {.string = result}};
+}
 void register_string_natives(Env* env) {
     STRING_REGISTER(env, "__str_toUpper", native_string_uppercase);
     STRING_REGISTER(env, "__str_toLower", native_string_lowercase);
     STRING_REGISTER(env, "__str_startsWith", native_string_startswith);
     STRING_REGISTER(env, "__str_endsWith", native_string_endswith);
     STRING_REGISTER(env, "__str_contains", native_string_contains);
+    STRING_REGISTER(env, "__str_replace", native_string_replace);
     
 }
