@@ -88,10 +88,25 @@ Value native_string_endswith(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = 0}};
 }
 
+Value native_string_contains(int arg_count, Value* args) {
+    if (arg_count < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
+        return (Value){VAL_NUMBER, {.number = 0}};
+    }
+
+    const char* str = args[0].as.string;
+    const char* needle = args[1].as.string;
+
+    if (strstr(str, needle) != NULL) {
+        return (Value){VAL_NUMBER, {.number = 1}};
+    }
+    return (Value){VAL_NUMBER, {.number = 0}};
+}
+
 void register_string_natives(Env* env) {
     STRING_REGISTER(env, "__str_toUpper", native_string_uppercase);
     STRING_REGISTER(env, "__str_toLower", native_string_lowercase);
     STRING_REGISTER(env, "__str_startsWith", native_string_startswith);
     STRING_REGISTER(env, "__str_endsWith", native_string_endswith);
+    STRING_REGISTER(env, "__str_contains", native_string_contains);
     
 }
