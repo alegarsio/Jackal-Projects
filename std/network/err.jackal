@@ -1,0 +1,11 @@
+@final
+class FormatInvalidException{
+    const InvalidPortFormat = "Invalid Port Format"
+    const InvalidAddressFormat = "Invalid Ip Address Format"
+    const InvalidBinary = "Invalid Binary Format"
+}
+
+@final
+class ConnectionError{
+    const NetworkConnectionError = "Couldn't connect to the network"
+}
