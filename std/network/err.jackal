@@ -9,3 +9,13 @@ class FormatInvalidException{
 class ConnectionError{
     const NetworkConnectionError = "Couldn't connect to the network"
 }
+
+@final 
+class HostError{
+    const HostNotFound = "Host not found"
+}
+
+@final
+class SocketStateError{
+    const SocketNotConnected = "Socket is not connected"
+}
