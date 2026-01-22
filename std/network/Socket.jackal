@@ -1,12 +1,11 @@
 class BasicSocket {
 
-    init(proto,sock_type) {
+    init() {
         this.fd = -1;
-        this.proto = proto
-        this.sock_type = sock_type
+        this.proto = AF_INET 
+        this.sock_type = SOCK_STREAM
     }
 
-    
 
     func listen(host: String, port : Number) -> Int {
         if (this.fd != -1) {
@@ -53,7 +52,6 @@ class BasicSocket {
     func send(target_fd, data) {
         return socket_send(target_fd, data);
     }
-    
 
  
     func receive(target_fd, size) {
