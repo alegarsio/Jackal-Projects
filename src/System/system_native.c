@@ -3,6 +3,12 @@
 #include <string.h>
 #include <errno.h>
 
+#define UNKNOWN 0
+#define WINDOWS 1
+#define MACOS   2
+#define LINUX   3
+#define UNIX    4
+
 #define SYS_REGISTER(env, name, func) \
     do { \
         if (func != NULL) { \
@@ -31,6 +37,19 @@ Value native_system_platform(int arg_count, Value* args) {
     #endif
 }
 
+Value native_system_platform_id(int arg_count, Value* args) {
+    #ifdef _WIN32
+        return (Value){VAL_NUMBER, {.number = WINDOWS}};
+    #elif __APPLE__
+        return (Value){VAL_NUMBER, {.number = MACOS}};
+    #elif __linux__
+        return (Value){VAL_NUMBER, {.number = LINUX}};
+    #elif __unix__
+        return (Value){VAL_NUMBER, {.number = UNIX}};
+    #else
+        return (Value){VAL_NUMBER, {.number = UNKNOWN}};
+    #endif
+}
 Value native_system_exec(int arg_count, Value* args) {
     if (arg_count < 1 || args[0].type != VAL_STRING) {
         return (Value){VAL_NUMBER, {.number = -1}};
@@ -42,6 +61,12 @@ Value native_system_exec(int arg_count, Value* args) {
 
 
 void register_sys_natives(Env* env){
+
+    set_var(env, "WINDOWS", (Value){VAL_NUMBER, {.number = WINDOWS}}, true, "");
+    set_var(env, "MACOS",   (Value){VAL_NUMBER, {.number = MACOS}}, true, "");
+    set_var(env, "LINUX",   (Value){VAL_NUMBER, {.number = LINUX}}, true, "");
+    set_var(env, "UNIX",    (Value){VAL_NUMBER, {.number = UNIX}}, true, "");
+
     SYS_REGISTER(env,"__sys_run",native_system_exec);
     SYS_REGISTER(env,"__sys_platform",native_system_platform);
 }
