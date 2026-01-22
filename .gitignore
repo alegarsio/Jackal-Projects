@@ -14,18 +14,18 @@ Thumbs.db
 .codeviz/
 .hello.dSYM/
 
-
-# Local test/script files (Ignored)
+da
 math.jackal
 hello.jackal
 test.jackal
 server.py
 temp.jackal
 index.html
+math.jackal
 
 *.jl
 *.jlo
-/.jackal
+
 
 # VM and Compiler Source/Headers
 include/vm/
@@ -33,6 +33,6 @@ include/compiler/
 src/vm/
 src/compiler/
 
-std/
+
 *.py
 *.cpp
