@@ -4,6 +4,12 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef _WIN32
+    #include <winsock2.h>
+#else
+    #include <sys/time.h>
+#endif
+
 #define SOCKET_REGISTER(env, name, func) \
     do { \
         if (func != NULL) { \
@@ -175,6 +181,28 @@ Value native_socket_connect(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = (double)res}};
 }
 
+Value native_socket_set_timeout(int arg_count, Value* args) {
+    if (arg_count < 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_NUMBER) {
+        return (Value){VAL_NUMBER, {.number = -1}};
+    }
+
+    socket_t s = (socket_t)args[0].as.number;
+    int ms = (int)args[1].as.number;
+
+#ifdef _WIN32
+    DWORD timeout = ms;
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+    int res = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
+#else
+    struct timeval tv;
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = (ms % 1000) * 1000;
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    int res = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+#endif
+    return (Value){VAL_NUMBER, {.number = (double)res}};
+}
+
 void register_socket_natives(Env* env) {
 
     set_var(env, "AF_INET", (Value){VAL_NUMBER, {.number = 2}}, true, "");
@@ -194,4 +222,5 @@ void register_socket_natives(Env* env) {
     SOCKET_REGISTER(env, "__net_aton", native_net_aton);
     SOCKET_REGISTER(env, "__net_ntoa", native_net_ntoa);
     SOCKET_REGISTER(env, "socket_get_local_ip", native_socket_get_local_ip);
+    SOCKET_REGISTER(env, "socket_set_timeout", native_socket_set_timeout);
 }
