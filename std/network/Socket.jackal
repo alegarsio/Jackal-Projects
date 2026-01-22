@@ -1,70 +1,62 @@
+import std.network.err 
+
 class BasicSocket {
 
-    init() {
+    init(host, port) {
         this.fd = -1;
-        this.proto = AF_INET 
-        this.sock_type = SOCK_STREAM
+        this.proto = AF_INET;
+        this.sock_type = SOCK_STREAM;
+        this.host = host;
+        this.port = port;
     }
 
-
-    func listen(host: String, port : Number) -> Int {
-        if (this.fd != -1) {
-            return this.fd;
-        }
-
-        let s = socket_create(this.proto, this.sock_type);
-
-        if (s == -1) {
-            return -1;
-        }
-
-        let b = socket_bind(s, host, port);
-        if (b == -1) {
-            socket_close(s);
-            return -1;
-        }
-
-        let l = socket_listen(s, 5);
-        if (l == -1) {
-            socket_close(s);
-            return -1;
-        }
-
-        this.fd = s;
-        return this.fd;
-    }
-
-    func connect(host : String , port : Int) {
+    func connect() {
         if (this.fd == -1) {
             this.fd = socket_create(this.proto, this.sock_type);
         }
         
-        let target_ip = socket_resolve(host)
-        
+        let target_ip = socket_resolve(this.host);
         
         if (target_ip == nil) {
-            return -1;
+            throw HostError().HostNotFound
+            return this; 
         }
-        return socket_connect(this.fd, target_ip, port);
-    }
-    
 
-    func send(target_fd, data) {
-        return socket_send(target_fd, data);
-    }
-
- 
-    func receive(target_fd, size) {
-        if (size == nil) {
-            return socket_recv(target_fd, 4096);
+        let res = socket_connect(this.fd, target_ip, this.port);
+        if (res == -1) {
+           throw ConnectionError().NetworkConnectionError
         }
-        return socket_recv(target_fd, size);
+
+        return this; 
+    }
+
+    func send(data) {
+        if (this.fd != -1) {
+            socket_send(this.fd, data);
+        }
+        return this; 
+    }
+
+    func listen() {
+        if (this.fd == -1) {
+            this.fd = socket_create(this.proto, this.sock_type);
+        }
+
+        if (socket_bind(this.fd, this.host, this.port) == -1) {
+            socket_close(this.fd);
+            this.fd = -1;
+            return this;
+        }
+
+        socket_listen(this.fd, 5);
+        return this;
     }
 
     func close() {
         if (this.fd != -1) {
-            socket_close(this.fd); 
+            socket_close(this.fd);
             this.fd = -1;
         }
+        return this;
     }
 }
