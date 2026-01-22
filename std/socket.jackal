@@ -1,5 +1,6 @@
 import std.network.Socket
 import std.network.err 
+import std.network.Inet
 
 const AF_INET = 2
 const SOCK_STREAM = 1
@@ -8,15 +9,32 @@ const LOCAL = "localhost"
 
 const FormatException = FormatInvalidException()
 const ConnectionException = ConnectionError()
+const StateError = SocketStateError()
 
 @final
-class Socket : BasicSocket {
+class Tcp : BasicSocket, Inet {
+
     func gethostname() -> String = socket_get_local_ip() != nil or LOCAL 
-    func gethostbyname(host : String) -> String = socket_resolve(host) or throw ConnectionException.NetworkConnectionError
-    func htons(port : Int) -> Int = __net_htons(port) or throw FormatException.InvalidPortFormat
-    func aton(host : String) -> Int = __net_aton(host) or throw FormatException.InvalidAddressFormat
-    func ntoa(host : String) -> String = __net_ntoa(host) or throw FormatException.InvalidBinary
+    func gethostbyname() -> String = socket_resolve(this.host) or throw ConnectionException.NetworkConnectionError
+
+    @override
+    func htons() -> Int = __net_htons(this.port) or throw FormatException.InvalidPortFormat
+    @override
+    func aton() -> Int = __net_aton(this.host) or throw FormatException.InvalidAddressFormat
+    @override
+    func ntoa() -> String = __net_ntoa(this.host) or throw FormatException.InvalidBinary
+
+    func connected() -> Boolean = this.fd != -1 or throw ConnectionException.NetworkConnectionError
+
+    func setTimeout(ms : Number) -> Int = socket_set_timeout(this.fd, ms) != -1 or throw StateError.SocketNotConnected
+    func receive(size) {
+        if (this.fd == -1) return nil
+
+        if (size == nil) {
+            return socket_recv(this.fd, 4096);
+        }
+        return socket_recv(this.fd, size);
+    }
+
 
 }
-
-
