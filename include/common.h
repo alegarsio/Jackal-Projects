@@ -304,7 +304,8 @@ typedef enum {
     VAL_STRUCT_DEF,     
     VAL_STRUCT_INSTANCE ,
     VAL_NAMESPACE,
-    VAL_BOOL
+    VAL_BOOL,
+    VAL_BYTE 
 } ValueType;
 
 typedef struct GCObject {
@@ -320,6 +321,7 @@ typedef struct Value {
     ValueType type;
     union {
         bool boolean;
+        unsigned char byte;
         double number;
         char* string;
         Func* function;
