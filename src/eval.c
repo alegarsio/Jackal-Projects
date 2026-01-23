@@ -104,15 +104,10 @@ const char *get_value_type_name(Value val)
     {
     case VAL_NIL:
         return "None";
+    case VAL_BYTE:
+        return "Byte";
     case VAL_NUMBER:
-        if (is_integer_value(val))
-        {
-            return "Int";
-        }
-        else
-        {
-            return "Float";
-        }
+        return is_integer_value(val) ? "Int" : "Float";
     case VAL_BOOL:
         return "Boolean";
     case VAL_STRING:
