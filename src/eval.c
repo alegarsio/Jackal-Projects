@@ -113,6 +113,8 @@ const char *get_value_type_name(Value val)
         {
             return "Float";
         }
+    case VAL_BOOL:
+        return "Boolean";
     case VAL_STRING:
         return "String";
     case VAL_ARRAY:
@@ -422,6 +424,9 @@ Value eval_node(Env *env, Node *n)
 
     switch (n->kind)
     {
+
+    case NODE_BOOL:
+        return (Value){VAL_BOOL, {.boolean = (n->value != 0.0)}};
 
     case NODE_FUNC_EXPR:
     {
@@ -1257,53 +1262,58 @@ Value eval_node(Env *env, Node *n)
         case TOKEN_GREATER:
             if (is_number(left, right))
             {
-                return (Value){VAL_NUMBER, {.number = (left.as.number > right.as.number) ? 1.0 : 0.0}};
+                return (Value){VAL_BOOL, {.boolean = left.as.number > right.as.number}};
             }
             if (is_string(left, right))
             {
-                return (Value){VAL_NUMBER, {.number = (strcmp(left.as.string, right.as.string) > 0) ? 1.0 : 0.0}};
+                return (Value){VAL_BOOL, {.boolean = strcmp(left.as.string, right.as.string) > 0}};
             }
             print_error("Operands must be numbers or strings for '>'.");
             break;
+
         case TOKEN_GREATER_EQUAL:
             if (is_number(left, right))
             {
-                return (Value){VAL_NUMBER, {.number = (left.as.number >= right.as.number) ? 1.0 : 0.0}};
+                return (Value){VAL_BOOL, {.boolean = left.as.number >= right.as.number}};
             }
             print_error("Operands must be numbers for '>='.");
             break;
+
         case TOKEN_LESS:
             if (is_number(left, right))
             {
-                return (Value){VAL_NUMBER, {.number = (left.as.number < right.as.number) ? 1.0 : 0.0}};
+                return (Value){VAL_BOOL, {.boolean = left.as.number < right.as.number}};
             }
             if (is_string(left, right))
             {
-                return (Value){VAL_NUMBER, {.number = (strcmp(left.as.string, right.as.string) < 0) ? 1.0 : 0.0}};
+                return (Value){VAL_BOOL, {.boolean = strcmp(left.as.string, right.as.string) < 0}};
             }
             print_error("Operands must be numbers or strings for '<'.");
             break;
+
         case TOKEN_LESS_EQUAL:
             if (is_number(left, right))
             {
-                return (Value){VAL_NUMBER, {.number = (left.as.number <= right.as.number) ? 1.0 : 0.0}};
+                return (Value){VAL_BOOL, {.boolean = left.as.number <= right.as.number}};
             }
             print_error("Operands must be numbers for '<='.");
             break;
+
         case TOKEN_EQUAL_EQUAL:
         {
-            Value result = eval_equals(left, right);
+            Value eq = eval_equals(left, right);
             free_value(left);
             free_value(right);
-            return result;
+            return (Value){VAL_BOOL, {.boolean = is_value_truthy(eq)}};
         }
+
         case TOKEN_BANG_EQUAL:
         {
-            Value result = eval_equals(left, right);
-            result.as.number = (result.as.number == 0.0) ? 1.0 : 0.0;
+            Value eq = eval_equals(left, right);
+            bool is_not_equal = !is_value_truthy(eq);
             free_value(left);
             free_value(right);
-            return result;
+            return (Value){VAL_BOOL, {.boolean = is_not_equal}};
         }
         default:
             print_error("Unknown binary operator.");
