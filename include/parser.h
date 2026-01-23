@@ -67,7 +67,8 @@ typedef enum {
     NODE_WITH,
     NODE_NAMESPACES,
     NODE_USING,
-    NODE_EXTENSION
+    NODE_EXTENSION,
+    NODE_BOOL 
 } NodeKind;
 
 /**
@@ -98,6 +99,7 @@ typedef struct Node {
     bool is_static;
     bool is_final;
     bool is_macro;
+
     
     char* deprecated_message;
 
@@ -109,6 +111,7 @@ typedef struct Node {
     int arity;
     char return_type[64];
     bool is_async;
+    
     
 } Node;
 
