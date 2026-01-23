@@ -25,8 +25,8 @@ class Tcp : BasicSocket, Inet {
     func ntoa() -> String = __net_ntoa(this.host) or throw FormatException.InvalidBinary
 
     func connected() -> Boolean = this.fd != -1 or throw ConnectionException.NetworkConnectionError
-
     func setTimeout(ms : Number) -> Int = socket_set_timeout(this.fd, ms) != -1 or throw StateError.SocketNotConnected
+
     func receive(size) {
         if (this.fd == -1) return nil
 
