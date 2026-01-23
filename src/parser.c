@@ -337,7 +337,7 @@ static Node *parse_primary(Parser *P)
     if (P->current.kind == TOKEN_TRUE)
     {
         next(P);
-        Node *n = new_node(NODE_NUMBER);
+        Node *n = new_node(NODE_BOOL);
         n->value = 1.0;
         return n;
     }
@@ -349,7 +349,7 @@ static Node *parse_primary(Parser *P)
     if (P->current.kind == TOKEN_FALSE)
     {
         next(P);
-        Node *n = new_node(NODE_NUMBER);
+        Node *n = new_node(NODE_BOOL);
         n->value = 0.0;
         return n;
     }
