@@ -132,6 +132,10 @@ void print_value(Value value)
     switch (value.type)
     {
 
+    case VAL_BOOL: 
+        printf(value.as.boolean ? "true" : "false");
+    break;
+
     case VAL_NATIVE:
         printf("<native fn>");
         break;
@@ -298,6 +302,8 @@ bool is_value_truthy(Value value)
 {
     switch (value.type)
     {
+    case VAL_BOOL: 
+        return value.as.boolean;
     case VAL_NIL:
         return false;
     case VAL_NUMBER:
