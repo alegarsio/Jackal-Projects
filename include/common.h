@@ -1,4 +1,3 @@
-
 /**
  * (c) Alegrarsio gifta Lesmana
  */
@@ -274,7 +273,10 @@ struct Interface {
 typedef struct {
     struct Value* class_val;
     struct Env* fields;
-    char template_type[64];
+    struct {
+        char names[10][64]; // Maksimal 10 parameter generic (K, V, T, dst)
+        int count;
+    } templates;
 } Instance;
 
 /**
@@ -301,7 +303,8 @@ typedef enum {
     VAL_SOCKET,
     VAL_STRUCT_DEF,     
     VAL_STRUCT_INSTANCE ,
-    VAL_NAMESPACE
+    VAL_NAMESPACE,
+    VAL_BOOL
 } ValueType;
 
 typedef struct GCObject {
@@ -316,6 +319,7 @@ typedef struct GCObject {
 typedef struct Value {
     ValueType type;
     union {
+        bool boolean;
         double number;
         char* string;
         Func* function;
