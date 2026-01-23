@@ -20,12 +20,12 @@
 #include <float.h>
 
 #if defined(__linux__) || (__APPLE__)
-    #include <sys/socket.h>
-    #include <sys/types.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <unistd.h>
-# endif
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#endif
 typedef struct
 {
     CURLcode result_code;
@@ -49,23 +49,28 @@ ValueArray *array_new(void)
     arr->count = 0;
     arr->values = malloc(sizeof(Value) * arr->capacity);
     arr->element_type[0] = '\0';
-    
-    for (int i = 0; i < arr->capacity; i++) {
+
+    for (int i = 0; i < arr->capacity; i++)
+    {
         arr->values[i].gc_info = NULL;
     }
 
     return arr;
 }
 
-ValueArray* get_minor(ValueArray* matrix, int col_to_remove) {
-    ValueArray* minor = array_new();
+ValueArray *get_minor(ValueArray *matrix, int col_to_remove)
+{
+    ValueArray *minor = array_new();
     int n = matrix->count;
 
-    for (int i = 1; i < n; i++) {
-        ValueArray* row = matrix->values[i].as.array;
-        ValueArray* new_row = array_new();
-        for (int j = 0; j < n; j++) {
-            if (j == col_to_remove) continue;
+    for (int i = 1; i < n; i++)
+    {
+        ValueArray *row = matrix->values[i].as.array;
+        ValueArray *new_row = array_new();
+        for (int j = 0; j < n; j++)
+        {
+            if (j == col_to_remove)
+                continue;
             array_append(new_row, row->values[j]);
         }
         array_append(minor, (Value){VAL_ARRAY, {.array = new_row}});
@@ -79,14 +84,19 @@ ValueArray* get_minor(ValueArray* matrix, int col_to_remove) {
  */
 void array_append(ValueArray *arr, Value val)
 {
-    if (arr->element_type[0] != '\0') {
-        const char* val_type = get_value_type_name(val);
-        if (strcmp(arr->element_type, "int") == 0 || strcmp(arr->element_type, "number") == 0) {
-            if (val.type != VAL_NUMBER) {
+    if (arr->element_type[0] != '\0')
+    {
+        const char *val_type = get_value_type_name(val);
+        if (strcmp(arr->element_type, "int") == 0 || strcmp(arr->element_type, "number") == 0)
+        {
+            if (val.type != VAL_NUMBER)
+            {
                 print_error("Type Mismatch: Array<%s> cannot accept %s", arr->element_type, val_type);
                 return;
             }
-        } else if (strcmp(arr->element_type, val_type) != 0) {
+        }
+        else if (strcmp(arr->element_type, val_type) != 0)
+        {
             print_error("Type Mismatch: Array<%s> cannot accept %s", arr->element_type, val_type);
             return;
         }
@@ -106,7 +116,8 @@ void array_append(ValueArray *arr, Value val)
  */
 void array_free(ValueArray *arr)
 {
-    if (arr == NULL) return;
+    if (arr == NULL)
+        return;
 
     for (int i = 0; i < arr->count; i++)
     {
@@ -118,10 +129,9 @@ void array_free(ValueArray *arr)
         free(arr->values);
         arr->values = NULL;
     }
-    
+
     arr->count = 0;
     arr->capacity = 0;
-
 }
 /**
  * Prints a Value to stdout.
@@ -132,9 +142,13 @@ void print_value(Value value)
     switch (value.type)
     {
 
-    case VAL_BOOL: 
+    case VAL_BOOL:
         printf(value.as.boolean ? "true" : "false");
-    break;
+        break;
+
+    case VAL_BYTE:
+        printf("0x%02X", value.as.byte);
+        break;
 
     case VAL_NATIVE:
         printf("<native fn>");
@@ -142,12 +156,15 @@ void print_value(Value value)
     case VAL_NIL:
 
         break;
-   case VAL_NUMBER:
+    case VAL_NUMBER:
     {
         double n = value.as.number;
-        if (n == (long long)n) {
+        if (n == (long long)n)
+        {
             printf("%lld", (long long)n);
-        } else {
+        }
+        else
+        {
             printf("%g", n);
         }
     }
@@ -302,7 +319,10 @@ bool is_value_truthy(Value value)
 {
     switch (value.type)
     {
-    case VAL_BOOL: 
+
+    case VAL_BYTE:
+        return value.as.byte != 0;
+    case VAL_BOOL:
         return value.as.boolean;
     case VAL_NIL:
         return false;
@@ -355,10 +375,15 @@ Value eval_equals(Value a, Value b)
     }
     else
     {
+        bool res = false;
         switch (a.type)
         {
+
         case VAL_NIL:
             result = 1.0;
+            break;
+        case VAL_BYTE:
+            res = (a.as.byte == b.as.byte);
             break;
         case VAL_FILE:
             return (Value){VAL_NUMBER, {.number = (a.as.file == b.as.file)}};
@@ -398,10 +423,13 @@ Value eval_equals(Value a, Value b)
     return (Value){VAL_NUMBER, {.number = result}};
 }
 
-Value builtin_writeline(int argCount, Value *args) {
-    for (int i = 0; i < argCount; i++) {
+Value builtin_writeline(int argCount, Value *args)
+{
+    for (int i = 0; i < argCount; i++)
+    {
         print_value(args[i]);
-        if (i < argCount - 1) {
+        if (i < argCount - 1)
+        {
             printf(" ");
         }
     }
@@ -410,10 +438,13 @@ Value builtin_writeline(int argCount, Value *args) {
     return (Value){VAL_NIL, {0}};
 }
 
-Value builtin_write(int argCount, Value *args) {
-    for (int i = 0; i < argCount; i++) {
+Value builtin_write(int argCount, Value *args)
+{
+    for (int i = 0; i < argCount; i++)
+    {
         print_value(args[i]);
-        if (i < argCount - 1) {
+        if (i < argCount - 1)
+        {
             printf(" ");
         }
     }
@@ -2026,26 +2057,30 @@ int compareNeighbors(const void *a, const void *b)
         return 1;
     return 0;
 }
-Value native_knn_nd(int arg_count, Value* args) {
+Value native_knn_nd(int arg_count, Value *args)
+{
 
-    if (arg_count != 4) return (Value){VAL_NIL};
+    if (arg_count != 4)
+        return (Value){VAL_NIL};
 
-    ValueArray* newPoint = args[0].as.array; 
-    ValueArray* history = args[1].as.array;   
-    ValueArray* labels = args[2].as.array;   
+    ValueArray *newPoint = args[0].as.array;
+    ValueArray *history = args[1].as.array;
+    ValueArray *labels = args[2].as.array;
     int k = (int)args[3].as.number;
 
     int n_history = history->count;
-    Neighbor* neighbors = malloc(sizeof(Neighbor) * n_history);
+    Neighbor *neighbors = malloc(sizeof(Neighbor) * n_history);
 
-    for (int i = 0; i < n_history; i++) {
-        ValueArray* refPoint = history->values[i].as.array;
+    for (int i = 0; i < n_history; i++)
+    {
+        ValueArray *refPoint = history->values[i].as.array;
         double sum_sq = 0;
 
-        for (int j = 0; j < newPoint->count; j++) {
+        for (int j = 0; j < newPoint->count; j++)
+        {
             double val1 = newPoint->values[j].as.number;
             double val2 = refPoint->values[j].as.number;
-            
+
             double diff = val1 - val2;
             sum_sq += diff * diff;
         }
@@ -2058,9 +2093,12 @@ Value native_knn_nd(int arg_count, Value* args) {
 
     int votes0 = 0;
     int votes1 = 0;
-    for (int i = 0; i < k && i < n_history; i++) {
-        if (neighbors[i].label == 0) votes0++;
-        else votes1++;
+    for (int i = 0; i < k && i < n_history; i++)
+    {
+        if (neighbors[i].label == 0)
+            votes0++;
+        else
+            votes1++;
     }
 
     free(neighbors);
@@ -2095,31 +2133,40 @@ Value native_accuracy(int arg_count, Value *args)
     return (Value){VAL_NUMBER, {.number = score}};
 }
 
-Value native_normalize_nd(int arg_count, Value* args) {
-    if (arg_count != 1 || args[0].type != VAL_ARRAY) return (Value){VAL_NIL};
+Value native_normalize_nd(int arg_count, Value *args)
+{
+    if (arg_count != 1 || args[0].type != VAL_ARRAY)
+        return (Value){VAL_NIL};
 
-    ValueArray* matrix = args[0].as.array;
+    ValueArray *matrix = args[0].as.array;
     int rows = matrix->count;
-    if (rows == 0) return (Value){VAL_NIL};
-    
+    if (rows == 0)
+        return (Value){VAL_NIL};
+
     int cols = matrix->values[0].as.array->count;
 
-    double* min_vals = malloc(sizeof(double) * cols);
-    double* max_vals = malloc(sizeof(double) * cols);
+    double *min_vals = malloc(sizeof(double) * cols);
+    double *max_vals = malloc(sizeof(double) * cols);
 
-    for (int j = 0; j < cols; j++) {
+    for (int j = 0; j < cols; j++)
+    {
         min_vals[j] = INFINITY;
         max_vals[j] = -INFINITY;
-        for (int i = 0; i < rows; i++) {
+        for (int i = 0; i < rows; i++)
+        {
             double val = matrix->values[i].as.array->values[j].as.number;
-            if (val < min_vals[j]) min_vals[j] = val;
-            if (val > max_vals[j]) max_vals[j] = val;
+            if (val < min_vals[j])
+                min_vals[j] = val;
+            if (val > max_vals[j])
+                max_vals[j] = val;
         }
     }
-    ValueArray* newMatrix = array_new();
-    for (int i = 0; i < rows; i++) {
-        ValueArray* newRow = array_new();
-        for (int j = 0; j < cols; j++) {
+    ValueArray *newMatrix = array_new();
+    for (int i = 0; i < rows; i++)
+    {
+        ValueArray *newRow = array_new();
+        for (int j = 0; j < cols; j++)
+        {
             double val = matrix->values[i].as.array->values[j].as.number;
             double norm_val = (max_vals[j] - min_vals[j] == 0) ? 0 : (val - min_vals[j]) / (max_vals[j] - min_vals[j]);
             array_append(newRow, (Value){VAL_NUMBER, {.number = norm_val}});
@@ -2209,55 +2256,65 @@ Value native_confusion_matrix(int arg_count, Value *args)
 
     return (Value){VAL_ARRAY, {.array = result}};
 }
-Value native_split(int arg_count, Value* args) {
-    if (arg_count != 2) return (Value){VAL_NIL};
+Value native_split(int arg_count, Value *args)
+{
+    if (arg_count != 2)
+        return (Value){VAL_NIL};
 
-    ValueArray* data = args[0].as.array;
+    ValueArray *data = args[0].as.array;
     double ratio = args[1].as.number;
 
     int totalCount = data->count;
     int trainLimit = (int)(totalCount * ratio);
-    
-    if (trainLimit == 0 && totalCount > 0 && ratio > 0) {
+
+    if (trainLimit == 0 && totalCount > 0 && ratio > 0)
+    {
         trainLimit = 1;
     }
 
-    ValueArray* trainArray = array_new();
-    ValueArray* testArray = array_new();
+    ValueArray *trainArray = array_new();
+    ValueArray *testArray = array_new();
 
-    for (int i = 0; i < totalCount; i++) {
-        if (i < trainLimit) {
+    for (int i = 0; i < totalCount; i++)
+    {
+        if (i < trainLimit)
+        {
             array_append(trainArray, data->values[i]);
-        } else {
+        }
+        else
+        {
             array_append(testArray, data->values[i]);
         }
     }
 
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
     array_append(result, (Value){VAL_ARRAY, {.array = trainArray}});
     array_append(result, (Value){VAL_ARRAY, {.array = testArray}});
 
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
+Value native_sync_shuffle(int arg_count, Value *args)
+{
 
-Value native_sync_shuffle(int arg_count, Value* args) {
-   
-    if (arg_count != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_ARRAY) {
+    if (arg_count != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_ARRAY)
+    {
         return (Value){VAL_NIL};
     }
 
-    ValueArray* data = args[0].as.array;
-    ValueArray* labels = args[1].as.array;
+    ValueArray *data = args[0].as.array;
+    ValueArray *labels = args[1].as.array;
 
-    if (data->count != labels->count) return (Value){VAL_NIL};
+    if (data->count != labels->count)
+        return (Value){VAL_NIL};
 
     int n = data->count;
-    srand(time(NULL)); 
+    srand(time(NULL));
 
-    for (int i = n - 1; i > 0; i--) {
+    for (int i = n - 1; i > 0; i--)
+    {
         int j = rand() % (i + 1);
-        
+
         Value tempData = data->values[i];
         data->values[i] = data->values[j];
         data->values[j] = tempData;
@@ -2267,50 +2324,57 @@ Value native_sync_shuffle(int arg_count, Value* args) {
         labels->values[j] = tempLabel;
     }
 
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
     array_append(result, (Value){VAL_ARRAY, {.array = data}});
     array_append(result, (Value){VAL_ARRAY, {.array = labels}});
 
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_zip(int arg_count, Value* args) {
-    if (arg_count != 2) return (Value){VAL_NIL};
-    if (args[0].type != VAL_ARRAY || args[1].type != VAL_ARRAY) {
+Value native_zip(int arg_count, Value *args)
+{
+    if (arg_count != 2)
+        return (Value){VAL_NIL};
+    if (args[0].type != VAL_ARRAY || args[1].type != VAL_ARRAY)
+    {
         printf("Runtime Error: zip() expects two arrays.\n");
         return (Value){VAL_NIL};
     }
 
-    ValueArray* arr1 = args[0].as.array;
-    ValueArray* arr2 = args[1].as.array;
+    ValueArray *arr1 = args[0].as.array;
+    ValueArray *arr2 = args[1].as.array;
 
-   
     int length = (arr1->count < arr2->count) ? arr1->count : arr2->count;
 
-    ValueArray* result = array_new();
-    for (int i = 0; i < length; i++) {
-        ValueArray* pair = array_new();
+    ValueArray *result = array_new();
+    for (int i = 0; i < length; i++)
+    {
+        ValueArray *pair = array_new();
         array_append(pair, arr1->values[i]);
         array_append(pair, arr2->values[i]);
-        
+
         array_append(result, (Value){VAL_ARRAY, {.array = pair}});
     }
 
     return (Value){VAL_ARRAY, {.array = result}};
 }
-Value native_logistic_predict(int arg_count, Value* args) {
-    if (arg_count != 2) return (Value){VAL_NIL};
+Value native_logistic_predict(int arg_count, Value *args)
+{
+    if (arg_count != 2)
+        return (Value){VAL_NIL};
 
-    ValueArray* newPoint = args[0].as.array;
-    ValueArray* model = args[1].as.array;
+    ValueArray *newPoint = args[0].as.array;
+    ValueArray *model = args[1].as.array;
 
-    ValueArray* weights = model->values[0].as.array;
+    ValueArray *weights = model->values[0].as.array;
     double bias = model->values[1].as.number;
 
-    if (newPoint->count != weights->count) return (Value){VAL_NIL};
+    if (newPoint->count != weights->count)
+        return (Value){VAL_NIL};
 
     double z = bias;
-    for (int j = 0; j < newPoint->count; j++) {
+    for (int j = 0; j < newPoint->count; j++)
+    {
         z += newPoint->values[j].as.number * weights->values[j].as.number;
     }
 
@@ -2320,69 +2384,82 @@ Value native_logistic_predict(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = result}};
 }
 
-Value native_logistic_fit(int arg_count, Value* args) {
-    if (arg_count != 4) return (Value){VAL_NIL};
+Value native_logistic_fit(int arg_count, Value *args)
+{
+    if (arg_count != 4)
+        return (Value){VAL_NIL};
 
-    ValueArray* data = args[0].as.array;    
-    ValueArray* labels = args[1].as.array;  
-    double lr = args[2].as.number;          
+    ValueArray *data = args[0].as.array;
+    ValueArray *labels = args[1].as.array;
+    double lr = args[2].as.number;
     int iterations = (int)args[3].as.number;
 
     int n_samples = data->count;
     int n_features = data->values[0].as.array->count;
 
-    double* weights = malloc(sizeof(double) * n_features);
-    for(int f = 0; f < n_features; f++) weights[f] = 0.0;
+    double *weights = malloc(sizeof(double) * n_features);
+    for (int f = 0; f < n_features; f++)
+        weights[f] = 0.0;
     double bias = 0.0;
 
-    for (int iter = 0; iter < iterations; iter++) {
-        double* dW_sum = malloc(sizeof(double) * n_features);
-        for(int f = 0; f < n_features; f++) dW_sum[f] = 0.0;
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        double *dW_sum = malloc(sizeof(double) * n_features);
+        for (int f = 0; f < n_features; f++)
+            dW_sum[f] = 0.0;
         double dB_sum = 0.0;
 
-        for (int i = 0; i < n_samples; i++) {
-            ValueArray* row = data->values[i].as.array;
+        for (int i = 0; i < n_samples; i++)
+        {
+            ValueArray *row = data->values[i].as.array;
             double y_true = labels->values[i].as.number;
 
             double z = bias;
-            for (int j = 0; j < n_features; j++) {
+            for (int j = 0; j < n_features; j++)
+            {
                 z += row->values[j].as.number * weights[j];
             }
 
             double y_pred;
-            if (z >= 0) {
+            if (z >= 0)
+            {
                 y_pred = 1.0 / (1.0 + exp(-z));
-            } else {
+            }
+            else
+            {
                 double ez = exp(z);
                 y_pred = ez / (1.0 + ez);
             }
 
             double error = y_pred - y_true;
 
-            for (int j = 0; j < n_features; j++) {
+            for (int j = 0; j < n_features; j++)
+            {
                 dW_sum[j] += error * row->values[j].as.number;
             }
             dB_sum += error;
         }
 
-        for (int j = 0; j < n_features; j++) {
+        for (int j = 0; j < n_features; j++)
+        {
             weights[j] -= lr * (dW_sum[j] / n_samples);
         }
         bias -= lr * (dB_sum / n_samples);
-        
+
         free(dW_sum);
     }
 
-    ValueArray* final_weights = array_new();
-    for (int j = 0; j < n_features; j++) {
+    ValueArray *final_weights = array_new();
+    for (int j = 0; j < n_features; j++)
+    {
         Value w_val = {VAL_NUMBER, {.number = weights[j]}};
         array_append(final_weights, w_val);
     }
 
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
     Value weights_wrap = {VAL_ARRAY, {.array = final_weights}};
     array_append(result, weights_wrap);
-    
+
     Value bias_wrap = {VAL_NUMBER, {.number = bias}};
     array_append(result, bias_wrap);
 
@@ -2390,68 +2467,87 @@ Value native_logistic_fit(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_nb_fit(int arg_count, Value* args) {
-    ValueArray* data = args[0].as.array;
-    ValueArray* labels = args[1].as.array;
+Value native_nb_fit(int arg_count, Value *args)
+{
+    ValueArray *data = args[0].as.array;
+    ValueArray *labels = args[1].as.array;
 
     int n_samples = data->count;
     int n_features = data->values[0].as.array->count;
 
-    double* mean0 = malloc(sizeof(double) * n_features);
-    double* var0 = malloc(sizeof(double) * n_features);
-    double* mean1 = malloc(sizeof(double) * n_features);
-    double* var1 = malloc(sizeof(double) * n_features);
-    
+    double *mean0 = malloc(sizeof(double) * n_features);
+    double *var0 = malloc(sizeof(double) * n_features);
+    double *mean1 = malloc(sizeof(double) * n_features);
+    double *var1 = malloc(sizeof(double) * n_features);
+
     int count0 = 0, count1 = 0;
 
-    for (int f = 0; f < n_features; f++) {
+    for (int f = 0; f < n_features; f++)
+    {
         mean0[f] = var0[f] = mean1[f] = var1[f] = 0.0;
     }
 
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_samples; i++)
+    {
         int label = (int)labels->values[i].as.number;
-        ValueArray* row = data->values[i].as.array;
-        if (label == 0) {
+        ValueArray *row = data->values[i].as.array;
+        if (label == 0)
+        {
             count0++;
-            for (int f = 0; f < n_features; f++) mean0[f] += row->values[f].as.number;
-        } else {
+            for (int f = 0; f < n_features; f++)
+                mean0[f] += row->values[f].as.number;
+        }
+        else
+        {
             count1++;
-            for (int f = 0; f < n_features; f++) mean1[f] += row->values[f].as.number;
+            for (int f = 0; f < n_features; f++)
+                mean1[f] += row->values[f].as.number;
         }
     }
 
-    if (count0 > 0) for (int f = 0; f < n_features; f++) mean0[f] /= count0;
-    if (count1 > 0) for (int f = 0; f < n_features; f++) mean1[f] /= count1;
+    if (count0 > 0)
+        for (int f = 0; f < n_features; f++)
+            mean0[f] /= count0;
+    if (count1 > 0)
+        for (int f = 0; f < n_features; f++)
+            mean1[f] /= count1;
 
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_samples; i++)
+    {
         int label = (int)labels->values[i].as.number;
-        ValueArray* row = data->values[i].as.array;
-        if (label == 0) {
-            for (int f = 0; f < n_features; f++) {
+        ValueArray *row = data->values[i].as.array;
+        if (label == 0)
+        {
+            for (int f = 0; f < n_features; f++)
+            {
                 double diff = row->values[f].as.number - mean0[f];
                 var0[f] += diff * diff;
             }
-        } else {
-            for (int f = 0; f < n_features; f++) {
+        }
+        else
+        {
+            for (int f = 0; f < n_features; f++)
+            {
                 double diff = row->values[f].as.number - mean1[f];
                 var1[f] += diff * diff;
             }
         }
     }
 
-    ValueArray* v_mean0 = array_new();
-    ValueArray* v_var0 = array_new();
-    ValueArray* v_mean1 = array_new();
-    ValueArray* v_var1 = array_new();
+    ValueArray *v_mean0 = array_new();
+    ValueArray *v_var0 = array_new();
+    ValueArray *v_mean1 = array_new();
+    ValueArray *v_var1 = array_new();
 
-    for (int f = 0; f < n_features; f++) {
+    for (int f = 0; f < n_features; f++)
+    {
         array_append(v_mean0, (Value){VAL_NUMBER, {.number = mean0[f]}});
         array_append(v_var0, (Value){VAL_NUMBER, {.number = (var0[f] / (count0 > 0 ? count0 : 1)) + 1e-9}});
         array_append(v_mean1, (Value){VAL_NUMBER, {.number = mean1[f]}});
         array_append(v_var1, (Value){VAL_NUMBER, {.number = (var1[f] / (count1 > 0 ? count1 : 1)) + 1e-9}});
     }
 
-    ValueArray* final_model = array_new();
+    ValueArray *final_model = array_new();
     array_append(final_model, (Value){VAL_ARRAY, {.array = v_mean0}});
     array_append(final_model, (Value){VAL_ARRAY, {.array = v_var0}});
     array_append(final_model, (Value){VAL_ARRAY, {.array = v_mean1}});
@@ -2459,30 +2555,36 @@ Value native_nb_fit(int arg_count, Value* args) {
     array_append(final_model, (Value){VAL_NUMBER, {.number = (double)count0}});
     array_append(final_model, (Value){VAL_NUMBER, {.number = (double)count1}});
 
-    free(mean0); free(var0); free(mean1); free(var1);
+    free(mean0);
+    free(var0);
+    free(mean1);
+    free(var1);
 
     return (Value){VAL_ARRAY, {.array = final_model}};
 }
-Value native_nb_predict(int arg_count, Value* args) {
-    if (arg_count != 2) return (Value){VAL_NIL};
+Value native_nb_predict(int arg_count, Value *args)
+{
+    if (arg_count != 2)
+        return (Value){VAL_NIL};
 
-    ValueArray* point = args[0].as.array;
-    ValueArray* model = args[1].as.array;
+    ValueArray *point = args[0].as.array;
+    ValueArray *model = args[1].as.array;
 
-    ValueArray* mean0 = model->values[0].as.array;
-    ValueArray* var0 = model->values[1].as.array;
-    ValueArray* mean1 = model->values[2].as.array;
-    ValueArray* var1 = model->values[3].as.array;
+    ValueArray *mean0 = model->values[0].as.array;
+    ValueArray *var0 = model->values[1].as.array;
+    ValueArray *mean1 = model->values[2].as.array;
+    ValueArray *var1 = model->values[3].as.array;
     double count0 = model->values[4].as.number;
     double count1 = model->values[5].as.number;
 
     int n_features = point->count;
     double log_probs[2];
-    
+
     log_probs[0] = log(count0 / (count0 + count1));
     log_probs[1] = log(count1 / (count0 + count1));
 
-    for (int f = 0; f < n_features; f++) {
+    for (int f = 0; f < n_features; f++)
+    {
         double x = point->values[f].as.number;
 
         double m0 = mean0->values[f].as.number;
@@ -2498,21 +2600,25 @@ Value native_nb_predict(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = result}};
 }
 
-Value native_kmeans_predict(int arg_count, Value* args) {
-    ValueArray* point = args[0].as.array;
-    ValueArray* centroids = args[1].as.array;
+Value native_kmeans_predict(int arg_count, Value *args)
+{
+    ValueArray *point = args[0].as.array;
+    ValueArray *centroids = args[1].as.array;
 
     double min_dist = 1e18;
     int best_cluster = 0;
 
-    for (int i = 0; i < centroids->count; i++) {
-        ValueArray* centroid = centroids->values[i].as.array;
+    for (int i = 0; i < centroids->count; i++)
+    {
+        ValueArray *centroid = centroids->values[i].as.array;
         double dist = 0;
-        for (int f = 0; f < point->count; f++) {
+        for (int f = 0; f < point->count; f++)
+        {
             double diff = point->values[f].as.number - centroid->values[f].as.number;
             dist += diff * diff;
         }
-        if (dist < min_dist) {
+        if (dist < min_dist)
+        {
             min_dist = dist;
             best_cluster = i;
         }
@@ -2521,38 +2627,46 @@ Value native_kmeans_predict(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = (double)best_cluster}};
 }
 
-Value native_kmeans_fit(int arg_count, Value* args) {
-    ValueArray* data = args[0].as.array;
+Value native_kmeans_fit(int arg_count, Value *args)
+{
+    ValueArray *data = args[0].as.array;
     int k = (int)args[1].as.number;
     int iterations = (int)args[2].as.number;
 
     int n_samples = data->count;
     int n_features = data->values[0].as.array->count;
 
-    double** centroids = malloc(sizeof(double*) * k);
-    for (int i = 0; i < k; i++) {
+    double **centroids = malloc(sizeof(double *) * k);
+    for (int i = 0; i < k; i++)
+    {
         centroids[i] = malloc(sizeof(double) * n_features);
-        ValueArray* random_row = data->values[i % n_samples].as.array;
-        for (int f = 0; f < n_features; f++) {
+        ValueArray *random_row = data->values[i % n_samples].as.array;
+        for (int f = 0; f < n_features; f++)
+        {
             centroids[i][f] = random_row->values[f].as.number;
         }
     }
 
-    for (int iter = 0; iter < iterations; iter++) {
-        int* assignments = malloc(sizeof(int) * n_samples);
-        
-        for (int i = 0; i < n_samples; i++) {
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        int *assignments = malloc(sizeof(int) * n_samples);
+
+        for (int i = 0; i < n_samples; i++)
+        {
             double min_dist = 1e18;
             int best_cluster = 0;
-            ValueArray* row = data->values[i].as.array;
+            ValueArray *row = data->values[i].as.array;
 
-            for (int j = 0; j < k; j++) {
+            for (int j = 0; j < k; j++)
+            {
                 double dist = 0;
-                for (int f = 0; f < n_features; f++) {
+                for (int f = 0; f < n_features; f++)
+                {
                     double diff = row->values[f].as.number - centroids[j][f];
                     dist += diff * diff;
                 }
-                if (dist < min_dist) {
+                if (dist < min_dist)
+                {
                     min_dist = dist;
                     best_cluster = j;
                 }
@@ -2560,32 +2674,41 @@ Value native_kmeans_fit(int arg_count, Value* args) {
             assignments[i] = best_cluster;
         }
 
-        for (int j = 0; j < k; j++) {
-            double* new_mean = malloc(sizeof(double) * n_features);
-            for(int f=0; f<n_features; f++) new_mean[f] = 0;
+        for (int j = 0; j < k; j++)
+        {
+            double *new_mean = malloc(sizeof(double) * n_features);
+            for (int f = 0; f < n_features; f++)
+                new_mean[f] = 0;
             int count = 0;
 
-            for (int i = 0; i < n_samples; i++) {
-                if (assignments[i] == j) {
+            for (int i = 0; i < n_samples; i++)
+            {
+                if (assignments[i] == j)
+                {
                     count++;
-                    for (int f = 0; f < n_features; f++) {
+                    for (int f = 0; f < n_features; f++)
+                    {
                         new_mean[f] += data->values[i].as.array->values[f].as.number;
                     }
                 }
             }
 
-            if (count > 0) {
-                for (int f = 0; f < n_features; f++) centroids[j][f] = new_mean[f] / count;
+            if (count > 0)
+            {
+                for (int f = 0; f < n_features; f++)
+                    centroids[j][f] = new_mean[f] / count;
             }
             free(new_mean);
         }
         free(assignments);
     }
 
-    ValueArray* final_centroids = array_new();
-    for (int i = 0; i < k; i++) {
-        ValueArray* c_row = array_new();
-        for (int f = 0; f < n_features; f++) {
+    ValueArray *final_centroids = array_new();
+    for (int i = 0; i < k; i++)
+    {
+        ValueArray *c_row = array_new();
+        for (int f = 0; f < n_features; f++)
+        {
             array_append(c_row, (Value){VAL_NUMBER, {.number = centroids[i][f]}});
         }
         array_append(final_centroids, (Value){VAL_ARRAY, {.array = c_row}});
@@ -2596,52 +2719,63 @@ Value native_kmeans_fit(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = final_centroids}};
 }
 
-Value native_kmeans_loss(int arg_count, Value* args) {
-    ValueArray* data = args[0].as.array;
-    ValueArray* centroids = args[1].as.array;
+Value native_kmeans_loss(int arg_count, Value *args)
+{
+    ValueArray *data = args[0].as.array;
+    ValueArray *centroids = args[1].as.array;
     double total_sse = 0;
 
-    for (int i = 0; i < data->count; i++) {
+    for (int i = 0; i < data->count; i++)
+    {
         double min_dist = 1e18;
-        ValueArray* row = data->values[i].as.array;
-        for (int j = 0; j < centroids->count; j++) {
+        ValueArray *row = data->values[i].as.array;
+        for (int j = 0; j < centroids->count; j++)
+        {
             double dist = 0;
-            ValueArray* c = centroids->values[j].as.array;
-            for (int f = 0; f < row->count; f++) {
+            ValueArray *c = centroids->values[j].as.array;
+            for (int f = 0; f < row->count; f++)
+            {
                 double diff = row->values[f].as.number - c->values[f].as.number;
                 dist += diff * diff;
             }
-            if (dist < min_dist) min_dist = dist;
+            if (dist < min_dist)
+                min_dist = dist;
         }
         total_sse += min_dist;
     }
     return (Value){VAL_NUMBER, {.number = total_sse}};
 }
 
-Value native_matrix_dot(int arg_count, Value* args) {
-    if (arg_count != 2) return (Value){VAL_NIL};
-    
-    ValueArray* A = args[0].as.array;
-    ValueArray* B = args[1].as.array;
+Value native_matrix_dot(int arg_count, Value *args)
+{
+    if (arg_count != 2)
+        return (Value){VAL_NIL};
+
+    ValueArray *A = args[0].as.array;
+    ValueArray *B = args[1].as.array;
 
     int rowsA = A->count;
     int colsA = A->values[0].as.array->count;
     int rowsB = B->count;
     int colsB = B->values[0].as.array->count;
 
-    if (colsA != rowsB) {
+    if (colsA != rowsB)
+    {
         return (Value){VAL_NIL};
     }
 
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
 
-    for (int i = 0; i < rowsA; i++) {
-        ValueArray* new_row = array_new();
-        ValueArray* rowA = A->values[i].as.array;
+    for (int i = 0; i < rowsA; i++)
+    {
+        ValueArray *new_row = array_new();
+        ValueArray *rowA = A->values[i].as.array;
 
-        for (int j = 0; j < colsB; j++) {
+        for (int j = 0; j < colsB; j++)
+        {
             double sum = 0;
-            for (int k = 0; k < colsA; k++) {
+            for (int k = 0; k < colsA; k++)
+            {
                 double valA = rowA->values[k].as.number;
                 double valB = B->values[k].as.array->values[j].as.number;
                 sum += valA * valB;
@@ -2654,25 +2788,29 @@ Value native_matrix_dot(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_matrix_add(int arg_count, Value* args) {
-    ValueArray* A = args[0].as.array;
-    ValueArray* B = args[1].as.array;
+Value native_matrix_add(int arg_count, Value *args)
+{
+    ValueArray *A = args[0].as.array;
+    ValueArray *B = args[1].as.array;
 
     int rows = A->count;
     int cols = A->values[0].as.array->count;
 
-    if (rows != B->count || cols != B->values[0].as.array->count) {
+    if (rows != B->count || cols != B->values[0].as.array->count)
+    {
         return (Value){VAL_NIL};
     }
 
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
 
-    for (int i = 0; i < rows; i++) {
-        ValueArray* rowA = A->values[i].as.array;
-        ValueArray* rowB = B->values[i].as.array;
-        ValueArray* new_row = array_new();
+    for (int i = 0; i < rows; i++)
+    {
+        ValueArray *rowA = A->values[i].as.array;
+        ValueArray *rowB = B->values[i].as.array;
+        ValueArray *new_row = array_new();
 
-        for (int j = 0; j < cols; j++) {
+        for (int j = 0; j < cols; j++)
+        {
             double sum = rowA->values[j].as.number + rowB->values[j].as.number;
             array_append(new_row, (Value){VAL_NUMBER, {.number = sum}});
         }
@@ -2682,25 +2820,29 @@ Value native_matrix_add(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_matrix_sub(int arg_count, Value* args) {
-    ValueArray* A = args[0].as.array;
-    ValueArray* B = args[1].as.array;
+Value native_matrix_sub(int arg_count, Value *args)
+{
+    ValueArray *A = args[0].as.array;
+    ValueArray *B = args[1].as.array;
 
     int rows = A->count;
     int cols = A->values[0].as.array->count;
 
-    if (rows != B->count || cols != B->values[0].as.array->count) {
+    if (rows != B->count || cols != B->values[0].as.array->count)
+    {
         return (Value){VAL_NIL};
     }
 
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
 
-    for (int i = 0; i < rows; i++) {
-        ValueArray* rowA = A->values[i].as.array;
-        ValueArray* rowB = B->values[i].as.array;
-        ValueArray* new_row = array_new();
+    for (int i = 0; i < rows; i++)
+    {
+        ValueArray *rowA = A->values[i].as.array;
+        ValueArray *rowB = B->values[i].as.array;
+        ValueArray *new_row = array_new();
 
-        for (int j = 0; j < cols; j++) {
+        for (int j = 0; j < cols; j++)
+        {
             double diff = rowA->values[j].as.number - rowB->values[j].as.number;
             array_append(new_row, (Value){VAL_NUMBER, {.number = diff}});
         }
@@ -2710,12 +2852,15 @@ Value native_matrix_sub(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-double calculate_determinant(ValueArray* matrix) {
+double calculate_determinant(ValueArray *matrix)
+{
     int n = matrix->count;
 
-    if (n == 1) return matrix->values[0].as.array->values[0].as.number;
-    
-    if (n == 2) {
+    if (n == 1)
+        return matrix->values[0].as.array->values[0].as.number;
+
+    if (n == 2)
+    {
         double a = matrix->values[0].as.array->values[0].as.number;
         double b = matrix->values[0].as.array->values[1].as.number;
         double c = matrix->values[1].as.array->values[0].as.number;
@@ -2725,37 +2870,43 @@ double calculate_determinant(ValueArray* matrix) {
 
     double det = 0;
     int sign = 1;
-    ValueArray* first_row = matrix->values[0].as.array;
+    ValueArray *first_row = matrix->values[0].as.array;
 
-    for (int j = 0; j < n; j++) {
-        ValueArray* minor = get_minor(matrix, j);
+    for (int j = 0; j < n; j++)
+    {
+        ValueArray *minor = get_minor(matrix, j);
         det += sign * first_row->values[j].as.number * calculate_determinant(minor);
         sign = -sign;
     }
     return det;
 }
 
-Value native_matrix_det(int arg_count, Value* args) {
-    ValueArray* matrix = args[0].as.array;
+Value native_matrix_det(int arg_count, Value *args)
+{
+    ValueArray *matrix = args[0].as.array;
     int rows = matrix->count;
     int cols = matrix->values[0].as.array->count;
 
-    if (rows != cols) return (Value){VAL_NIL};
+    if (rows != cols)
+        return (Value){VAL_NIL};
 
     double result = calculate_determinant(matrix);
     return (Value){VAL_NUMBER, {.number = result}};
 }
 
-Value native_matrix_scalar_mul(int arg_count, Value* args) {
-    ValueArray* M = args[0].as.array;
+Value native_matrix_scalar_mul(int arg_count, Value *args)
+{
+    ValueArray *M = args[0].as.array;
     double scalar = args[1].as.number;
     int rows = M->count;
     int cols = M->values[0].as.array->count;
 
-    ValueArray* result = array_new();
-    for (int i = 0; i < rows; i++) {
-        ValueArray* new_row = array_new();
-        for (int j = 0; j < cols; j++) {
+    ValueArray *result = array_new();
+    for (int i = 0; i < rows; i++)
+    {
+        ValueArray *new_row = array_new();
+        for (int j = 0; j < cols; j++)
+        {
             double val = M->values[i].as.array->values[j].as.number;
             array_append(new_row, (Value){VAL_NUMBER, {.number = val * scalar}});
         }
@@ -2764,31 +2915,38 @@ Value native_matrix_scalar_mul(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_read_csv(int arg_count, Value* args) {
-    const char* filename = args[0].as.string;
-    FILE* file = fopen(filename, "r");
-    if (!file) return (Value){VAL_NIL};
+Value native_read_csv(int arg_count, Value *args)
+{
+    const char *filename = args[0].as.string;
+    FILE *file = fopen(filename, "r");
+    if (!file)
+        return (Value){VAL_NIL};
 
-    ValueArray* matrix = array_new();
+    ValueArray *matrix = array_new();
     char line[4096];
 
-    while (fgets(line, sizeof(line), file)) {
+    while (fgets(line, sizeof(line), file))
+    {
         line[strcspn(line, "\r\n")] = 0;
-        if (strlen(line) == 0) continue;
+        if (strlen(line) == 0)
+            continue;
 
-        ValueArray* row = array_new();
-        char* token = strtok(line, ",");
-        
-        while (token) {
-            char* end;
+        ValueArray *row = array_new();
+        char *token = strtok(line, ",");
+
+        while (token)
+        {
+            char *end;
             double val = strtod(token, &end);
-            if (end != token) {
+            if (end != token)
+            {
                 array_append(row, (Value){VAL_NUMBER, {.number = val}});
             }
             token = strtok(NULL, ",");
         }
-        
-        if (row->count > 0) {
+
+        if (row->count > 0)
+        {
             array_append(matrix, (Value){VAL_ARRAY, {.array = row}});
         }
     }
@@ -2797,27 +2955,33 @@ Value native_read_csv(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = matrix}};
 }
 
-Value native_load_csv_smart(int arg_count, Value* args) {
-    const char* filename = args[0].as.string;
-    FILE* file = fopen(filename, "r");
-    if (!file) return (Value){VAL_NIL};
+Value native_load_csv_smart(int arg_count, Value *args)
+{
+    const char *filename = args[0].as.string;
+    FILE *file = fopen(filename, "r");
+    if (!file)
+        return (Value){VAL_NIL};
 
-    ValueArray* all_rows = array_new();
-    char line[10240]; 
+    ValueArray *all_rows = array_new();
+    char line[10240];
 
-    while (fgets(line, sizeof(line), file)) {
-        ValueArray* row = array_new();
-        char* token = strtok(line, ",");
-        while (token) {
+    while (fgets(line, sizeof(line), file))
+    {
+        ValueArray *row = array_new();
+        char *token = strtok(line, ",");
+        while (token)
+        {
             token[strcspn(token, "\r\n")] = 0;
-            
-            char* endptr;
+
+            char *endptr;
             double val = strtod(token, &endptr);
-            
-            
-            if (endptr == token) {
+
+            if (endptr == token)
+            {
                 array_append(row, (Value){VAL_STRING, {.string = strdup(token)}});
-            } else {
+            }
+            else
+            {
                 array_append(row, (Value){VAL_NUMBER, {.number = val}});
             }
             token = strtok(NULL, ",");
@@ -2828,95 +2992,113 @@ Value native_load_csv_smart(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = all_rows}};
 }
 
-Value native_tensor_add(int arg_count, Value* args) {
-    ValueArray* a = args[0].as.array;
+Value native_tensor_add(int arg_count, Value *args)
+{
+    ValueArray *a = args[0].as.array;
     double scalar = args[1].as.number;
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
 
-    for (int i = 0; i < a->count; i++) {
+    for (int i = 0; i < a->count; i++)
+    {
         double val = a->values[i].as.number;
         array_append(result, (Value){VAL_NUMBER, {.number = val + scalar}});
     }
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_tensor_sub(int arg_count, Value* args) {
-    ValueArray* a = args[0].as.array;
+Value native_tensor_sub(int arg_count, Value *args)
+{
+    ValueArray *a = args[0].as.array;
     double scalar = args[1].as.number;
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
 
-    for (int i = 0; i < a->count; i++) {
+    for (int i = 0; i < a->count; i++)
+    {
         double val = a->values[i].as.number;
         array_append(result, (Value){VAL_NUMBER, {.number = val - scalar}});
     }
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_tensor_mul(int arg_count, Value* args) {
-    ValueArray* a = args[0].as.array;
+Value native_tensor_mul(int arg_count, Value *args)
+{
+    ValueArray *a = args[0].as.array;
     double scalar = args[1].as.number;
-    ValueArray* result = array_new();
+    ValueArray *result = array_new();
 
-    for (int i = 0; i < a->count; i++) {
+    for (int i = 0; i < a->count; i++)
+    {
         double val = a->values[i].as.number;
         array_append(result, (Value){VAL_NUMBER, {.number = val * scalar}});
     }
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_tensor_check_shape(int arg_count, Value* args) {
-    ValueArray* data = args[0].as.array;
-    ValueArray* new_shape = args[1].as.array;
+Value native_tensor_check_shape(int arg_count, Value *args)
+{
+    ValueArray *data = args[0].as.array;
+    ValueArray *new_shape = args[1].as.array;
 
     int current_size = data->count;
     long target_size = 1;
 
-    for (int i = 0; i < new_shape->count; i++) {
+    for (int i = 0; i < new_shape->count; i++)
+    {
         target_size *= (int)new_shape->values[i].as.number;
     }
 
-   
-    if (current_size == (int)target_size) {
-        return (Value){VAL_NUMBER, {.number = 1}}; 
+    if (current_size == (int)target_size)
+    {
+        return (Value){VAL_NUMBER, {.number = 1}};
     }
-    return (Value){VAL_NUMBER, {.number = 0}};     
+    return (Value){VAL_NUMBER, {.number = 0}};
 }
 
-Value native_save_jml(int arg_count, Value* args) {
-    const char* filename = args[0].as.string;
-    ValueArray* data = args[1].as.array;
-    ValueArray* shape = args[2].as.array;
+Value native_save_jml(int arg_count, Value *args)
+{
+    const char *filename = args[0].as.string;
+    ValueArray *data = args[1].as.array;
+    ValueArray *shape = args[2].as.array;
 
-    FILE* file = fopen(filename, "w");
-    if (!file) return (Value){VAL_NUMBER, {.number = 0}};
+    FILE *file = fopen(filename, "w");
+    if (!file)
+        return (Value){VAL_NUMBER, {.number = 0}};
 
-    for (int i = 0; i < shape->count; i++) {
+    for (int i = 0; i < shape->count; i++)
+    {
         fprintf(file, "%f", shape->values[i].as.number);
-        if (i < shape->count - 1) fprintf(file, ",");
+        if (i < shape->count - 1)
+            fprintf(file, ",");
     }
     fprintf(file, "\n");
 
-    for (int i = 0; i < data->count; i++) {
+    for (int i = 0; i < data->count; i++)
+    {
         fprintf(file, "%f", data->values[i].as.number);
-        if (i < data->count - 1) fprintf(file, ",");
+        if (i < data->count - 1)
+            fprintf(file, ",");
     }
 
     fclose(file);
     return (Value){VAL_NUMBER, {.number = 1}};
 }
 
-Value native_load_jml(int arg_count, Value* args) {
-    const char* filename = args[0].as.string;
-    FILE* file = fopen(filename, "r");
-    if (!file) return (Value){VAL_NIL};
+Value native_load_jml(int arg_count, Value *args)
+{
+    const char *filename = args[0].as.string;
+    FILE *file = fopen(filename, "r");
+    if (!file)
+        return (Value){VAL_NIL};
 
-    ValueArray* result = array_new(); 
+    ValueArray *result = array_new();
     char line[4096];
 
-    while (fgets(line, sizeof(line), file)) {
-        ValueArray* row = array_new();
-        char* token = strtok(line, ",");
-        while (token) {
+    while (fgets(line, sizeof(line), file))
+    {
+        ValueArray *row = array_new();
+        char *token = strtok(line, ",");
+        while (token)
+        {
             array_append(row, (Value){VAL_NUMBER, {.number = atof(token)}});
             token = strtok(NULL, ",");
         }
@@ -2927,42 +3109,51 @@ Value native_load_jml(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_tensor_sum(int arg_count, Value* args) {
-    ValueArray* a = args[0].as.array;
+Value native_tensor_sum(int arg_count, Value *args)
+{
+    ValueArray *a = args[0].as.array;
     double total = 0;
 
-    for (int i = 0; i < a->count; i++) {
+    for (int i = 0; i < a->count; i++)
+    {
         total += a->values[i].as.number;
     }
     return (Value){VAL_NUMBER, {.number = total}};
 }
 
-Value native_tensor_mean(int arg_count, Value* args) {
-    ValueArray* a = args[0].as.array;
-    if (a->count == 0) return (Value){VAL_NUMBER, {.number = 0}};
-    
+Value native_tensor_mean(int arg_count, Value *args)
+{
+    ValueArray *a = args[0].as.array;
+    if (a->count == 0)
+        return (Value){VAL_NUMBER, {.number = 0}};
+
     Value sum_val = native_tensor_sum(arg_count, args);
     return (Value){VAL_NUMBER, {.number = sum_val.as.number / a->count}};
 }
 
-Value native_tensor_dot(int arg_count, Value* args) {
-    ValueArray* data_a = args[0].as.array;
-    ValueArray* shape_a = args[1].as.array;
-    ValueArray* data_b = args[2].as.array;
-    ValueArray* shape_b = args[3].as.array;
+Value native_tensor_dot(int arg_count, Value *args)
+{
+    ValueArray *data_a = args[0].as.array;
+    ValueArray *shape_a = args[1].as.array;
+    ValueArray *data_b = args[2].as.array;
+    ValueArray *shape_b = args[3].as.array;
 
     int r1 = (int)shape_a->values[0].as.number;
     int c1 = (int)shape_a->values[1].as.number;
     int r2 = (int)shape_b->values[0].as.number;
     int c2 = (int)shape_b->values[1].as.number;
 
-    if (c1 != r2) return (Value){VAL_NIL}; 
+    if (c1 != r2)
+        return (Value){VAL_NIL};
 
-    ValueArray* result = array_new();
-    for (int i = 0; i < r1; i++) {
-        for (int j = 0; j < c2; j++) {
+    ValueArray *result = array_new();
+    for (int i = 0; i < r1; i++)
+    {
+        for (int j = 0; j < c2; j++)
+        {
             double sum = 0;
-            for (int k = 0; k < c1; k++) {
+            for (int k = 0; k < c1; k++)
+            {
                 sum += data_a->values[i * c1 + k].as.number * data_b->values[k * c2 + j].as.number;
             }
             array_append(result, (Value){VAL_NUMBER, {.number = sum}});
@@ -2971,37 +3162,45 @@ Value native_tensor_dot(int arg_count, Value* args) {
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_vector_dot(int arg_count, Value* args) {
-    ValueArray* a = args[0].as.array;
-    ValueArray* b = args[1].as.array;
+Value native_vector_dot(int arg_count, Value *args)
+{
+    ValueArray *a = args[0].as.array;
+    ValueArray *b = args[1].as.array;
     double result = 0;
 
-    for (int i = 0; i < a->count; i++) {
+    for (int i = 0; i < a->count; i++)
+    {
         result += a->values[i].as.number * b->values[i].as.number;
     }
     return (Value){VAL_NUMBER, {.number = result}};
 }
 
-Value native_vector_norm(int arg_count, Value* args) {
-    ValueArray* a = args[0].as.array;
+Value native_vector_norm(int arg_count, Value *args)
+{
+    ValueArray *a = args[0].as.array;
     double sum_sq = 0;
 
-    for (int i = 0; i < a->count; i++) {
+    for (int i = 0; i < a->count; i++)
+    {
         double val = a->values[i].as.number;
         sum_sq += val * val;
     }
     return (Value){VAL_NUMBER, {.number = sqrt(sum_sq)}};
 }
 
-Value native_math_acos(int arg_count, Value* args) {
-    if (args[0].type != VAL_NUMBER) {
+Value native_math_acos(int arg_count, Value *args)
+{
+    if (args[0].type != VAL_NUMBER)
+    {
         return (Value){VAL_NIL};
     }
-    
+
     double val = args[0].as.number;
-    
-    if (val < -1.0) val = -1.0;
-    if (val > 1.0) val = 1.0;
-    
+
+    if (val < -1.0)
+        val = -1.0;
+    if (val > 1.0)
+        val = 1.0;
+
     return (Value){VAL_NUMBER, {.number = acos(val)}};
 }
