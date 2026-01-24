@@ -1,6 +1,6 @@
 <div align="center">
 
-# The Jackal Scripting Language
+# The Jackal Scriptin Language 
 **A lightweight, elegant programming language for the open source community**
 
 [![New Website](https://img.shields.io/badge/website-jackal--lang-blue)](https://jackal-new-documentation.vercel.app/)
@@ -11,7 +11,9 @@
 
 </div>
 
-
+```js
+func f(x : Int , y : Int) -> Boolean = (2 * x) + 1 == y
+```
 ---
 
 ## About

@@ -218,8 +218,8 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_ANY;
         else if (strcmp(tk.text,"with") == 0)
             tk.kind = TOKEN_WITH;
-
-        
+        else if (strcmp(tk.text,"lambda") == 0)
+            tk.kind = TOKEN_LAMBDA;
         else if (strcmp(tk.text,"namespace") == 0)
             tk.kind = TOKEN_NAMESPACE;
         
@@ -233,6 +233,8 @@ Token lexer_next(Lexer *L)
         else if (strcmp(tk.text,"is") == 0){
             tk.kind = TOKEN_IS;
         }
+        else if (strcmp(tk.text, "∑") == 0)
+            tk.kind = TOKEN_SIGMA;
         
         else if (strcmp(tk.text, "implements") == 0)
             tk.kind = TOKEN_IMPLEMENTS;
@@ -250,22 +252,42 @@ Token lexer_next(Lexer *L)
         return tk;
     }
 
-    if (isdigit(c) || (c == '.' && isdigit(L->src[L->pos + 1])))
+    if ((unsigned char)L->src[L->pos] == 0xE2 && 
+        (unsigned char)L->src[L->pos+1] == 0x88 && 
+        (unsigned char)L->src[L->pos+2] == 0x91) {
+        L->pos += 3;
+        Token T;
+        T.kind = TOKEN_SIGMA;
+        strcpy(T.text, "∑");
+        return T;
+    }
+    
+    if (isdigit(c))
     {
         int i = 0;
+        if (c == '0' && (L->src[L->pos + 1] == 'x' || L->src[L->pos + 1] == 'X')) {
+            tk.text[i++] = get(L);
+            tk.text[i++] = get(L);
+            while (isxdigit(peek(L))) {
+                if (i < 63) tk.text[i++] = get(L);
+                else get(L);
+            }
+            tk.text[i] = '\0';
+            tk.kind = TOKEN_NUMBER;
+            tk.number = (double)strtol(tk.text, NULL, 16);
+            return tk;
+        }
+        
         int dot = 0;
         while (isdigit(peek(L)) || peek(L) == '.')
         {
             if (peek(L) == '.')
             {
-                if (dot)
-                    break;
+                if (dot) break;
                 dot = 1;
             }
-            if (i < 63)
-                tk.text[i++] = get(L);
-            else
-                get(L);
+            if (i < 63) tk.text[i++] = get(L);
+            else get(L);
         }
         tk.text[i] = '\0';
         tk.kind = TOKEN_NUMBER;
