@@ -1,7 +1,7 @@
 <div align="center">
 
 # The Jackal Scriptin Language 
-**A lightweight, elegant programming language for the open source community**
+**The expression first scripting language for engineer**
 
 [![New Website](https://img.shields.io/badge/website-jackal--lang-blue)](https://jackal-new-documentation.vercel.app/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
@@ -13,6 +13,8 @@
 
 ```js
 func f(x : Int , y : Int) -> Boolean = (2 * x) + 1 == y
+
+1 |> f(3) |> println()
 ```
 ---
 
