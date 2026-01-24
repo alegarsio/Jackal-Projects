@@ -1,6 +1,6 @@
 <div align="center">
 
-# The Jackal Scriptin Language 
+# The Jackal Scripting Language 
 **The expression first scripting language for engineer**
 
 [![New Website](https://img.shields.io/badge/website-jackal--lang-blue)](https://jackal-new-documentation.vercel.app/)
