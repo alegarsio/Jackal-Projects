@@ -1,0 +1,4 @@
+class BasicMathStream{
+    init(num : Number) = this.num = num
+    func abs() -> Number = __math_abs(this.num) or throw "Error"
+}
