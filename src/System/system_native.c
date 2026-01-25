@@ -9,6 +9,13 @@
 #define LINUX   3
 #define UNIX    4
 
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+    #include <sys/time.h>
+#endif
+
 #define SYS_REGISTER(env, name, func) \
     do { \
         if (func != NULL) { \
