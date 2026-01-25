@@ -1,4 +1,6 @@
 object Sys{
     func run(command : String) -> Int = __sys_run(command) or throw "Error"
     func platform() -> String = __sys_platform() or throw "Error"
+    func now() -> Int  = __sys_now() or throw "Error"
+    
 }
