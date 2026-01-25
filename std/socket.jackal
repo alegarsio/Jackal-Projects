@@ -1,14 +1,16 @@
 import std.network.Socket
 import std.network.err 
 import std.network.Inet
+import sys.System
 
 const AF_INET = 2
 const SOCK_STREAM = 1
 const SOCK_DGRAM = 2
 const LOCAL = "localhost"
 
-const FormatException = FormatInvalidException()
+const FormatException = FormatInvalidException() 
 const ConnectionException = ConnectionError()
+@final
 const StateError = SocketStateError()
 
 @final
@@ -25,8 +27,8 @@ class Tcp : BasicSocket, Inet {
     func ntoa() -> String = __net_ntoa(this.host) or throw FormatException.InvalidBinary
 
     func connected() -> Boolean = this.fd != -1 or throw ConnectionException.NetworkConnectionError
-    func setTimeout(ms : Number) -> Int = socket_set_timeout(this.fd, ms) != -1 or throw StateError.SocketNotConnected
 
+    func setTimeout(ms : Number) -> Int = socket_set_timeout(this.fd, ms) != -1 or throw StateError.SocketNotConnected
     func receive(size) {
         if (this.fd == -1) return nil
 
@@ -35,6 +37,5 @@ class Tcp : BasicSocket, Inet {
         }
         return socket_recv(this.fd, size);
     }
-
 
 }

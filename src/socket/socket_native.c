@@ -221,6 +221,6 @@ void register_socket_natives(Env* env) {
     SOCKET_REGISTER(env, "__net_htons", native_net_htons);
     SOCKET_REGISTER(env, "__net_aton", native_net_aton);
     SOCKET_REGISTER(env, "__net_ntoa", native_net_ntoa);
-    SOCKET_REGISTER(env, "socket_get_local_ip", native_socket_get_local_ip);
-    SOCKET_REGISTER(env, "socket_set_timeout", native_socket_set_timeout);
+    SOCKET_REGISTER(env, "socket_get_local_ip",native_socket_get_local_ip);
+    SOCKET_REGISTER(env, "socket_set_timeout",native_socket_set_timeout);
 }
