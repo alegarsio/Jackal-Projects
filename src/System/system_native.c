@@ -66,6 +66,16 @@ Value native_system_exec(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = (double)result}};
 }
 
+Value native_sys_sleep(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NIL, {0}};
+    int ms = (int)args[0].as.number;
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    usleep(ms * 1000);
+#endif
+    return (Value){VAL_NIL, {0}};
+}
 
 void register_sys_natives(Env* env){
 
@@ -75,5 +85,6 @@ void register_sys_natives(Env* env){
     set_var(env, "UNIX",    (Value){VAL_NUMBER, {.number = UNIX}}, true, "");
 
     SYS_REGISTER(env,"__sys_run",native_system_exec);
+    SYS_REGISTER(env,"__sys_sleep",native_sys_sleep);
     SYS_REGISTER(env,"__sys_platform",native_system_platform);
 }
