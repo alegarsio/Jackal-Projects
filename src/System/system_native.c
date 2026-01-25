@@ -77,6 +77,13 @@ Value native_sys_sleep(int arg_count, Value* args) {
     return (Value){VAL_NIL, {0}};
 }
 
+Value native_sys_now(int arg_count, Value* args) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    double ms = (double)(tv.tv_sec) * 1000 + (double)(tv.tv_usec) / 1000;
+    return (Value){VAL_NUMBER, {.number = ms}};
+}
+
 void register_sys_natives(Env* env){
 
     set_var(env, "WINDOWS", (Value){VAL_NUMBER, {.number = WINDOWS}}, true, "");
@@ -87,4 +94,5 @@ void register_sys_natives(Env* env){
     SYS_REGISTER(env,"__sys_run",native_system_exec);
     SYS_REGISTER(env,"__sys_sleep",native_sys_sleep);
     SYS_REGISTER(env,"__sys_platform",native_system_platform);
+    SYS_REGISTER(env,"__sys_now",native_sys_now);
 }
