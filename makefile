@@ -35,6 +35,7 @@ SRC = src/common.c \
 	  src/socket/net_utils.c \
 	  src/String/string_native.c \
 	  src/System/system_native.c \
+	  src/math/native_math.c \
 	  src/native/native_registry.c \
 	  src/socket/socket_native.c \
       src/main.c
