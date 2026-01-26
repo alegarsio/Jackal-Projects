@@ -40,7 +40,7 @@ void register_all_natives(Env* env) {
     SAFE_REGISTER(env, "__io_readAll", builtin_io_readAll);
     SAFE_REGISTER(env, "__io_write", builtin_io_write);
     SAFE_REGISTER(env, "__io_close", builtin_io_close);
-    SAFE_REGISTER(env, "__io_read_line", builtin_read_line);
+    SAFE_REGISTER(env, "__io_autostream", builtin_read_line);
     SAFE_REGISTER(env, "__io_read_array", builtin_read_array);
     SAFE_REGISTER(env, "__io_table_stream", builtin_print_table);
     SAFE_REGISTER(env, "__io_json", builtin_print_json);
