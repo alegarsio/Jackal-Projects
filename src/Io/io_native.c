@@ -36,7 +36,11 @@ Value native_input_string(int arity, Value *args) {
     return (Value){VAL_STRING, {.string = strdup(input)}};
 }
 
-
+Value native_input_number(int arity, Value *args) {
+    char* input = get_input_raw(arity > 0 ? args[0].as.string : NULL);
+    if (!input) return (Value){VAL_NUMBER, {.number = 0}};
+    return (Value){VAL_NUMBER, {.number = atof(input)}};
+}
 void register_io_natives(Env *env)
 {
 }
