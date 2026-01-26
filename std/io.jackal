@@ -4,26 +4,9 @@
  * Io object represents the standard input and output library 
  * this library is part of std/io lib the std/io/out ara deprecated
 **/
-object input(){
-    /**
-     * readln() 
-     * represents the basic input feature
-     * @return String
-     * @param None
-    **/
-    func readln() -> String{
-       return __io_read_line();
-    }
+object Input{
 
-    /**
-     * readarr() 
-     * represents the input listen feature
-     * @return String
-     * @param None
-    **/
-    func readarr(prompt:String, delimeter:String) -> Array{
-        return __io_read_array(prompt,delimeter);
-    }
+    func string(prompt : String) -> None = __io_string(prompt) 
 
 }
 
