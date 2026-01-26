@@ -5,9 +5,8 @@
  * this library is part of std/io lib the std/io/out ara deprecated
 **/
 object Input{
-
     func string(prompt : String) -> None = __io_string(prompt) 
-
+    func number(prompt : String) -> None = __io_number(prompt)
 }
 
 /**
