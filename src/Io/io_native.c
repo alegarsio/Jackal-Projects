@@ -44,5 +44,5 @@ Value native_input_number(int arity, Value *args) {
 void register_io_natives(Env *env)
 {
     IO_REGISTER(env,"__io_string",native_input_string);
-    
+    IO_REGISTER(env,"__io_number",native_input_number);
 }
