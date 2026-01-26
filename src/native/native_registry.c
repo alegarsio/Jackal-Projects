@@ -2,7 +2,8 @@
 #include "socket/socket_native.h"
 #include "String/string_native.h"
 #include "System/system_native.h"
-#include "math/math_native.h"
+#include "math/native_math.h"
+#include "Io/io_native.h"
 /**
  * Register DEFAULT is now DEPRECATED
  */
@@ -121,5 +122,6 @@ void register_all_natives(Env* env) {
     register_string_natives(env);
     register_sys_natives(env);
     register_math_natives(env);
+    register_io_natives(env);
     
 }
