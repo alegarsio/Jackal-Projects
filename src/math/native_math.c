@@ -39,6 +39,11 @@ Value native_math_floor(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = floor(args[0].as.number)}};
 }
 
+Value native_math_ceil(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NUMBER, {.number = 0}};
+    return (Value){VAL_NUMBER, {.number = ceil(args[0].as.number)}};
+}
+
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
