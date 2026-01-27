@@ -1,4 +1,4 @@
-#include"math/math_native.h"
+#include"math/native_math.h"
 #include<stdlib.h>
 #include<string.h>
 #include<errno.h>
@@ -15,6 +15,11 @@
 Value native_math_abs(int arg_count, Value* args) {
     if (arg_count < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NUMBER, {.number = 0}};
     return (Value){VAL_NUMBER, {.number = fabs(args[0].as.number)}};
+}
+
+Value native_math_sqrt(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NUMBER, {.number = 0}};
+    return (Value){VAL_NUMBER, {.number = sqrt(args[0].as.number)}};
 }
 
 void register_math_natives(Env* env){
