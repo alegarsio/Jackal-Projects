@@ -651,39 +651,42 @@ void map_set(HashMap *map, const char *key, Value val)
     entry->value = copy_value(val);
 }
 
-Value builtin_read_line(int arity, Value *args)
-{
-    if (arity != 0)
-    {
-        print_error("Error: '__io_read' expects zero arguments.");
+// Value builtin_read_line(int arity, Value *args) {
 
-        return (Value){VAL_NIL, .as = {0}};
-    }
+//     if (arity > 0 && args[0].type == VAL_STRING) {
+//         printf("%s", args[0].as.string);
+//         fflush(stdout);
+//     }
 
-    char buffer[1024];
+//     char buffer[1024];
+//     if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+//         return (Value){VAL_NIL, .as = {0}};
+//     }
 
-    if (fgets(buffer, sizeof(buffer), stdin) == NULL)
-    {
-        return (Value){VAL_NIL, .as = {0}};
-    }
+//     size_t len = strlen(buffer);
+//     if (len > 0 && buffer[len - 1] == '\n') {
+//         buffer[len - 1] = '\0';
+//     }
 
-    size_t len = strlen(buffer);
-    if (len > 0 && buffer[len - 1] == '\n')
-    {
-        buffer[len - 1] = '\0';
-    }
+//     char *endptr;
+//     double num = strtod(buffer, &endptr);
 
-    char *str_copy = malloc(strlen(buffer) + 1);
+//     if (strlen(buffer) == 0) {
+//         char *empty = malloc(1);
+//         empty[0] = '\0';
+//         return (Value){VAL_STRING, {.string = empty}};
+//     }
 
-    if (str_copy == NULL)
-    {
-        return (Value){VAL_NIL, .as = {0}};
-    }
+//     if (*endptr == '\0') {
+//         return (Value){VAL_NUMBER, {.number = num}};
+//     }
 
-    strcpy(str_copy, buffer);
+//     char *str_copy = malloc(strlen(buffer) + 1);
+//     if (str_copy == NULL) return (Value){VAL_NIL, .as = {0}};
+//     strcpy(str_copy, buffer);
 
-    return (Value){VAL_STRING, {.string = str_copy}};
-}
+//     return (Value){VAL_STRING, {.string = str_copy}};
+// }
 
 Value builtin_read_array(int arity, Value *args)
 {

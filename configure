@@ -1,0 +1,49 @@
+#!/bin/sh
+
+echo "Detecting OS..."
+UNAME_S=$(uname -s)
+
+if [ "$UNAME_S" = "Darwin" ]; then
+    echo "macOS detected"
+    CC=clang
+    CXX=clang++
+    EXE=
+    CJSON_INCLUDE="-I/opt/homebrew/include"
+    CJSON_LIBPATH="-L/opt/homebrew/lib"
+    CURL_CFLAGS=$(curl-config --cflags)
+    CURL_LDFLAGS=$(curl-config --libs)
+elif [ "$UNAME_S" = "Linux" ]; then
+    echo "Linux detected"
+    CC=gcc
+    CXX=g++
+    EXE=
+    CJSON_INCLUDE=
+    CJSON_LIBPATH=
+    CURL_CFLAGS=$(curl-config --cflags)
+    CURL_LDFLAGS=$(curl-config --libs)
+elif [ "$OS" = "Windows_NT" ]; then
+    echo "Windows detected"
+    CC=x86_64-w64-mingw32-gcc
+    CXX=x86_64-w64-mingw32-g++
+    EXE=.exe
+    CJSON_INCLUDE=
+    CJSON_LIBPATH=
+    CURL_CFLAGS=
+    CURL_LDFLAGS=-lcurl
+else
+    echo "Unsupported OS: $UNAME_S"
+    exit 1
+fi
+
+echo "Generating config.mk..."
+cat > config.mk <<EOF
+CC=$CC
+CXX=$CXX
+EXE=$EXE
+CJSON_INCLUDE=$CJSON_INCLUDE
+CJSON_LIBPATH=$CJSON_LIBPATH
+CURL_CFLAGS=$CURL_CFLAGS
+CURL_LDFLAGS=$CURL_LDFLAGS
+EOF
+
+echo "Configuration complete. You can now run 'make'!"

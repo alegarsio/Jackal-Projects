@@ -1,0 +1,13 @@
+class StringStream {
+    
+    init(char : String) -> None = this.char = char 
+    
+    func starswith(prefix : String) -> Boolean  = __str_startsWith(this.char,prefix) or throw "Error"
+
+    func endswith(prefix : String) -> Boolean = __str_endsWith(this.char, prefix) or throw "Error"
+
+    func contains(prefix : String) -> Boolean = __str_contains(this.char,prefix) or throw "Error"
+
+    func replace(prefix_old : String , prefix_new : String) -> String = __str_replace(this.char , prefix_old, prefix_new) or throw "Error"
+
+}

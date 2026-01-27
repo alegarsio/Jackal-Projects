@@ -222,10 +222,8 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_LAMBDA;
         else if (strcmp(tk.text,"namespace") == 0)
             tk.kind = TOKEN_NAMESPACE;
-        
         else if (strcmp(tk.text,"using") == 0)
             tk.kind = TOKEN_USING;
-
         else if (strcmp(tk.text, "or") == 0){
             tk.kind = TOKEN_OR;
         }
