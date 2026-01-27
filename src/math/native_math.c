@@ -44,4 +44,5 @@ void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
     MATH_REGISTER(env,"__math_round",native_math_round);
     MATH_REGISTER(env,"__math_pow",native_math_pow);
+    MATH_REGISTER(env,"__math_floor",native_math_floor);
 }
