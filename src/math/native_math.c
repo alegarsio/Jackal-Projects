@@ -30,4 +30,5 @@ Value native_math_round(int arg_count, Value* args) {
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
+    MATH_REGISTER(env,"__math_round",native_math_round);
 }
