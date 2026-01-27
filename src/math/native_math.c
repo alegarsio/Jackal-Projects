@@ -24,4 +24,5 @@ Value native_math_sqrt(int arg_count, Value* args) {
 
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
+    MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
 }
