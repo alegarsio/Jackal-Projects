@@ -1,4 +1,4 @@
 class BasicMathStream{
-    init(num : Number) = this.num = num
-    func abs() -> Number = __math_abs(this.num) or throw "Error"
+    func abs(n : Int) -> Number = __math_abs(n) or throw "Error"
+    func sqrt(n : Int) -> Number = __math_sqrt(n) or throw "Error"
 }
