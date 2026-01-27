@@ -51,10 +51,10 @@ static Node *parse_unary(Parser *P);
 static Node *parse_logical_or(Parser *P);
 
 /**
- * @brief Parses try statement.
- * @param  Pointer to the Parser.
+ * @brief Parses a try statement.
+ * @param P Pointer to the Parser.
  */
-static Node *parse_try_stmt(Parser *);
+static Node *parse_try_stmt(Parser *P);
 
 /**
  * @brief Parses a throw statement.
@@ -309,48 +309,9 @@ static Node *parse_array_literal(Parser *P)
         print_error("Expected ']' after array items."); //
     }
 
-    next(P);
+    next(P); // Konsumsi TOKEN_RBRACKET
 
     n->left = items_head;
-    return n;
-}
-static Node *parse_lambda(Parser *P) {
-    Node *n = new_node(NODE_FUNC_EXPR);
-    next(P);
-
-    Node *params_head = NULL;
-    Node *params_current = NULL;
-    n->arity = 0;
-
-    if (P->current.kind != TOKEN_RPAREN) {
-        do {
-            Node *param_node = new_node(NODE_IDENT);
-            strcpy(param_node->name, P->current.text);
-            next(P);
-            n->arity++;
-
-            if (params_head == NULL) {
-                params_head = param_node;
-                params_current = param_node;
-            } else {
-                params_current->next = param_node;
-                params_current = param_node;
-            }
-        } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
-    }
-
-    next(P);
-
-    if (P->current.kind == TOKEN_ARROW) {
-        next(P);
-        Node *ret_stmt = new_node(NODE_RETURN_STMT);
-        ret_stmt->left = parse_expr(P);
-        n->right = ret_stmt;
-    } else {
-        n->right = parse_block(P);
-    }
-
-    n->left = params_head;
     return n;
 }
 
@@ -362,7 +323,6 @@ static Node *parse_lambda(Parser *P) {
 static Node *parse_primary(Parser *P)
 {
 
-   
     if (P->current.kind == TOKEN_NUMBER)
     {
         Node *n = new_node(NODE_NUMBER);
@@ -1705,8 +1665,6 @@ Node *parse_stmt(Parser *P)
         return parse_observe_stmt(P);
     }
 
-   
-
     if (P->current.kind == TOKEN_MATCH)
     {
         return parse_match_stmt(P);
@@ -1812,7 +1770,7 @@ Node *parse_stmt(Parser *P)
         return parse_while_stmt(P);
     }
 
-    if (P->current.kind == TOKEN_FOR || P->current.kind == TOKEN_SIGMA)
+    if (P->current.kind == TOKEN_FOR)
     {
         return parse_for_stmt(P);
     }
@@ -1836,7 +1794,7 @@ Node *parse_stmt(Parser *P)
 
         if (P->current.kind == TOKEN_LBRACKET)
         {
-            next(P); 
+            next(P);
             Node *destructure_node = new_node(NODE_DESTRUCTURE);
             Node *head = NULL;
             Node *current = NULL;
@@ -2068,8 +2026,6 @@ static Node *parse_extension_def(Parser *P) {
     n->left = func_head;
     return n;
 }
-
-
 static Node *parse_namespace(Parser *P)
 {
     next(P);
@@ -2762,7 +2718,7 @@ static void parse_annotations(Parser *P, Node *n)
 }
 
 /**
- * @brief  when expression
+ * @brief parse when expression
  * @param P to parser pointer
  */
 static Node *parse_when_expr(Parser *P)

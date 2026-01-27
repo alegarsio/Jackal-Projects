@@ -19,8 +19,8 @@
 
 
 /**
- * @typedef @um TOKENKIND
- * Represents the kinds of tokens in the Jenckal programming language.
+ * @typedef @enum TOKENKIND
+ * Represents the kinds of tokens in the Jackal programming language.
  */
 typedef enum {
 

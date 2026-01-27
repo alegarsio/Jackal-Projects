@@ -1180,15 +1180,6 @@ Value eval_node(Env *env, Node *n)
                 }
                 return val;
             }
-            if (strcmp(target_type, "Byte") == 0)
-            {
-                if (val.type == VAL_NUMBER)
-                {
-                    unsigned char b = (unsigned char)val.as.number;
-                    return (Value){VAL_BYTE, {.byte = b}};
-                }
-                return val;
-            }
 
             print_error("Runtime Error: Cannot cast to type %s", target_type);
             return (Value){VAL_NIL, {0}};
@@ -1356,12 +1347,6 @@ Value eval_node(Env *env, Node *n)
     {
         Value val = eval_node(env, n->right);
 
-        if (strcmp(n->type_name, "Byte") == 0 && val.type == VAL_NUMBER) {
-            unsigned char b_val = (unsigned char)val.as.number;
-            val.type = VAL_BYTE;
-            val.as.byte = b_val;
-        }
-        
         if (val.type == VAL_ARRAY && n->template_types != NULL)
         {
             strcpy(val.as.array->element_type, n->template_types->name);

@@ -933,6 +933,8 @@ int main(int argc, char **argv)
     net_init();
     Env *env = env_new(NULL);
     register_all_natives(env);
+    load_jackal_file("std/io.jackal", env);
+    load_jackal_file("std/stream.jackal", env);
 
     if (argc == 1)
     {
