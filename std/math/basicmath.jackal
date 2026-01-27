@@ -8,6 +8,8 @@ class BasicMathStream{
     func pow(base, exp) -> Number =
         __math_pow(base,exp) or throw "Error"
     func floor(n : Int) -> Number = 
-        __math_floor(n)
+        __math_floor(n) or throw "Error"
+    func ceil(n : Int) -> Number =
+        __math_ceil(n) or throw "Error"
     
 }
