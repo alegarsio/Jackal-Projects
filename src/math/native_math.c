@@ -61,6 +61,15 @@ Value native_math_atan2(int arity, Value *args) {
     return (Value){VAL_NUMBER, {.number = atan2(args[0].as.number, args[1].as.number)}};
 }
 
+Value native_math_min(int arity, Value *args) {
+    if (arity < 2) return arity == 1 ? args[0] : (Value){VAL_NUMBER, {.number = 0}};
+    double min_val = args[0].as.number;
+    for (int i = 1; i < arity; i++) {
+        if (args[i].as.number < min_val) min_val = args[i].as.number;
+    }
+    return (Value){VAL_NUMBER, {.number = min_val}};
+}
+
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
