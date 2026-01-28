@@ -12,7 +12,7 @@ const LN2  : Float  = 0.693147180559945
 const LN10 : Float  = 2.302585092994046
 
 object Math() {
-    
+
     func abs(n : Int) -> Number = 
         __math_abs(n) or throw "Error"
 
@@ -36,4 +36,8 @@ object Math() {
 
     func sin(rad : Number) -> Number =
         __math_sin(rad) or throw "Error"
+
+    func atan2(x : Number , y : Number) -> Number =
+        __math_atan2(x , y) or throw "Error"
+
 }
