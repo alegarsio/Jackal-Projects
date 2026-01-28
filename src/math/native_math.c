@@ -44,6 +44,10 @@ Value native_math_ceil(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = ceil(args[0].as.number)}};
 }
 
+Value native_math_random(int arity, Value *args) {
+    return (Value){VAL_NUMBER, {.number = (double)rand() / (double)RAND_MAX}};
+}
+
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
