@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<errno.h>
+#include<math.h>
 
 #define MATH_REGISTER(env, name, func) \
     do { \
@@ -48,6 +49,10 @@ Value native_math_random(int arity, Value *args) {
     return (Value){VAL_NUMBER, {.number = (double)rand() / (double)RAND_MAX}};
 }
 
+Value native_math_sin(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NUMBER, {.number = 0}};
+    return (Value){VAL_NUMBER, {.number = sin(args[0].as.number)}};
+}
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
