@@ -44,5 +44,8 @@ object Math() {
     
     func min(a : Number , b : Number) -> Number = 
         __math_min(a,b) or throw "Error"
+    
+    func max(a : Number , b : Number) -> Number =
+        __math_max(a,b) or throw "Error"
 
 }
