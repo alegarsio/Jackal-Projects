@@ -1,5 +1,3 @@
-import std.math.basicmath 
-
 @final
 const PI : Float = 3.141592653589793
 @final 
@@ -10,6 +8,10 @@ const SQRT : Float = 1.414213562373095
 const LN2  : Float  = 0.693147180559945
 @final
 const LN10 : Float  = 2.302585092994046
+@final
+const INF = 1.0 / 0.0
+@final
+const NAN = 0.0 / 0.0
 
 object Math() {
 
@@ -39,5 +41,8 @@ object Math() {
 
     func atan2(x : Number , y : Number) -> Number =
         __math_atan2(x , y) or throw "Error"
+    
+    func min(a : Number , b : Number) -> Number = 
+        __math_min(a,b) or throw "Error"
 
 }
