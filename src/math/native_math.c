@@ -61,4 +61,6 @@ void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_floor",native_math_floor);
     MATH_REGISTER(env,"__math_ceil",native_math_ceil);
     MATH_REGISTER(env,"__math_random",native_math_random);
+    MATH_REGISTER(env,"__math_sin",native_math_sin);
+
 }
