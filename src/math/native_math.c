@@ -79,6 +79,11 @@ Value native_math_max(int arity, Value *args) {
     return (Value){VAL_NUMBER, {.number = max_val}};
 }
 
+Value native_math_isnan(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NUMBER, {.number = 1}};
+    return (Value){VAL_NUMBER, {.number = isnan(args[0].as.number)}};
+}
+
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
@@ -91,4 +96,5 @@ void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_atan2",native_math_atan2);
     MATH_REGISTER(env,"__math_min",native_math_min);
     MATH_REGISTER(env,"__math_max",native_math_max);
+
 }
