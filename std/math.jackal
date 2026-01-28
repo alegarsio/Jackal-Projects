@@ -47,5 +47,8 @@ object Math() {
     
     func max(a : Number , b : Number) -> Number =
         __math_max(a,b) or throw "Error"
+    
+    func isNan(n) -> Boolean = 
+        __math_isnan(n) or throw "Error"
 
 }
