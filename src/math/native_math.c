@@ -53,6 +53,14 @@ Value native_math_sin(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NUMBER, {.number = 0}};
     return (Value){VAL_NUMBER, {.number = sin(args[0].as.number)}};
 }
+
+Value native_math_atan2(int arity, Value *args) {
+    if (arity < 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_NUMBER) {
+        return (Value){VAL_NUMBER, {.number = 0}};
+    }
+    return (Value){VAL_NUMBER, {.number = atan2(args[0].as.number, args[1].as.number)}};
+}
+
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
