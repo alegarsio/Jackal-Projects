@@ -96,5 +96,5 @@ void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_atan2",native_math_atan2);
     MATH_REGISTER(env,"__math_min",native_math_min);
     MATH_REGISTER(env,"__math_max",native_math_max);
-
+    MATH_REGISTER(env,"__math_isnan",native_math_isnan);
 }
