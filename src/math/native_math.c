@@ -70,6 +70,15 @@ Value native_math_min(int arity, Value *args) {
     return (Value){VAL_NUMBER, {.number = min_val}};
 }
 
+Value native_math_max(int arity, Value *args) {
+    if (arity < 2) return arity == 1 ? args[0] : (Value){VAL_NUMBER, {.number = 0}};
+    double max_val = args[0].as.number;
+    for (int i = 1; i < arity; i++) {
+        if (args[i].as.number > max_val) max_val = args[i].as.number;
+    }
+    return (Value){VAL_NUMBER, {.number = max_val}};
+}
+
 void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_abs",native_math_abs);
     MATH_REGISTER(env,"__math_sqrt",native_math_sqrt);
@@ -81,5 +90,4 @@ void register_math_natives(Env* env){
     MATH_REGISTER(env,"__math_sin",native_math_sin);
     MATH_REGISTER(env,"__math_atan2",native_math_atan2);
     MATH_REGISTER(env,"__math_min",native_math_min);
-
 }
