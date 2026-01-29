@@ -54,4 +54,5 @@ Value native_file_exists(int arity, Value *args)
 void register_file_natives(Env *env)
 {
     FILE_REGISTER(env, "__ioFile_read", native_file_read);
+    FILE_REGISTER(env, "__ioFile_exist", native_file_exists);
 }
