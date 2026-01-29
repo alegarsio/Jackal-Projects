@@ -3,6 +3,7 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include<sys/stat.h>
 
 #define FILE_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -83,10 +84,25 @@ Value native_file_append(int arity, Value *args) {
 
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+
+Value native_file_size(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_NUMBER, {.number = -1}};
+    }
+
+    struct stat st;
+    if (stat(args[0].as.string, &st) == 0) {
+        return (Value){VAL_NUMBER, {.number = (double)st.st_size}};
+    }
+
+    return (Value){VAL_NUMBER, {.number = -1}};
+}
+
 void register_file_natives(Env *env)
 {
     FILE_REGISTER(env, "__ioFile_read", native_file_read);
     FILE_REGISTER(env, "__ioFile_exist", native_file_exists);
     FILE_REGISTER(env,"__ioFile_write",native_file_write);
     FILE_REGISTER(env,"__ioFile_append",native_file_append);
+    FILE_REGISTER(env,"__ioFile_size",native_file_size);
 }
