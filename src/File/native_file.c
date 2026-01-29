@@ -37,18 +37,21 @@ Value native_file_read(int arity, Value *args)
     string[fsize] = 0;
     return (Value){VAL_STRING, {.string = string}};
 }
+
 Value native_file_exists(int arity, Value *args)
 {
     if (arity < 1 || args[0].type != VAL_STRING)
-        return (Value){VAL_NUMBER, {.number = 0}};
+        return (Value){VAL_BOOL, {.boolean = false}};
 
     FILE *file = fopen(args[0].as.string, "r");
+
     if (file)
     {
         fclose(file);
-        return (Value){VAL_NUMBER, {.number = 1}};
+        return (Value){VAL_BOOL, {.boolean = true}};
     }
-    return (Value){VAL_NUMBER, {.number = 0}};
+
+    return (Value){VAL_BOOL, {.boolean = false}};
 }
 
 void register_file_natives(Env *env)
