@@ -32,5 +32,5 @@
     }
 
 void register_file_natives(Env* env){
-
+    FILE_REGISTER(env,"__ioFile_read",native_file_read);
 }
