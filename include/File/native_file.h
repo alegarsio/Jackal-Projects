@@ -1,5 +1,5 @@
-#ifndef IO_REGISTRY_H
-#define IO_REGISTRY_H
+#ifndef FILE_REGISTRY_H
+#define FILE_REGISTRY_H
 
 #include "common.h"
 #include "env.h"
