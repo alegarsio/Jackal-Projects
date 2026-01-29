@@ -8,6 +8,4 @@ class BasicFileStream{
     func write(content : String) -> Int = 
         __ioFile_write(this.path,content) or throw "Error"
     
-        
-    
 }

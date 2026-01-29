@@ -2,5 +2,9 @@ import std.File.FileStream
 
 class File : BasicFileStream {
     func exist() -> Boolean = 
-        __ioFile_exist(this.path) 
+        __ioFile_exist(this.path) or throw "Error"
+    func append(content : String) -> Boolean = 
+        __ioFile_append(this.path,content) or throw "Error"
+    func size() -> Number =
+        __ioFile_size(this.path) or throw "Error"
 }
