@@ -1,3 +1,6 @@
 import std.File.FileStream 
 
-class File : BasicFileStream {}
+class File : BasicFileStream {
+    func exist() -> Boolean = 
+        __ioFile_exist(this.path) 
+}
