@@ -111,7 +111,16 @@ Value native_file_create(int arity, Value *args) {
 
     return (Value){VAL_BOOL, {.boolean = 0}};
 }
+Value native_file_remove(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
 
+    if (remove(args[0].as.string) == 0) {
+        return (Value){VAL_BOOL, {.boolean = 1}};
+    }
+    return (Value){VAL_BOOL, {.boolean = 0}};
+}
 
 void register_file_natives(Env *env)
 {
