@@ -97,6 +97,21 @@ Value native_file_size(int arity, Value *args) {
 
     return (Value){VAL_NUMBER, {.number = -1}};
 }
+Value native_file_create(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
+
+    FILE *file = fopen(args[0].as.string, "w");
+    
+    if (file) {
+        fclose(file);
+        return (Value){VAL_BOOL, {.boolean = 1}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = 0}};
+}
+
 
 void register_file_natives(Env *env)
 {
