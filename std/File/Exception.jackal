@@ -1,0 +1,7 @@
+class FileException{
+    @final 
+    const FileNotFoundError : String = "File Not Found"
+    @final
+    const PermissionError : String = "Permission Denied"
+
+}
