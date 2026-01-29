@@ -1,0 +1,3 @@
+import std.File.FileStream 
+
+class File : BasicFileStream {}
