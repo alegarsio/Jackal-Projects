@@ -53,6 +53,7 @@ Value native_file_exists(int arity, Value *args)
 
     return (Value){VAL_BOOL, {.boolean = false}};
 }
+
 Value native_file_write(int arity, Value *args) {
     if (arity < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
         return (Value){VAL_NUMBER, {.number = 0}};
@@ -65,6 +66,22 @@ Value native_file_write(int arity, Value *args) {
     fclose(file);
 
     return (Value){VAL_NUMBER, {.number = 1}};
+}
+
+Value native_file_append(int arity, Value *args) {
+    if (arity < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    FILE *file = fopen(args[0].as.string, "a");
+    if (!file) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    fprintf(file, "%s", args[1].as.string);
+    fclose(file);
+
+    return (Value){VAL_BOOL, {.boolean = true}};
 }
 void register_file_natives(Env *env)
 {
