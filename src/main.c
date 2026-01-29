@@ -46,23 +46,19 @@
 
 #define HTTP_DEFAULT_PORT 80
 #define BUFFER_SIZE 4096
-
 char* value_to_string(Value value) {
     char buffer[128];
 
     switch (value.type) {
+        case VAL_BOOL:
+            return strdup(value.as.boolean ? "true" : "false");
+
         case VAL_NUMBER:
             snprintf(buffer, sizeof(buffer), "%g", value.as.number);
             return strdup(buffer);
         
         case VAL_STRING:
             return strdup(value.as.string);
-        
-        case TOKEN_TRUE:
-            return strdup("true");
-        
-        case TOKEN_FALSE:
-            return strdup("false");
         
         case VAL_NIL:
             return strdup("nil");
@@ -72,6 +68,10 @@ char* value_to_string(Value value) {
 
         case VAL_ARRAY:
             return strdup("[Array]");
+
+        case VAL_BYTE:
+            snprintf(buffer, sizeof(buffer), "0x%02X", value.as.byte);
+            return strdup(buffer);
 
         default:
             return strdup("[Unknown]");
