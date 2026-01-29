@@ -121,7 +121,16 @@ Value native_file_remove(int arity, Value *args) {
     }
     return (Value){VAL_BOOL, {.boolean = 0}};
 }
+Value native_file_rename(int arity, Value *args) {
+    if (arity < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
 
+    if (rename(args[0].as.string, args[1].as.string) == 0) {
+        return (Value){VAL_BOOL, {.boolean = 1}};
+    }
+    return (Value){VAL_BOOL, {.boolean = 0}};
+}
 void register_file_natives(Env *env)
 {
     FILE_REGISTER(env, "__ioFile_read", native_file_read);
