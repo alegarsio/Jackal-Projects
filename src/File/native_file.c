@@ -88,4 +88,5 @@ void register_file_natives(Env *env)
     FILE_REGISTER(env, "__ioFile_read", native_file_read);
     FILE_REGISTER(env, "__ioFile_exist", native_file_exists);
     FILE_REGISTER(env,"__ioFile_write",native_file_write);
+    FILE_REGISTER(env,"__ioFile_append",native_file_append);
 }
