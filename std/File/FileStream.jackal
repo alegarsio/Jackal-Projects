@@ -1,10 +1,13 @@
-
 class BasicFileStream{
 
     init(path : String) = this.path = path
 
     func read() -> String = 
         __ioFile_read(this.path) or throw "Error"
+        
+    func write(content : String) -> Int = 
+        __ioFile_write(this.path,content) or throw "Error"
     
+        
     
 }
