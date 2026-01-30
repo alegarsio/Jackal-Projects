@@ -1,0 +1,9 @@
+trait Exception{
+    func flush();
+}
+class FileException{
+    init(this.path,this.msg){
+        this.path = path
+        this.msg = msg
+    }
+}
