@@ -1,7 +1,7 @@
-class FileException{
-    @final 
-    const FileNotFoundError : String = "File Not Found"
-    @final
-    const PermissionError : String = "Permission Denied"
+import std.File.Abstract.FileException
 
+class FileNotFoundException : FileException, Exception{
+    @override
+    func flush() ->  String = 
+        this.path + "  " + this.message
 }
