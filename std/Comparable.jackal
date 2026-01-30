@@ -1,3 +1,4 @@
 import std.collections.comparable.compare
 
+@final 
 class Compare<T> : Comparable<T>
