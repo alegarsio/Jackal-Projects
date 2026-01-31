@@ -5,6 +5,7 @@
 #include "math/native_math.h"
 #include "Io/io_native.h"
 #include "File/native_file.h"
+#include"http/native_http.h"
 /**
  * Register DEFAULT is now DEPRECATED
  */
@@ -126,5 +127,5 @@ void register_all_natives(Env* env) {
     register_math_natives(env);
     register_io_natives(env);
     register_file_natives(env);
-    
+    register_http_natives(env);
 }
