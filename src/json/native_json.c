@@ -79,4 +79,5 @@ Value native_json_parse(int arity, Value *args)
 
 void register_file_natives(Env *env)
 {
+    JSON_REGISTER(env,"__json_parse",native_json_parse);
 }
