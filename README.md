@@ -19,9 +19,7 @@ func f(x : Int , y : Int) -> Boolean = (2 * x) + 1 == y
 ---
 
 ## About
-
-Jackal is a dynamic, object-oriented interpreted programming language built from scratch in C. This project is designed as an in-depth exploration of language implementation, covering a lexer, a recursive descent parser, and a tree-walking evaluator.
-
+Jackal is modern pragmatic, lightweight ,expression first scripting language
 ## Project Vision
 
 The goal of this project is to create a **lightweight and elegant** programming language **together** as a community. Jackal is built by and for open source scientists and developers who want to learn, contribute, and shape the future of a language collaboratively.
