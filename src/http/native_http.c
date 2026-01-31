@@ -162,4 +162,5 @@ Value native_http_get_headers(int arity, Value *args) {
 void register_http_natives(Env *env){
     HTTP_REGISTER(env,"__http_get",native_http_get);
     HTTP_REGISTER(env,"__http_post",native_http_post);
+    HTTP_REGISTER(env,"__http_header",native_http_get_headers);
 }
