@@ -76,4 +76,5 @@ Value native_http_get(int arity, Value *args) {
 }
 
 void register_file_natives(Env *env){
+    HTTP_REGISTER(env,"__http_get",native_http_get);
 }
