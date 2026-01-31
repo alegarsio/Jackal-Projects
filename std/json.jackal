@@ -1,0 +1,6 @@
+
+object Json(){
+    func parse(content) = 
+        __json_parse(content) 
+            or "Error"
+}
