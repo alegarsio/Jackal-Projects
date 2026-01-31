@@ -1,0 +1,35 @@
+
+enum Status {
+    OK = 200,
+    CREATED = 201,       
+    ACCEPTED = 202,
+
+    MOVED = 301,
+    FOUND = 302,
+
+    BAD_REQUEST = 400,   
+    UNAUTHORIZED = 401,  
+    FORBIDDEN = 403,     
+    NOT_FOUND = 404,   
+    METHOD_NOT_ALLOWED = 405,
+
+    INTERNAL_ERROR = 500, 
+    BAD_GATEWAY = 502,
+    SERVICE_UNAVAILABLE = 503,
+    GATEWAY_TIMEOUT = 504
+}
+
+object Http{
+    func get(url : String) -> String = 
+        __http_get(url) 
+            or "Error to get data"
+    func post(url : String , load : String) -> String = 
+        __http_post(url,load)
+            or "Error to post data"
+    func getHeaders(url : String, headers : Array) -> String =
+        __http_header(url,headers) 
+            or "Error to get header"
+    func statusCode(url : String) -> Number = 
+        __http_status(url) or "Error"
+
+}
