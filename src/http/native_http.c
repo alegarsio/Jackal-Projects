@@ -113,6 +113,53 @@ Value native_http_post(int arity, Value *args) {
     free(chunk.data);
     return result;
 }
+Value native_http_get_headers(int arity, Value *args) {
+    if (arity < 2 || args[0].type != VAL_STRING || args[1].type != VAL_ARRAY) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    CURL *curl_handle;
+    CURLcode res;
+    struct HttpBuffer chunk = {malloc(1), 0};
+    struct curl_slist *header_list = NULL;
+
+    ValueArray *arr = args[1].as.array; 
+
+    curl_handle = curl_easy_init();
+    if (curl_handle) {
+        for (int i = 0; i < arr->count; i++) {
+            Value item = arr->values[i];
+            if (item.type == VAL_STRING) {
+                header_list = curl_slist_append(header_list, item.as.string);
+            }
+        }
+
+        curl_easy_setopt(curl_handle, CURLOPT_URL, args[0].as.string);
+        curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, header_list);
+        
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
+        curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "Jackal-Interpreter/1.0");
+
+        res = curl_easy_perform(curl_handle);
+
+        // Penting: Bersihkan list curl setelah selesai
+        curl_slist_free_all(header_list);
+        
+        if (res != CURLE_OK) {
+            free(chunk.data);
+            curl_easy_cleanup(curl_handle);
+            return (Value){VAL_NIL, {0}};
+        }
+
+        curl_easy_cleanup(curl_handle);
+    }
+
+    Value result = (Value){VAL_STRING, {.string = strdup(chunk.data)}};
+    free(chunk.data);
+    return result;
+}
 void register_http_natives(Env *env){
     HTTP_REGISTER(env,"__http_get",native_http_get);
+    HTTP_REGISTER(env,"__http_post",native_http_post);
 }
