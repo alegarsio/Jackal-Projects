@@ -131,6 +131,36 @@ Value native_file_rename(int arity, Value *args) {
     }
     return (Value){VAL_BOOL, {.boolean = 0}};
 }
+Value native_file_load(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    const char* path = args[0].as.string;
+    FILE* f = fopen(path, "r");
+    if (!f) return (Value){VAL_BOOL, {.boolean = false}};
+
+    fseek(f, 0, SEEK_END);
+    long len = ftell(f);
+    rewind(f);
+
+    char* source = malloc(len + 1);
+    if (!source) {
+        fclose(f);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    fread(source, 1, len, f);
+    source[len] = '\0';
+    fclose(f);
+
+    extern Env* global_env; 
+    execute_source(source, global_env);
+
+    free(source);
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
+
 void register_file_natives(Env *env)
 {
     FILE_REGISTER(env, "__ioFile_read", native_file_read);
