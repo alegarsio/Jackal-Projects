@@ -92,4 +92,5 @@ Value native_json_pretty(int arity, Value *args) {
 void register_json_natives(Env *env)
 {
     JSON_REGISTER(env,"__json_parse",native_json_parse);
+    JSON_REGISTER(env,"__json_preety",native_json_pretty);
 }
