@@ -5,7 +5,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <curl/curl.h>
-#include "cJSON.h"
+#include <cjson/cJSON.h>
 
 #define JSON_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -44,7 +44,7 @@ Value cjson_to_jackal(cJSON *item)
         cJSON *child;
         cJSON_ArrayForEach(child, item)
         {
-            map_put(map, child->string, cjson_to_jackal(child));
+            map_set(map, child->string, cjson_to_jackal(child));
         }
         return (Value){VAL_MAP, {.map = map}};
     }
@@ -54,7 +54,7 @@ Value cjson_to_jackal(cJSON *item)
         cJSON *element;
         cJSON_ArrayForEach(element, item)
         {
-            array_push(arr, cjson_to_jackal(element));
+            array_append(arr, cjson_to_jackal(element));
         }
         return (Value){VAL_ARRAY, {.array = arr}};
     }
@@ -76,8 +76,20 @@ Value native_json_parse(int arity, Value *args)
     cJSON_Delete(json);
     return result;
 }
+Value native_json_pretty(int arity, Value *args) {
+    if (arity < 1) return (Value){VAL_NIL, {0}, NULL};
 
-void register_file_natives(Env *env)
+    cJSON *json = jackal_to_cjson(args[0]); 
+    char *json_str = cJSON_Print(json);     
+    
+    Value result = (Value){VAL_STRING, {.string = strdup(json_str)}, NULL};
+    
+    free(json_str);
+    cJSON_Delete(json);
+    return result;
+}
+
+void register_json_natives(Env *env)
 {
     JSON_REGISTER(env,"__json_parse",native_json_parse);
 }
