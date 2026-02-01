@@ -103,6 +103,19 @@ Value native_system_exit(int arg_count, Value* args) {
     exit(code); 
     return (Value){VAL_NIL, {0}, NULL};
 }
+
+Value native_system_cwd(int arg_count, Value* args) {
+    char cwd[1024];
+    #ifdef _WIN32
+        if (_getcwd(cwd, sizeof(cwd)) != NULL)
+    #else
+        if (getcwd(cwd, sizeof(cwd)) != NULL)
+    #endif
+    {
+        return (Value){VAL_STRING, {.string = strdup(cwd)}, NULL};
+    }
+    return (Value){VAL_NIL, {0}, NULL};
+}
 void register_sys_natives(Env* env){
 
     set_var(env, "WINDOWS", (Value){VAL_NUMBER, {.number = WINDOWS}}, true, "");
