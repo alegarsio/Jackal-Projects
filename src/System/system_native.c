@@ -115,4 +115,5 @@ void register_sys_natives(Env* env){
     SYS_REGISTER(env,"__sys_platform",native_system_platform);
     SYS_REGISTER(env,"__sys_now",native_sys_now);
     SYS_REGISTER(env, "__sys_getenv", native_system_getenv);
+    SYS_REGISTER(env, "__sys_exit", native_system_exit);
 }
