@@ -84,6 +84,17 @@ Value native_sys_now(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = ms}};
 }
 
+Value native_system_getenv(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_NIL, {0}, NULL};
+    }
+    
+    char* val = getenv(args[0].as.string);
+    if (val == NULL) return (Value){VAL_NIL, {0}, NULL};
+    
+    return (Value){VAL_STRING, {.string = strdup(val)}, NULL};
+}
+
 void register_sys_natives(Env* env){
 
     set_var(env, "WINDOWS", (Value){VAL_NUMBER, {.number = WINDOWS}}, true, "");
