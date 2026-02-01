@@ -95,6 +95,14 @@ Value native_system_getenv(int arg_count, Value* args) {
     return (Value){VAL_STRING, {.string = strdup(val)}, NULL};
 }
 
+Value native_system_exit(int arg_count, Value* args) {
+    int code = 0;
+    if (arg_count > 0 && args[0].type == VAL_NUMBER) {
+        code = (int)args[0].as.number;
+    }
+    exit(code); 
+    return (Value){VAL_NIL, {0}, NULL};
+}
 void register_sys_natives(Env* env){
 
     set_var(env, "WINDOWS", (Value){VAL_NUMBER, {.number = WINDOWS}}, true, "");
