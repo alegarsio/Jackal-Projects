@@ -2242,7 +2242,7 @@ static Node *parse_interface_def(Parser *P)
     next(P);
 
     if (P->current.kind != TOKEN_IDENT)
-        print_error("Expected interface name.");
+        print_error("Expected interface/trait name.");
     strcpy(n->name, P->current.text);
     next(P);
 
@@ -2257,12 +2257,13 @@ static Node *parse_interface_def(Parser *P)
     {
         if (P->current.kind != TOKEN_FUNCTION)
         {
-            print_error("Expected 'function' keyword in interface.");
-            break;
+            next(P);
+            continue;
         }
         next(P);
 
         Node *method = new_node(NODE_FUNC_DEF);
+
         if (P->current.kind != TOKEN_IDENT)
             print_error("Expected function name.");
         strcpy(method->name, P->current.text);
@@ -2272,25 +2273,75 @@ static Node *parse_interface_def(Parser *P)
             print_error("Expected '(' after function name.");
         next(P);
 
+        Node *params_head = NULL;
+        Node *params_curr = NULL;
         method->arity = 0;
+
         if (P->current.kind != TOKEN_RPAREN)
         {
             do
             {
                 if (P->current.kind != TOKEN_IDENT)
                     print_error("Expected parameter name.");
+                Node *param = new_node(NODE_IDENT);
+                strcpy(param->name, P->current.text);
                 next(P);
+
+                if (P->current.kind == TOKEN_COLON)
+                {
+                    next(P);
+                    if (P->current.kind == TOKEN_IDENT)
+                        next(P);
+                }
+
                 method->arity++;
+                if (params_head == NULL)
+                {
+                    params_head = param;
+                    params_curr = param;
+                }
+                else
+                {
+                    params_curr->next = param;
+                    params_curr = param;
+                }
+
             } while (P->current.kind == TOKEN_COMMA && (next(P), 1));
         }
+
         if (P->current.kind != TOKEN_RPAREN)
             print_error("Expected ')' after parameters.");
         next(P);
 
-        next(P);
+        method->left = params_head;
 
-        method->left = NULL;
-        method->right = NULL;
+        if (P->current.kind == TOKEN_ARROW_TO_RETURN)
+        {
+            next(P);
+            if (P->current.kind == TOKEN_IDENT)
+            {
+                strcpy(method->return_type, P->current.text);
+                next(P);
+            }
+            else
+            {
+                print_error("Expected return type identifier.");
+            }
+        }
+
+        if (P->current.kind == TOKEN_LBRACE)
+        {
+            method->right = parse_block(P);
+        }
+        else if (P->current.kind == TOKEN_SEMI)
+        {
+            method->right = NULL;
+            next(P);
+        }
+        else
+        {
+            print_error("Expected '{' or ';' after function signature in interface.");
+        }
 
         if (methods_head == NULL)
         {
