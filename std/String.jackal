@@ -3,6 +3,8 @@ object String {
         __str_toUpper(char) or "Error"
     func lower(char : String) -> String = 
         __str_toLower(char) or "Error"
-    func starswith(char : String) -> Boolean = 
-        __str_startsWith(char) or "Error"
+    func starswith(char : String , exp : String) -> Boolean = 
+        __str_startsWith(char,exp) or "Error"
+    func contains(char : String, exp : String) -> Boolean = 
+        __str_contains(char,exp) or "Error"
 }
