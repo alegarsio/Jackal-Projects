@@ -1,7 +1,6 @@
-import std.String.Exception 
-import std.String.String
-
-class String : StringStream {
-    func upper() -> String = __str_toUpper(this.char) or throw "Error"
-    func lower() -> String = __str_toLower(this.char) or throw "Error"
+object String {
+    func upper(char : String) -> String = 
+        __str_toUpper(char) or "Error"
+    func lower(char : String) -> String = 
+        __str_toLower(char) or throw "Error"
 }
