@@ -90,16 +90,16 @@ Value native_string_endswith(int arg_count, Value* args) {
 
 Value native_string_contains(int arg_count, Value* args) {
     if (arg_count < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
-        return (Value){VAL_NUMBER, {.number = 0}};
+        return (Value){VAL_BOOL, {.number = false}};
     }
 
     const char* str = args[0].as.string;
     const char* needle = args[1].as.string;
 
     if (strstr(str, needle) != NULL) {
-        return (Value){VAL_NUMBER, {.number = 1}};
+        return (Value){VAL_BOOL, {.number = true}};
     }
-    return (Value){VAL_NUMBER, {.number = 0}};
+    return (Value){VAL_BOOL, {.number = false}};
 }
 
 Value native_string_replace(int arg_count, Value* args) {
