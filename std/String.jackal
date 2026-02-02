@@ -7,4 +7,6 @@ object String {
         __str_startsWith(char,exp) or "Error"
     func contains(char : String, exp : String) -> Boolean = 
         __str_contains(char,exp) or "Error"
+    func trim(char : String) -> String = 
+        __str_trim(char) or "Error"
 }
