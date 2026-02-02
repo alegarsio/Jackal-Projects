@@ -2,5 +2,7 @@ object String {
     func upper(char : String) -> String = 
         __str_toUpper(char) or "Error"
     func lower(char : String) -> String = 
-        __str_toLower(char) or throw "Error"
+        __str_toLower(char) or "Error"
+    func starswith(char : String) -> Boolean = 
+        __str_startsWith(char) or "Error"
 }
