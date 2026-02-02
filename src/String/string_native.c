@@ -143,6 +143,26 @@ Value native_string_replace(int arg_count, Value* args) {
 
     return (Value){VAL_STRING, {.string = result}};
 }
+Value native_string_trim(int arg_count, Value* args) {
+    if (arg_count < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL, {0}, NULL};
+    
+    char* str = args[0].as.string;
+    char* end;
+
+    while(isspace((unsigned char)*str)) str++;
+
+    if(*str == 0) return (Value){VAL_STRING, {.string = strdup("")}, NULL};
+
+    end = str + strlen(str) - 1;
+    while(end > str && isspace((unsigned char)*end)) end--;
+
+    int len = (int)(end - str + 1);
+    char* trimmed = malloc(len + 1);
+    strncpy(trimmed, str, len);
+    trimmed[len] = '\0';
+
+    return (Value){VAL_STRING, {.string = trimmed}, NULL};
+}
 void register_string_natives(Env* env) {
     STRING_REGISTER(env, "__str_toUpper", native_string_uppercase);
     STRING_REGISTER(env, "__str_toLower", native_string_lowercase);
