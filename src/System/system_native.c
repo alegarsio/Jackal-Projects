@@ -16,6 +16,9 @@
     #include <sys/time.h>
 #endif
 
+extern int global_argc;
+extern char** global_argv;
+
 #define SYS_REGISTER(env, name, func) \
     do { \
         if (func != NULL) { \
@@ -115,6 +118,18 @@ Value native_system_cwd(int arg_count, Value* args) {
         return (Value){VAL_STRING, {.string = strdup(cwd)}, NULL};
     }
     return (Value){VAL_NIL, {0}, NULL};
+}
+
+Value native_system_args(int arg_count, Value* args) {
+    ValueArray* array = array_new();
+
+    for (int i = 0; i < global_argc; i++) {
+        Value str_val = (Value){VAL_STRING, {.string = strdup(global_argv[i])}, NULL};
+        
+        array_push(array, str_val);
+    }
+
+    return (Value){VAL_ARRAY, {.array = array}, NULL};
 }
 void register_sys_natives(Env* env){
 
