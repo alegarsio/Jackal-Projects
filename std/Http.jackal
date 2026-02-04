@@ -20,6 +20,7 @@ enum Status {
 }
 
 object Http{
+    @async
     func get(url : String) -> String = 
         __http_get(url) 
             or "Error to get data"
