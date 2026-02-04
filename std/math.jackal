@@ -13,31 +13,31 @@ const INF = 1.0 / 0.0
 @final
 const NAN = 0.0 / 0.0
 
-object Math() {
-
+object Math {
     func abs(n : Int) -> Number = 
-        __math_abs(n) or throw "Error"
-
+        __math_abs(n) 
+            or throw "Error"
     func sqrt(n : Int) -> Number =
-         __math_sqrt(n) or throw "Error"
-
+         __math_sqrt(n) 
+            or throw "Error"
     func round(n : Int) -> Number = 
-        __math_round(n) or throw "Error"
-
+        __math_round(n) 
+            or throw "Error"
     func pow(base, exp) -> Number =
-        __math_pow(base,exp) or throw "Error"
-
+        __math_pow(base,exp) 
+            or throw "Error"
     func floor(n : Int) -> Number = 
-        __math_floor(n) or throw "Error"
-
+        __math_floor(n) 
+            or throw "Error"
     func ceil(n : Int) -> Number =
-        __math_ceil(n) or throw "Error"
-
+        __math_ceil(n)
+             or throw "Error"
     func random() -> Number =
-        __math_random() or throw "Error"
-
+        __math_random() 
+            or throw "Error"
     func sin(rad : Number) -> Number =
-        __math_sin(rad) or throw "Error"
+        __math_sin(rad) 
+            or throw "Error"
 
     func atan2(x : Number , y : Number) -> Number =
         __math_atan2(x , y) or throw "Error"
