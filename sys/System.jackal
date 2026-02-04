@@ -14,5 +14,10 @@ object Sys{
     func getenv(env : String) -> String = 
         __sys_getenv(env) 
             or throw "Error"
-    
+    func args() -> Array = 
+        __sys_args() or throw "Error"
+    func exit(code : Int) -> None = 
+        __sys_exit(code) 
+            or throw "Error"
+        
 }
