@@ -126,7 +126,7 @@ Value native_system_args(int arg_count, Value* args) {
     for (int i = 0; i < global_argc; i++) {
         Value str_val = (Value){VAL_STRING, {.string = strdup(global_argv[i])}, NULL};
         
-        array_push(array, str_val);
+        array_append(array, str_val);
     }
 
     return (Value){VAL_ARRAY, {.array = array}, NULL};
