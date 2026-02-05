@@ -225,7 +225,6 @@ let result = square(12)
 square(12) * mul(1,2) |> println()
 
 ```
-
 ```js
 1 .. 5 |> println()
 ```
