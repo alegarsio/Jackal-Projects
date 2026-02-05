@@ -254,6 +254,10 @@ for(i in 1 .. 10){
     println(i)
 }
 ```
+```js
+for count in [1 .. 10]
+    println(count)
+```
 
 Range based loop with step:
 
