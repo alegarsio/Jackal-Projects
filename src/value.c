@@ -179,7 +179,7 @@ void print_value(Value value)
         print_value(*value.as.return_val);
         break;
     case VAL_ARRAY:
-        printf("[");
+ 
         for (int i = 0; i < value.as.array->count; i++)
         {
             print_value(value.as.array->values[i]);
@@ -188,7 +188,7 @@ void print_value(Value value)
                 printf(","); // Hanya koma, tanpa spasi ekstra agar bersih
             }
         }
-        printf("]");
+    
         break;
     case VAL_INTERFACE:
         printf("<interface %s>", value.as.interface_obj->name);
@@ -356,8 +356,10 @@ bool is_value_truthy(Value value)
         return value.as.list->count > 0;
     case VAL_RETURN:
         return is_value_truthy(*value.as.return_val);
+    default : 
+     return false;
     }
-    return false;
+
 }
 
 /**
