@@ -2490,6 +2490,27 @@ static Node *parse_enum_def(Parser *P)
     return n;
 }
 
+static Node *parse_where_expr(Parser *P) {
+    Node *left = parse_comparison(P); 
+
+    while (P->current.kind == TOKEN_WHERE) {
+        next(P);
+        Node *n = new_node(NODE_WHERE);
+        n->left = left;
+        
+        if (P->current.kind != TOKEN_LPAREN) print_error("Expected '(' after 'where'.");
+        next(P);
+        
+        n->right = parse_expr(P); 
+        
+        if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after 'where' condition.");
+        next(P);
+        
+        left = n;
+    }
+    return left;
+}
+
 static Node *parse_func_expr(Parser *P)
 {
     Node *n = new_node(NODE_FUNC_EXPR);
