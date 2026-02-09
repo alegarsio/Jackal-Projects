@@ -103,7 +103,7 @@ const char *get_value_type_name(Value val)
     switch (val.type)
     {
     case VAL_NIL:
-        return "None";
+        return "Void";
     case VAL_BYTE:
         return "Byte";
     case VAL_NUMBER:
@@ -344,6 +344,7 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         {
             type_matches = true;
         }
+        
         else if (strcmp(func->return_type, actual_type_name) == 0)
         {
             type_matches = true;
@@ -1037,6 +1038,38 @@ Value eval_node(Env *env, Node *n)
 
         return (Value){.type = VAL_NIL, .as = {0}};
     }
+   
+case NODE_WHERE: {
+    Value left_val = eval_node(env, n->left); 
+    
+    if (left_val.type != VAL_ARRAY) {
+        print_error("'where' operator can only be used on Arrays.");
+        free_value(left_val);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *source = left_val.as.array;
+    ValueArray *filtered = array_new();
+    
+    Env *where_env = env_new(env);
+
+    for (int i = 0; i < source->count; i++) {
+        set_var(where_env, "it", source->values[i], true, "");
+        
+        Value condition = eval_node(where_env, n->right);
+        
+        if (is_value_truthy(condition)) {
+            array_append(filtered, copy_value(source->values[i]));
+        }
+        
+        free_value(condition);
+        
+    }
+
+    env_free(where_env);
+    free_value(left_val);
+    return (Value){VAL_ARRAY, {.array = filtered}};
+}
 
     case NODE_POST_INC:
     {
@@ -1967,6 +2000,37 @@ Value eval_node(Env *env, Node *n)
                     }
                     return (Value){VAL_NIL, {0}};
                 }
+                if (strcmp(get_node->name, "each") == 0) {
+    if (n->arity < 1) {
+        print_error("Error: each() expects a callback function.");
+        return (Value){VAL_NIL, {0}, NULL};
+    }
+
+    // Ambil fungsi callback-nya
+    Value callback = eval_node(env, n->right);
+    
+    if (callback.type != VAL_FUNCTION && callback.type != VAL_NATIVE) {
+        print_error("Error: argument to each() must be a function.");
+        free_value(callback);
+        return (Value){VAL_NIL, {0}, NULL};
+    }
+
+    ValueArray* array = obj.as.array;
+    for (int i = 0; i < array->count; i++) {
+        // Siapkan argumen untuk callback (isi elemen array saat ini)
+        Value args[1] = { array->values[i] };
+        
+        // Panggil fungsi callback tersebut
+        // Asumsi kamu punya fungsi call_function(env, function, arg_count, args)
+        Value result = call_jackal_function(env, callback, 1, args);
+        
+        // Kita tidak butuh return value dari callback, jadi hapus
+        free_value(result);
+    }
+
+    free_value(callback);
+    return (Value){VAL_NIL, {0}, NULL};
+}
 
                 if (strcmp(get_node->name, "pop") == 0)
                 {
