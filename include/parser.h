@@ -68,7 +68,8 @@ typedef enum {
     NODE_NAMESPACES,
     NODE_USING,
     NODE_EXTENSION,
-    NODE_BOOL 
+    NODE_BOOL ,
+    NODE_WHERE
 } NodeKind;
 
 /**
