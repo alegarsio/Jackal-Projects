@@ -18,6 +18,7 @@ static Node *parse_every_loop(Parser *P);
  */
 static Node *parse_when_expr(Parser *P);
 
+static Node *parse_where_expr(Parser *P);
 /**
  * @brief Parses annotation
  * @param P Pointer to the Parser.
@@ -641,14 +642,15 @@ static Node *parse_comparison(Parser *P)
  */
 static Node *parse_equality(Parser *P)
 {
-    Node *left = parse_comparison(P);
-    while (P->current.kind == TOKEN_EQUAL_EQUAL || P->current.kind == TOKEN_BANG_EQUAL )
+    Node *left = parse_where_expr(P); 
+    
+    while (P->current.kind == TOKEN_EQUAL_EQUAL || P->current.kind == TOKEN_BANG_EQUAL)
     {
         Node *n = new_node(NODE_BINOP);
         n->op = P->current.kind;
         next(P);
         n->left = left;
-        n->right = parse_comparison(P);
+        n->right = parse_where_expr(P); 
         left = n;
     }
     return left;
@@ -2489,23 +2491,26 @@ static Node *parse_enum_def(Parser *P)
     n->left = head;
     return n;
 }
-
 static Node *parse_where_expr(Parser *P) {
     Node *left = parse_comparison(P); 
 
     while (P->current.kind == TOKEN_WHERE) {
-        next(P);
+        next(P); 
         Node *n = new_node(NODE_WHERE);
         n->left = left;
-        
-        if (P->current.kind != TOKEN_LPAREN) print_error("Expected '(' after 'where'.");
-        next(P);
-        
+
+        if (P->current.kind != TOKEN_LPAREN) {
+            print_error("Expected '(' after 'where'.");
+        }
+        next(P); 
+
         n->right = parse_expr(P); 
-        
-        if (P->current.kind != TOKEN_RPAREN) print_error("Expected ')' after 'where' condition.");
-        next(P);
-        
+
+        if (P->current.kind != TOKEN_RPAREN) {
+            print_error("Expected ')' after where condition.");
+        }
+        next(P); 
+
         left = n;
     }
     return left;
