@@ -100,12 +100,13 @@ typedef struct Node {
     bool is_static;
     bool is_final;
     bool is_macro;
-
+    
     
     char* deprecated_message;
 
     struct Node* super_template_types;
     struct Node* template_types;
+    struct Node* where_cond;
 
     bool is_platform_specific;
     char* target_os;
