@@ -1683,7 +1683,9 @@ Node *parse_stmt(Parser *P)
     if (P->current.kind == TOKEN_PACK){
         return parse_pack(P);
     }
-
+    if (P->current.kind == TOKEN_USE){
+        return parse_use(P);
+    }
     
 
     if (P->current.kind == TOKEN_CONTINUE)
