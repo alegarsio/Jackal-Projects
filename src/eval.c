@@ -1840,6 +1840,21 @@ case NODE_WHERE: {
             set_var(global_pack_registry, n->name, pack_val, true, "pack");
             return (Value){VAL_NIL, {0}};
         }
+    case NODE_USE: {
+            init_pack_registry();
+            Var *v = find_var(global_pack_registry, n->name);
+            if (v && v->value.type == VAL_NAMESPACE) {
+                Env *pack_env = v->value.as.env;
+                Var *curr = pack_env->vars;
+                while (curr) {
+                    set_var(env, curr->name, curr->value, false, "use");
+                    curr = curr->next;
+                }
+            } else {
+                print_error("Pack '%s' not found", n->name);
+            }
+            return (Value){VAL_NIL, {0}};
+        }
     case NODE_NAMESPACES:
     {
         Env *ns_env = env_new(NULL);
