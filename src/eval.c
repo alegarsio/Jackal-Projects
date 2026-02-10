@@ -26,6 +26,14 @@ const char *get_platform_name()
 }
 
 Func *current_executing_func = NULL;
+
+Env* global_pack_registry = NULL;
+
+void init_pack_registry() {
+    if (global_pack_registry == NULL) {
+        global_pack_registry = env_new(NULL);
+    }
+}
 /**
  * @include collections DSA stl
  */
