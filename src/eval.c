@@ -1828,6 +1828,18 @@ case NODE_WHERE: {
 
         return (Value){VAL_NIL, {0}};
     }
+    case NODE_PACK: {
+            Env *pack_env = env_new(NULL);
+            Node *stmt = n->left;
+            while (stmt) {
+                eval_node(pack_env, stmt);
+                stmt = stmt->next;
+            }
+            Value pack_val = (Value){VAL_NAMESPACE, {.env = pack_env}};
+            init_pack_registry();
+            set_var(global_pack_registry, n->name, pack_val, true, "pack");
+            return (Value){VAL_NIL, {0}};
+        }
     case NODE_NAMESPACES:
     {
         Env *ns_env = env_new(NULL);
