@@ -1990,6 +1990,22 @@ Node *parse_stmt(Parser *P)
 }
 
 
+static Node *parse_pack(Parser *P) {
+    next(P); 
+    
+    Node *n = new_node(NODE_PACK);
+    if (P->current.kind != TOKEN_IDENT) {
+        print_error("Expected identifier after 'pack'");
+    }
+    strcpy(n->name, P->current.text);
+    next(P);
+    n->left = NULL; 
+    
+    if (P->current.kind == TOKEN_SEMI) next(P);
+    return n;
+}
+
+
 static Node *parse_extension_def(Parser *P) {
     next(P);
     if (P->current.kind != TOKEN_IDENT) {
