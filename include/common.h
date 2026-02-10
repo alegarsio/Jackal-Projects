@@ -127,7 +127,8 @@ typedef enum {
     TOKEN_SIGMA,
     TOKEN_LAMBDA,
     TOKEN_WHERE,
-    TOKEN_PACK
+    TOKEN_PACK,
+    TOKEN_USE
 
     
 } TokenKind;
