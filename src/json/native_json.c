@@ -60,6 +60,39 @@ Value cjson_to_jackal(cJSON *item)
     }
     return (Value){VAL_NIL, {0}};
 }
+cJSON* jackal_to_cjson(Value val) {
+    switch (val.type) {
+        case VAL_NUMBER:
+            return cJSON_CreateNumber(val.as.number);
+        case VAL_STRING:
+            return cJSON_CreateString(val.as.string);
+        case VAL_BOOL:
+            return val.as.boolean ? cJSON_CreateTrue() : cJSON_CreateFalse();
+        case VAL_NIL:
+            return cJSON_CreateNull();
+        case VAL_ARRAY: {
+            cJSON *arr = cJSON_CreateArray();
+            ValueArray *list = val.as.array;
+            for (int i = 0; i < list->count; i++) {
+                cJSON_AddItemToArray(arr, jackal_to_cjson(list->values[i]));
+            }
+            return arr;
+        }
+        case VAL_MAP: {
+            cJSON *obj = cJSON_CreateObject();
+            HashMap *map = val.as.map;
+            for (int i = 0; i < map->capacity; i++) {
+                Entry *entry = &map->entries[i];
+                if (entry->key != NULL) {
+                    cJSON_AddItemToObject(obj, entry->key, jackal_to_cjson(entry->value));
+                }
+            }
+            return obj;
+        }
+        default:
+            return cJSON_CreateNull();
+    }
+}
 
 Value native_json_parse(int arity, Value *args)
 {

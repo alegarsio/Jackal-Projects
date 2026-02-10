@@ -46,6 +46,7 @@
 
 #define HTTP_DEFAULT_PORT 80
 #define BUFFER_SIZE 4096
+
 char* value_to_string(Value value) {
     char buffer[128];
 
@@ -926,9 +927,13 @@ void runFile(const char *path, Env *env)
     execute_source(source, env);
     free(source);
 }
+int global_argc;
+char** global_argv;
 
 int main(int argc, char **argv)
 {
+    global_argc = argc;
+    global_argv = argv;
 
     net_init();
     Env *env = env_new(NULL);

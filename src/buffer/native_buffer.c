@@ -6,6 +6,11 @@
 #include<sys/stat.h>
 #include<curl/curl.h>
 
+typedef struct {
+    uint8_t* data;
+    size_t size;
+    size_t capacity;
+} ByteBuffer;
 
 #define BUFFER_REGISTER(env, name, func)                                           \
     do                                                                           \

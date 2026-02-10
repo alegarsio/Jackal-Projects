@@ -2499,17 +2499,20 @@ static Node *parse_where_expr(Parser *P) {
         Node *n = new_node(NODE_WHERE);
         n->left = left;
 
-        if (P->current.kind != TOKEN_LPAREN) {
-            print_error("Expected '(' after 'where'.");
+        bool has_paren = false;
+        if (P->current.kind == TOKEN_LPAREN) {
+            has_paren = true;
+            next(P); 
         }
-        next(P); 
 
         n->right = parse_expr(P); 
 
-        if (P->current.kind != TOKEN_RPAREN) {
-            print_error("Expected ')' after where condition.");
+        if (has_paren) {
+            if (P->current.kind != TOKEN_RPAREN) {
+                print_error("Expected ')' after where condition.");
+            }
+            next(P); 
         }
-        next(P); 
 
         left = n;
     }

@@ -153,6 +153,7 @@ void print_value(Value value)
     case VAL_NATIVE:
         printf("<native fn>");
         break;
+    
     case VAL_NIL:
 
         break;
@@ -350,6 +351,7 @@ bool is_value_truthy(Value value)
         return false;
     case VAL_CONTINUE:
         return false;
+    
     case VAL_ENUM:
         return true;
     case VAL_LINKEDLIST:
