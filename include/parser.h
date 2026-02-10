@@ -71,6 +71,7 @@ typedef enum {
     NODE_BOOL ,
     NODE_WHERE,
     NODE_PACK,
+    NODE_USE
     
 } NodeKind;
 
