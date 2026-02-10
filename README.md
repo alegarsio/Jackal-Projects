@@ -22,7 +22,7 @@ func f(x : Int , y : Int) -> Boolean = (2 * x) + 1 == y
 Jackal is modern pragmatic, lightweight ,expression first scripting language
 ## Project Vision
 
-The goal of this project is to create a **lightweight and elegant** programming language **together** as a community. Jackal is built by and for open source scientists and developers who want to learn, contribute, and shape the future of a language collaboratively.
+The goal of this project is to make elegant, modern, expression first scripting language
 
 ## Key Features
 
