@@ -69,7 +69,9 @@ typedef enum {
     NODE_USING,
     NODE_EXTENSION,
     NODE_BOOL ,
-    NODE_WHERE
+    NODE_WHERE,
+    NODE_PACK,
+    
 } NodeKind;
 
 /**
@@ -106,7 +108,7 @@ typedef struct Node {
 
     struct Node* super_template_types;
     struct Node* template_types;
-    struct Node* where_cond;
+    
 
     bool is_platform_specific;
     char* target_os;
