@@ -1680,6 +1680,9 @@ Node *parse_stmt(Parser *P)
     {
         return parse_break_stmt(P);
     }
+    if (P->current.kind == TOKEN_PACK){
+        return parse_pack(P);
+    }
 
     if (P->current.kind == TOKEN_CONTINUE)
     {
