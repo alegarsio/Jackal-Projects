@@ -1684,6 +1684,8 @@ Node *parse_stmt(Parser *P)
         return parse_pack(P);
     }
 
+    
+
     if (P->current.kind == TOKEN_CONTINUE)
     {
         return parse_continue_stmt(P);
@@ -2007,7 +2009,16 @@ static Node *parse_pack(Parser *P) {
     if (P->current.kind == TOKEN_SEMI) next(P);
     return n;
 }
-
+static Node *parse_use(Parser *P) {
+    next(P); 
+    Node *n = new_node(NODE_USE);
+    if (P->current.kind != TOKEN_IDENT) {
+        print_error("Expected identifier after 'use'");
+    }
+    strcpy(n->name, P->current.text);
+    next(P);
+    return n;
+}
 
 static Node *parse_extension_def(Parser *P) {
     next(P);
