@@ -57,6 +57,9 @@ static Node *parse_logical_or(Parser *P);
  */
 static Node *parse_try_stmt(Parser *P);
 
+static Node *parse_use(Parser *P);
+
+static Node *parse_pack(Parser *P);
 /**
  * @brief Parses a throw statement.
  * @param P Pointer to the Parser.
@@ -2021,11 +2024,12 @@ static Node *parse_use(Parser *P) {
     next(P);
     return n;
 }
-
 static Node *parse_extension_def(Parser *P) {
-    next(P);
+    next(P); 
+    
     if (P->current.kind != TOKEN_IDENT) {
         print_error("Expected type name after 'extend'.");
+       
     }
 
     Node *n = new_node(NODE_EXTENSION);
@@ -2034,6 +2038,7 @@ static Node *parse_extension_def(Parser *P) {
 
     if (P->current.kind != TOKEN_LBRACE) {
         print_error("Expected '{' after extension target.");
+        return n;
     }
     next(P);
     
@@ -2041,9 +2046,10 @@ static Node *parse_extension_def(Parser *P) {
     Node *func_curr = NULL;
 
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
-        if (P->current.kind == TOKEN_FUNCTION) {
-            next(P);
-            Node *f = parse_func_def(P);
+        // Jangan panggil next(P) di sini, biarkan parse_stmt atau parse_func_def yang mengaturnya
+        Node *f = parse_stmt(P); 
+        
+        if (f != NULL && f->kind == NODE_FUNC_DEF) {
             if (func_head == NULL) {
                 func_head = f;
                 func_curr = f;
@@ -2051,48 +2057,44 @@ static Node *parse_extension_def(Parser *P) {
                 func_curr->next = f;
                 func_curr = f;
             }
-        } else {
-            next(P);
+        } else if (f == NULL) {
+            next(P); // Skip jika token tidak dikenal untuk menghindari infinite loop
         }
     }
 
-    if (P->current.kind == TOKEN_RBRACE) next(P);
+    if (P->current.kind == TOKEN_RBRACE) {
+        next(P);
+    } else {
+        print_error("Expected '}' at the end of extension.");
+    }
+
     n->left = func_head;
     return n;
 }
-static Node *parse_namespace(Parser *P)
-{
-    next(P);
-    if (P->current.kind != TOKEN_IDENT)
-    {
+static Node *parse_namespace(Parser *P) {
+    next(P); // Konsumsi 'namespace'
+    if (P->current.kind != TOKEN_IDENT) {
         print_error("Expected identifier after 'namespace'");
     }
+
     Node *n = new_node(NODE_NAMESPACES);
     strcpy(n->name, P->current.text);
-    next(P);
-    if (P->current.kind != TOKEN_LBRACE)
-    {
-        print_error("Expected '{' for namespace body");
-    }
-    next(P);
+    next(P); // Konsumsi nama namespace
+
     n->left = NULL;
     Node *last = NULL;
-    while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
-    {
+
+    // Hard Debug: Loop sampai akhir file atau namespace lain
+    while (P->current.kind != TOKEN_END && P->current.kind != TOKEN_NAMESPACE) {
         Node *stmt = parse_stmt(P);
-        if (stmt)
-        {
-            if (!n->left)
-                n->left = stmt;
-            else
-                last->next = stmt;
+        if (stmt) {
+            if (!n->left) n->left = stmt;
+            else last->next = stmt;
             last = stmt;
         }
     }
-    next(P);
     return n;
 }
-
 static Node *parse_using(Parser *P)
 {
     next(P);
