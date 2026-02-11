@@ -867,17 +867,9 @@ static Node *parse_block(Parser *P)
 static Node *parse_if_stmt(Parser *P)
 {
     Node *n = new_node(NODE_IF_STMT);
-    next(P);
-
-    if (P->current.kind != TOKEN_LPAREN)
-        print_error("Expected '(' after 'if'.");
-    next(P);
+    next(P); 
 
     n->left = parse_expr(P);
-
-    if (P->current.kind != TOKEN_RPAREN)
-        print_error("Expected ')' after if condition.");
-    next(P);
 
     n->right = new_node(NODE_IDENT);
 
@@ -914,7 +906,9 @@ static Node *parse_if_stmt(Parser *P)
     }
 
     return n;
-}/**
+}
+
+/**
  *
  */
 static Node *parse_func_def(Parser *P)
@@ -2072,19 +2066,17 @@ static Node *parse_extension_def(Parser *P) {
     return n;
 }
 static Node *parse_namespace(Parser *P) {
-    next(P); // Konsumsi 'namespace'
+    next(P); 
     if (P->current.kind != TOKEN_IDENT) {
         print_error("Expected identifier after 'namespace'");
     }
 
     Node *n = new_node(NODE_NAMESPACES);
     strcpy(n->name, P->current.text);
-    next(P); // Konsumsi nama namespace
+    next(P); 
 
     n->left = NULL;
     Node *last = NULL;
-
-    // Hard Debug: Loop sampai akhir file atau namespace lain
     while (P->current.kind != TOKEN_END && P->current.kind != TOKEN_NAMESPACE) {
         Node *stmt = parse_stmt(P);
         if (stmt) {
