@@ -7,6 +7,7 @@
 #include "File/native_file.h"
 #include"http/native_http.h"
 #include"json/native_json.h"
+#include"csv/native_csv.h"
 
 /**
  * Register DEFAULT is now DEPRECATED
@@ -131,4 +132,5 @@ void register_all_natives(Env* env) {
     register_file_natives(env);
     register_http_natives(env);
     register_json_natives(env);
+    register_csv_natives(env);
 }
