@@ -60,6 +60,6 @@
 
 void register_csv_natives(Env *env){
 
-    CSV_REGISTER(env,"__csv_read",native_load_csv);
+    CSV_REGISTER(env,"__csv_load",native_load_csv);
 
 }
