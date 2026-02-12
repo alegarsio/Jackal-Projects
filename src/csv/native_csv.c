@@ -18,7 +18,17 @@
         }                                                                        \
     } while (0)
 
-    Value native_load_csv(int arg_count, Value *args)
+int get_column_index(ValueArray *header, const char *col_name) {
+    for (int i = 0; i < header->count; i++) {
+        if (header->values[i].type == VAL_STRING && 
+            strcmp(header->values[i].as.string, col_name) == 0) {
+            return i;
+        }
+    }
+    return -1; 
+}
+
+Value native_read_csv(int arg_count, Value *args)
 {
     const char *filename = args[0].as.string;
     FILE *file = fopen(filename, "r");
@@ -58,8 +68,35 @@
     return (Value){VAL_ARRAY, {.array = matrix}};
 }
 
+Value native_csv_select(int arity, Value *args) {
+    if (arity < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_ARRAY) {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *matrix = args[0].as.array;
+    ValueArray *target_cols = args[1].as.array;
+    ValueArray *header = matrix->values[0].as.array;
+
+    ValueArray *result = array_new(); 
+
+    for (int i = 0; i < matrix->count; i++) {
+        ValueArray *row = matrix->values[i].as.array;
+        ValueArray *new_row = array_new();
+
+        for (int j = 0; j < target_cols->count; j++) {
+            int col_idx = get_column_index(header, target_cols->values[j].as.string);
+            if (col_idx != -1) {
+                array_append(new_row, row->values[col_idx]);
+            }
+        }
+        array_append(result, (Value){VAL_ARRAY, {.array = new_row}});
+    }
+
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
 void register_csv_natives(Env *env){
 
-    CSV_REGISTER(env,"__csv_load",native_load_csv);
+    CSV_REGISTER(env,"__csv_read",native_read_csv);
 
 }
