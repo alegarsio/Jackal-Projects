@@ -18,7 +18,7 @@
         }                                                                        \
     } while (0)
 
-    Value native_read_csv(int arg_count, Value *args)
+    Value native_load_csv(int arg_count, Value *args)
 {
     const char *filename = args[0].as.string;
     FILE *file = fopen(filename, "r");
@@ -59,5 +59,7 @@
 }
 
 void register_csv_natives(Env *env){
+
+    CSV_REGISTER(env,"__csv_read",native_load_csv);
 
 }
