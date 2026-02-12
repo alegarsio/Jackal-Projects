@@ -1,0 +1,6 @@
+import std.File.csv.CsvStream
+
+class Csv : CsvStream {
+    func load() -> Array =  
+        __csv_load(this.path) or "Error"
+}
