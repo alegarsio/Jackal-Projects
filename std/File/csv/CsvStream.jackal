@@ -1,5 +1,3 @@
 class CsvStream {
     init(path : String) = this.path = path
-    func load() -> Array =  
-        __csv_load(this.path) or "Error"
 }
