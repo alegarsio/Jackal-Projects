@@ -210,6 +210,38 @@ Value native_csv_sort(int arity, Value *args) {
 
     return args[0];
 }
+Value native_csv_write(int arity, Value *args) {
+    if (arity < 2 || args[0].type != VAL_STRING || args[1].type != VAL_ARRAY) {
+        print_error("csv_write expects (string path, Array data)");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char *path = args[0].as.string;
+    ValueArray *matrix = args[1].as.array;
+    FILE *file = fopen(path, "w");
+
+    if (!file) {
+        print_error("Could not create file: %s", path);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    for (int i = 0; i < matrix->count; i++) {
+        ValueArray *row = matrix->values[i].as.array;
+        for (int j = 0; j < row->count; j++) {
+            const char *str = value_to_string(row->values[j]);
+            fprintf(file, "%s", str);
+            
+            if (j < row->count - 1) {
+                fprintf(file, ",");
+            }
+            free((void*)str);
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
 
 void register_csv_natives(Env *env){
 
