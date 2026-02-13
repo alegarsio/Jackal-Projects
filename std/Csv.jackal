@@ -1,19 +1,51 @@
 import std.File.csv.CsvStream
+import std.File.csv.Abstract.CsvAbstractMethod
 
-class Csv : CsvStream {
 
-    func load() -> Csv {
-        this.result = __csv_read(this.path)
+class Csv : CsvStream , CsvAbstractMethod{
+
+    @override
+    func load(){
+        this.result = __csv_read(this.path,this.seperate)
         return this
     }
 
-    func select(item : Array<String>) -> Csv{
+    @override
+    func delimeter(sep : String){
+        this.seperate = sep
+        return this
+    }
+
+    @override
+    func select(item : Array<String>){
         this.result = __csv_select(this.result,item)
         return this
-    }
-    
-    func exports() -> Array = 
-        this.result or "Error"
+    } 
 
+    @deprecated
+    func agregate(col : String , op : String){
+        this.result = __csv_agregate(this.result, col, op)
+        return this
+    }
+
+    @override
+    func sort(col : String, order : String){
+        this.result = __csv_sort(this.result,col,order)
+        return this
+    }
+
+    private func write(dest : String) {
+        __csv_write(dest, this.result)   
+    }
+
+    @override
+    func exports(dest : String) -> Array{
+        __csv_write(dest, this.result)
+        return this.result
+    }
+
+    func view() -> Array = 
+        this.result or "Error"
     
+
 }
