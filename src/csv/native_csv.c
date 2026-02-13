@@ -3,7 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include<sys/stat.h>
+#include <sys/stat.h>
+#include <float.h>
+#include "value.h"
+
+static int sort_col_idx = 0;
+static bool sort_asc = true;
 
 #define CSV_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -26,6 +31,27 @@ int get_column_index(ValueArray *header, const char *col_name) {
         }
     }
     return -1; 
+}
+
+static int compare_rows(const void *a, const void *b) {
+    Value val_a = ((Value*)a)->as.array->values[sort_col_idx];
+    Value val_b = ((Value*)b)->as.array->values[sort_col_idx];
+
+    double num_a = (val_a.type == VAL_NUMBER) ? val_a.as.number : (val_a.type == VAL_STRING ? atof(val_a.as.string) : 0);
+    double num_b = (val_b.type == VAL_NUMBER) ? val_b.as.number : (val_b.type == VAL_STRING ? atof(val_b.as.string) : 0);
+
+    if (num_a < num_b) return sort_asc ? -1 : 1;
+    if (num_a > num_b) return sort_asc ? 1 : -1;
+    return 0;
+}
+
+void print_separator(int *widths, int col_count) {
+    printf("+");
+    for (int i = 0; i < col_count; i++) {
+        for (int j = 0; j < widths[i] + 2; j++) printf("-");
+        printf("+");
+    }
+    printf("\n");
 }
 
 Value native_read_csv(int arity, Value *args) {
@@ -110,7 +136,7 @@ Value native_csv_select(int arity, Value *args) {
     return (Value){VAL_ARRAY, {.array = result_matrix}};
 }
 
-alue native_csv_aggregate(int arity, Value *args) {
+Value native_csv_aggregate(int arity, Value *args) {
     if (arity < 3 || args[0].type != VAL_ARRAY || args[1].type != VAL_STRING || args[2].type != VAL_STRING) {
         print_error("csv_aggregate expects (Array data, String column, String op)");
         return (Value){VAL_NIL, {0}};
@@ -157,9 +183,44 @@ alue native_csv_aggregate(int arity, Value *args) {
     return (Value){VAL_NIL, {0}};
 }
 
+Value native_csv_table_view(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_ARRAY) return (Value){VAL_NIL, {0}};
+    ValueArray *matrix = args[0].as.array;
+    if (matrix->count == 0) return (Value){VAL_NIL, {0}};
+
+    int col_count = matrix->values[0].as.array->count;
+    int widths[col_count];
+    for (int i = 0; i < col_count; i++) widths[i] = 0;
+
+    for (int i = 0; i < matrix->count; i++) {
+        ValueArray *row = matrix->values[i].as.array;
+        for (int j = 0; j < col_count && j < row->count; j++) {
+            const char *str = value_to_string(row->values[j]);
+            int len = strlen(str);
+            if (len > widths[j]) widths[j] = len;
+        }
+    }
+
+    print_separator(widths, col_count);
+    for (int i = 0; i < matrix->count; i++) {
+        ValueArray *row = matrix->values[i].as.array;
+        printf("|");
+        for (int j = 0; j < col_count; j++) {
+            const char *str = (j < row->count) ? value_to_string(row->values[j]) : "";
+            printf(" %-*s |", widths[j], str);
+        }
+        printf("\n");
+        if (i == 0) print_separator(widths, col_count);
+    }
+    print_separator(widths, col_count);
+
+    return (Value){VAL_NIL, {0}};
+}
+
 void register_csv_natives(Env *env){
 
     CSV_REGISTER(env,"__csv_read",native_read_csv);
     CSV_REGISTER(env,"__csv_select",native_csv_select);
+    CSV_REGISTER(env,"__csv_agregate",native_csv_aggregate);
 
 }
