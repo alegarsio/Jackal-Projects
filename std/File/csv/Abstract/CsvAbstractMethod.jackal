@@ -1,0 +1,6 @@
+trait CsvAbstractMethod{
+    func select() ;
+    func load() ; 
+    func sort() ;
+    func exports();
+}
