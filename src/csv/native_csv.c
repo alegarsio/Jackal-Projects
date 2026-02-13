@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <float.h>
-#include "value.h"
+#include "env.h"
 
 static int sort_col_idx = 0;
 static bool sort_asc = true;
@@ -56,13 +56,14 @@ void print_separator(int *widths, int col_count) {
 
 Value native_read_csv(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_STRING) {
-        print_error("csv.read() expects 1 string argument (file path)");
+        print_error("csv_read expects at least 1 argument (path)");
         return (Value){VAL_NIL, {0}};
     }
 
     const char *path = args[0].as.string;
-    FILE *file = fopen(path, "r");
+    const char *delim = (arity > 1 && args[1].type == VAL_STRING) ? args[1].as.string : ",";
 
+    FILE *file = fopen(path, "r");
     if (!file) {
         print_error("Could not open file: %s", path);
         return (Value){VAL_NIL, {0}};
@@ -75,14 +76,13 @@ Value native_read_csv(int arity, Value *args) {
         line[strcspn(line, "\r\n")] = 0;
 
         ValueArray *row = array_new();
-        char *token = strtok(line, ",");
+        char *token = strtok(line, delim);
 
         while (token != NULL) {
             Value val_str = (Value){VAL_STRING, {.string = strdup(token)}};
             array_append(row, val_str);
-            token = strtok(NULL, ",");
+            token = strtok(NULL, delim);
         }
-
         array_append(matrix, (Value){VAL_ARRAY, {.array = row}});
     }
 
