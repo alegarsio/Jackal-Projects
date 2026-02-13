@@ -1,3 +1,5 @@
 class CsvStream {
-    init(path : String) = this.path = path
+    init(path : String)
+        this.path = path
+        this.result = []
 }
