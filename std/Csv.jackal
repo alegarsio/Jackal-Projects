@@ -1,16 +1,14 @@
 import std.File.csv.CsvStream
 
-// object Csv(){
-//     func read(path : String) -> Array = 
-//         __csv_read(path) or "Error"
-//     func select(item : Array<String>) -> Array =
-//         __csv_select(item) or "Error"
-// }
-
 class Csv : CsvStream {
 
-    func load() {
+    func load() -> Csv {
         this.result = __csv_read(this.path)
+        return this
+    }
+
+    func select(item : Array<String>) -> Csv{
+        this.result = __csv_select(this.result,item)
         return this
     }
     
