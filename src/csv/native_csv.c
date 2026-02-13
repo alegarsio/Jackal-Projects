@@ -249,5 +249,6 @@ void register_csv_natives(Env *env){
     CSV_REGISTER(env,"__csv_select",native_csv_select);
     CSV_REGISTER(env,"__csv_agregate",native_csv_aggregate);
     CSV_REGISTER(env,"__csv_sort",native_csv_sort);
+    CSV_REGISTER(env,"__csv_write",native_csv_write);
 
 }
