@@ -183,38 +183,32 @@ Value native_csv_aggregate(int arity, Value *args) {
     return (Value){VAL_NIL, {0}};
 }
 
-Value native_csv_table_view(int arity, Value *args) {
-    if (arity < 1 || args[0].type != VAL_ARRAY) return (Value){VAL_NIL, {0}};
+
+Value native_csv_sort(int arity, Value *args) {
+    if (arity < 3 || args[0].type != VAL_ARRAY || args[1].type != VAL_STRING || args[2].type != VAL_STRING) {
+        return (Value){VAL_NIL, {0}};
+    }
+
     ValueArray *matrix = args[0].as.array;
-    if (matrix->count == 0) return (Value){VAL_NIL, {0}};
+    const char *col_name = args[1].as.string;
+    sort_asc = strcmp(args[2].as.string, "asc") == 0;
 
-    int col_count = matrix->values[0].as.array->count;
-    int widths[col_count];
-    for (int i = 0; i < col_count; i++) widths[i] = 0;
+    if (matrix->count < 2) return args[0];
 
-    for (int i = 0; i < matrix->count; i++) {
-        ValueArray *row = matrix->values[i].as.array;
-        for (int j = 0; j < col_count && j < row->count; j++) {
-            const char *str = value_to_string(row->values[j]);
-            int len = strlen(str);
-            if (len > widths[j]) widths[j] = len;
+    ValueArray *header = matrix->values[0].as.array;
+    sort_col_idx = -1;
+    for (int i = 0; i < header->count; i++) {
+        if (header->values[i].type == VAL_STRING && strcmp(header->values[i].as.string, col_name) == 0) {
+            sort_col_idx = i;
+            break;
         }
     }
 
-    print_separator(widths, col_count);
-    for (int i = 0; i < matrix->count; i++) {
-        ValueArray *row = matrix->values[i].as.array;
-        printf("|");
-        for (int j = 0; j < col_count; j++) {
-            const char *str = (j < row->count) ? value_to_string(row->values[j]) : "";
-            printf(" %-*s |", widths[j], str);
-        }
-        printf("\n");
-        if (i == 0) print_separator(widths, col_count);
-    }
-    print_separator(widths, col_count);
+    if (sort_col_idx == -1) return args[0];
 
-    return (Value){VAL_NIL, {0}};
+    qsort(&matrix->values[1], matrix->count - 1, sizeof(Value), compare_rows);
+
+    return args[0];
 }
 
 void register_csv_natives(Env *env){
@@ -222,5 +216,6 @@ void register_csv_natives(Env *env){
     CSV_REGISTER(env,"__csv_read",native_read_csv);
     CSV_REGISTER(env,"__csv_select",native_csv_select);
     CSV_REGISTER(env,"__csv_agregate",native_csv_aggregate);
+    CSV_REGISTER(env,"__csv_sort",native_csv_sort);
 
 }
