@@ -8,6 +8,14 @@ import std.File.csv.CsvStream
 // }
 
 class Csv : CsvStream {
-    func load() -> Array = 
-        __csv_read(this.path) or "Error"
+
+    func load() {
+        this.result = __csv_read(this.path)
+        return this
+    }
+    
+    func exports() -> Array = 
+        this.result or "Error"
+
+    
 }
