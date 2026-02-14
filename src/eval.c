@@ -26,14 +26,6 @@ const char *get_platform_name()
 }
 
 Func *current_executing_func = NULL;
-
-Env* global_pack_registry = NULL;
-
-void init_pack_registry() {
-    if (global_pack_registry == NULL) {
-        global_pack_registry = env_new(NULL);
-    }
-}
 /**
  * @include collections DSA stl
  */
@@ -89,7 +81,7 @@ static char *read_file(const char *filename)
     return source;
 }
 
-static bool is_integer_value(Value val)
+bool is_integer_value(Value val)
 {
     if (val.type != VAL_NUMBER)
         return false;
@@ -111,7 +103,7 @@ const char *get_value_type_name(Value val)
     switch (val.type)
     {
     case VAL_NIL:
-        return "Void";
+        return "None";
     case VAL_BYTE:
         return "Byte";
     case VAL_NUMBER:
@@ -464,7 +456,13 @@ Value eval_node(Env *env, Node *n)
         Node *entry = n->left;
         while (entry)
         {
-            Value val = (Value){VAL_NUMBER, {.number = entry->value}};
+            Value val;
+            if (entry->kind == NODE_STRING) {
+                val = (Value){VAL_STRING, {.string = strdup(entry->string_value)}};
+            } else {
+                val = (Value){VAL_NUMBER, {.number = entry->value}};
+            }
+            
             set_var(en->values, entry->name, val, true, "");
             entry = entry->next;
         }
@@ -1828,65 +1826,35 @@ case NODE_WHERE: {
 
         return (Value){VAL_NIL, {0}};
     }
-    case NODE_PACK: {
-            Env *pack_env = env_new(NULL);
-            Node *stmt = n->left;
-            while (stmt) {
-                eval_node(pack_env, stmt);
-                stmt = stmt->next;
-            }
-            Value pack_val = (Value){VAL_NAMESPACE, {.env = pack_env}};
-            init_pack_registry();
-            set_var(global_pack_registry, n->name, pack_val, true, "pack");
-            return (Value){VAL_NIL, {0}};
-        }
-    case NODE_USE: {
-            init_pack_registry();
-            Var *v = find_var(global_pack_registry, n->name);
-            if (v && v->value.type == VAL_NAMESPACE) {
-                Env *pack_env = v->value.as.env;
-                Var *curr = pack_env->vars;
-                while (curr) {
-                    set_var(env, curr->name, curr->value, false, "use");
-                    curr = curr->next;
-                }
-            } else {
-                print_error("Pack '%s' not found", n->name);
-            }
-            return (Value){VAL_NIL, {0}};
-        }
-    case NODE_NAMESPACES:
+case NODE_NAMESPACES:
+{
+    Env *ns_env = env_new(env); 
+    Node *stmt = n->left;
+    while (stmt)
     {
-        Env *ns_env = env_new(NULL);
-        Node *stmt = n->left;
-        while (stmt)
-        {
-            eval_node(ns_env, stmt);
-            stmt = stmt->next;
-        }
-
-        HashMap *ns_map = malloc(sizeof(HashMap));
-        ns_map->count = 0;
-        ns_map->capacity = 16;
-        ns_map->entries = calloc(ns_map->capacity, sizeof(Entry));
-
-        Var *v = ns_env->vars;
-        while (v)
-        {
-            map_set(ns_map, v->name, v->value);
-            v = v->next;
-        }
-
-        Value ns_val;
-        ns_val.type = VAL_NAMESPACE;
-        ns_val.as.map = ns_map;
-
-        set_var(env, n->name, ns_val, true, "namespace");
-
-        env_free(ns_env);
-        return (Value){VAL_NIL, {0}};
+        eval_node(ns_env, stmt);
+        stmt = stmt->next;
     }
 
+    HashMap *ns_map = map_new(); 
+
+    Var *v = ns_env->vars;
+    while (v)
+    {
+        map_set(ns_map, v->name, v->value);
+        v = v->next;
+    }
+
+    Value ns_val;
+    ns_val.type = VAL_NAMESPACE;
+    ns_val.as.map = ns_map;
+
+    set_var(env, n->name, ns_val, true, "namespace");
+
+    env_free(ns_env); 
+    
+    return ns_val;
+}
     case NODE_USING:
     {
         Node *target = n->left;
@@ -2421,7 +2389,6 @@ case NODE_WHERE: {
                 final_result = result;
             }
 
-            // Pengecekan Return Type (Termasuk Array)
             if (func->return_type[0] != '\0')
             {
                 expected_type = func->return_type;
