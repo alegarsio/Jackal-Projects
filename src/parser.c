@@ -1604,27 +1604,30 @@ Node *apply_pipeline(Node *left, Node *right)
 static Node *parse_with_stmt(Parser *P)
 {
     Node *n = new_node(NODE_WITH);
-    next(P);
+    next(P); 
 
-    if (P->current.kind != TOKEN_LPAREN)
-    {
-        print_error("Expected '(' after with.");
-    }
-    next(P);
-
-    n->left = parse_expr(P);
-
-    if (P->current.kind == TOKEN_RPAREN)
+    if (P->current.kind == TOKEN_LPAREN)
     {
         next(P);
+        n->left = parse_expr(P);
+        if (P->current.kind == TOKEN_RPAREN)
+        {
+            next(P);
+        }
     }
-
-    if (P->current.kind != TOKEN_LBRACE)
+    else
     {
-        print_error("Expected '{' for with block, found '%s'.", P->current.text);
+        n->left = parse_expr(P);
     }
 
-    n->right = parse_block(P);
+    if (P->current.kind == TOKEN_LBRACE)
+    {
+        n->right = parse_block(P);
+    }
+    else
+    {
+        n->right = parse_stmt(P);
+    }
 
     return n;
 }
@@ -2474,9 +2477,8 @@ static Node *parse_enum_def(Parser *P)
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END)
     {
         if (P->current.kind != TOKEN_IDENT)
-        {
             print_error("Expected enum constant name.");
-        }
+        
         Node *entry = new_node(NODE_ENUM_DEF);
         strcpy(entry->name, P->current.text);
         next(P);
@@ -2484,15 +2486,22 @@ static Node *parse_enum_def(Parser *P)
         if (P->current.kind == TOKEN_ASSIGN)
         {
             next(P);
-            if (P->current.kind != TOKEN_NUMBER)
-                print_error("Enum value must be a number.");
-            entry->value = P->current.number;
-            currentValue = (int)P->current.number + 1; // Update counter
+            if (P->current.kind == TOKEN_NUMBER) {
+                entry->value = P->current.number;
+                entry->kind = NODE_NUMBER; 
+                currentValue = (int)P->current.number + 1;
+            } else if (P->current.kind == TOKEN_STRING) {
+                strcpy(entry->string_value, P->current.text);
+                entry->kind = NODE_STRING;
+            } else {
+                print_error("Enum value must be a number or a string.");
+            }
             next(P);
         }
         else
         {
             entry->value = (double)currentValue++;
+            entry->kind = NODE_NUMBER;
         }
 
         if (head == NULL)
