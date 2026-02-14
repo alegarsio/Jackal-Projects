@@ -408,5 +408,6 @@ void register_csv_natives(Env *env){
     CSV_REGISTER(env,"__csv_sort",native_csv_sort);
     CSV_REGISTER(env,"__csv_write",native_csv_write);
     CSV_REGISTER(env,"__csv_group_by",native_csv_group_by);
+    CSV_REGISTER(env,"__csv_join",native_csv_join);
 
 }
