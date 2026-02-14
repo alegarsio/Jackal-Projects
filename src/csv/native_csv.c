@@ -276,7 +276,7 @@ Value native_csv_group_by(int arity, Value *args) {
 
     for (int i = 0; i < header->count; i++) {
         char* h_name = strdup(header->values[i].as.string);
-        char* clean_h = trim_ws(h_name);
+        char* clean_h = trim_whitespace(h_name);
         if (strcmp(clean_h, group_col_name) == 0) g_idx = i;
         if (strcmp(clean_h, target_col_name) == 0) t_idx = i;
         free(h_name);
@@ -295,7 +295,7 @@ Value native_csv_group_by(int arity, Value *args) {
         char* raw_key = row->values[g_idx].as.string;
         
         char* key_copy = strdup(raw_key);
-        char* key = trim_ws(key_copy);
+        char* key = trim_whitespace(key_copy);
         
         double val = (row->values[t_idx].type == VAL_NUMBER) ? 
                       row->values[t_idx].as.number : atof(row->values[t_idx].as.string);
@@ -341,6 +341,63 @@ Value native_csv_group_by(int arity, Value *args) {
     }
 
     return (Value){VAL_ARRAY, {.array = res_matrix}};
+}
+
+Value native_csv_join(int arity, Value *args) {
+    if (arity < 4) {
+        print_error("join expects (Array left, Array right, String left_key, String right_key)");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *left_matrix = args[0].as.array;
+    ValueArray *right_matrix = args[1].as.array;
+    char *left_key = trim_ws(args[2].as.string);
+    char *right_key = trim_ws(args[3].as.string);
+
+    ValueArray *left_header = left_matrix->values[0].as.array;
+    ValueArray *right_header = right_matrix->values[0].as.array;
+
+    int l_idx = -1, r_idx = -1;
+    for (int i = 0; i < left_header->count; i++) {
+        if (strcmp(trim_ws(left_header->values[i].as.string), left_key) == 0) l_idx = i;
+    }
+    for (int i = 0; i < right_header->count; i++) {
+        if (strcmp(trim_ws(right_header->values[i].as.string), right_key) == 0) r_idx = i;
+    }
+
+    if (l_idx == -1 || r_idx == -1) return (Value){VAL_NIL, {0}};
+
+    ValueArray *result_matrix = array_new();
+
+    ValueArray *new_header = array_new();
+    for (int i = 0; i < left_header->count; i++) array_append(new_header, left_header->values[i]);
+    for (int i = 0; i < right_header->count; i++) {
+        if (i == r_idx) continue; 
+        array_append(new_header, right_header->values[i]);
+    }
+    array_append(result_matrix, (Value){VAL_ARRAY, {.array = new_header}});
+
+    for (int i = 1; i < left_matrix->count; i++) {
+        ValueArray *l_row = left_matrix->values[i].as.array;
+        char *l_val = l_row->values[l_idx].as.string;
+
+        for (int j = 1; j < right_matrix->count; j++) {
+            ValueArray *r_row = right_matrix->values[j].as.array;
+            char *r_val = r_row->values[r_idx].as.string;
+
+            if (strcmp(trim_ws(l_val), trim_ws(r_val)) == 0) {
+                ValueArray *joined_row = array_new();
+                for (int k = 0; k < l_row->count; k++) array_append(joined_row, l_row->values[k]);
+                for (int k = 0; k < r_row->count; k++) {
+                    if (k == r_idx) continue;
+                    array_append(joined_row, r_row->values[k]);
+                }
+                array_append(result_matrix, (Value){VAL_ARRAY, {.array = joined_row}});
+            }
+        }
+    }
+
+    return (Value){VAL_ARRAY, {.array = result_matrix}};
 }
 
 void register_csv_natives(Env *env){
