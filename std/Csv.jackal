@@ -40,16 +40,13 @@ class Csv : CsvStream , CsvAbstractMethod{
         return this
     }
 
-    private func write(dest : String) {
-        __csv_write(dest, this.result)   
-    }
-
     @override
     func exports(dest : String) -> Array{
         __csv_write(dest, this.result)
         return this.result
     }
 
+    @override
     func groupBy(groupCol : String, targetCol : String, op : String) {
         this.result = __csv_group_by(this.result, groupCol, targetCol, op)
         return this 
