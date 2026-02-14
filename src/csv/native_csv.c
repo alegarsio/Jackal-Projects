@@ -29,6 +29,16 @@ typedef struct {
         }                                                                        \
     } while (0)
 
+char* trim_whitespace(char* str) {
+    char* end;
+    while(isspace((unsigned char)*str)) str++;
+    if(*str == 0) return str;
+    end = str + strlen(str) - 1;
+    while(end > str && isspace((unsigned char)*end)) end--;
+    end[1] = '\0';
+    return str;
+}
+
 int get_column_index(ValueArray *header, const char *col_name) {
     for (int i = 0; i < header->count; i++) {
         if (header->values[i].type == VAL_STRING && 
@@ -180,7 +190,6 @@ Value native_csv_aggregate(int arity, Value *args) {
             count++;
         }
     }
-
     if (strcmp(op, "sum") == 0) return (Value){VAL_NUMBER, {.number = sum}};
     if (strcmp(op, "avg") == 0) return (Value){VAL_NUMBER, {.number = count > 0 ? sum / count : 0}};
     if (strcmp(op, "min") == 0) return (Value){VAL_NUMBER, {.number = min == DBL_MAX ? 0 : min}};
