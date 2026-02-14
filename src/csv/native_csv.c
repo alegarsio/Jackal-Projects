@@ -13,6 +13,7 @@ static bool sort_asc = true;
 typedef struct {
     char* key;
     double value;
+    double total_value;
     int count;
 } GroupEntry;
 
@@ -266,63 +267,82 @@ Value native_csv_group_by(int arity, Value *args) {
     }
 
     ValueArray *matrix = args[0].as.array;
-    const char *group_col_name = args[1].as.string;
-    const char *target_col_name = args[2].as.string;
-    const char *op = args[3].as.string;
+    char *group_col_name = args[1].as.string;
+    char *target_col_name = args[2].as.string;
+    char *op = args[3].as.string;
 
     ValueArray *header = matrix->values[0].as.array;
     int g_idx = -1, t_idx = -1;
+
     for (int i = 0; i < header->count; i++) {
-        if (strcmp(header->values[i].as.string, group_col_name) == 0) g_idx = i;
-        if (strcmp(header->values[i].as.string, target_col_name) == 0) t_idx = i;
+        char* h_name = strdup(header->values[i].as.string);
+        char* clean_h = trim_ws(h_name);
+        if (strcmp(clean_h, group_col_name) == 0) g_idx = i;
+        if (strcmp(clean_h, target_col_name) == 0) t_idx = i;
+        free(h_name);
     }
 
-    if (g_idx == -1 || t_idx == -1) return (Value){VAL_NIL, {0}};
+    if (g_idx == -1 || t_idx == -1) {
+        print_error("GroupBy Error: Column not found.");
+        return (Value){VAL_NIL, {0}};
+    }
 
-    GroupEntry groups[256]; 
+    GroupEntry groups[512]; 
     int group_count = 0;
 
     for (int i = 1; i < matrix->count; i++) {
         ValueArray *row = matrix->values[i].as.array;
-        char* key = row->values[g_idx].as.string;
-        double val = atof(row->values[t_idx].as.string);
+        char* raw_key = row->values[g_idx].as.string;
+        
+        char* key_copy = strdup(raw_key);
+        char* key = trim_ws(key_copy);
+        
+        double val = (row->values[t_idx].type == VAL_NUMBER) ? 
+                      row->values[t_idx].as.number : atof(row->values[t_idx].as.string);
 
-        int found = -1;
-        for(int k=0; k < group_count; k++) {
-            if(strcmp(groups[k].key, key) == 0) { found = k; break; }
+        int found_idx = -1;
+        for (int k = 0; k < group_count; k++) {
+            if (strcmp(groups[k].key, key) == 0) {
+                found_idx = k;
+                break;
+            }
         }
 
-        if (found != -1) {
-            groups[found].value += val;
-            groups[found].count++;
+        if (found_idx != -1) {
+            groups[found_idx].total_value += val;
+            groups[found_idx].count++;
+            free(key_copy); 
         } else {
-            groups[group_count].key = key;
-            groups[group_count].value = val;
+            groups[group_count].key = strdup(key);
+            groups[group_count].total_value = val;
             groups[group_count].count = 1;
             group_count++;
+            free(key_copy);
         }
     }
 
-    ValueArray *result_matrix = array_new();
+    ValueArray *res_matrix = array_new();
     
-    ValueArray *new_header = array_new();
-    array_append(new_header, (Value){VAL_STRING, {.string = strdup(group_col_name)}});
-    array_append(new_header, (Value){VAL_STRING, {.string = strdup("result")}});
-    array_append(result_matrix, (Value){VAL_ARRAY, {.array = new_header}});
+    ValueArray *h_row = array_new();
+    array_append(h_row, (Value){VAL_STRING, {.string = strdup(group_col_name)}});
+    array_append(h_row, (Value){VAL_STRING, {.string = strdup("result")}});
+    array_append(res_matrix, (Value){VAL_ARRAY, {.array = h_row}});
 
     for (int i = 0; i < group_count; i++) {
-        ValueArray *new_row = array_new();
-        array_append(new_row, (Value){VAL_STRING, {.string = strdup(groups[i].key)}});
+        ValueArray *d_row = array_new();
+        array_append(d_row, (Value){VAL_STRING, {.string = groups[i].key}});
         
-        double final_val = groups[i].value;
-        if (strcmp(op, "avg") == 0) final_val /= groups[i].count;
-        
-        array_append(new_row, (Value){VAL_NUMBER, {.number = final_val}});
-        array_append(result_matrix, (Value){VAL_ARRAY, {.array = new_row}});
+        double final_val = groups[i].total_value;
+        if (strcmp(op, "count") == 0) final_val = (double)groups[i].count;
+        else if (strcmp(op, "avg") == 0) final_val /= groups[i].count;
+
+        array_append(d_row, (Value){VAL_NUMBER, {.number = final_val}});
+        array_append(res_matrix, (Value){VAL_ARRAY, {.array = d_row}});
     }
 
-    return (Value){VAL_ARRAY, {.array = result_matrix}};
+    return (Value){VAL_ARRAY, {.array = res_matrix}};
 }
+
 void register_csv_natives(Env *env){
 
     CSV_REGISTER(env,"__csv_read",native_read_csv);
