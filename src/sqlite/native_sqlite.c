@@ -39,6 +39,26 @@ Value native_db_open(int arity, Value *args) {
     
     return (Value){VAL_FILE, {.file = (FILE*)db}};
 }
+Value native_db_execute(int arity, Value *args) {
+    if (arity < 2) {
+        print_error("db_execute expects 2 arguments: (handle, sql_string)");
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    sqlite3 *db = (sqlite3*)args[0].as.file;
+    const char* sql = args[1].as.string;
+    char *err_msg = 0;
+
+    int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+    if (rc != SQLITE_OK) {
+        printf("SQL Error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
 
 void register_sqlite_native(Env *env)
 {
