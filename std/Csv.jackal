@@ -3,12 +3,15 @@ import std.File.csv.Abstract.CsvAbstractMethod
 
 @final
 const asc = "asc"
-
 @final 
 const desc = "desc"
 
 @final
 class Csv : CsvStream , CsvAbstractMethod{
+    
+    func get() -> Array {
+        return this.result
+    }
 
     @override
     func load() {
@@ -44,6 +47,12 @@ class Csv : CsvStream , CsvAbstractMethod{
     func exports(dest : String) -> Array{
         __csv_write(dest, this.result)
         return this.result
+    }
+
+    @override
+    func join(other : Csv , left : String , right : String) {
+        this.result = __csv_join(this.result , other.get(), left,right)
+        return this
     }
 
     @override
