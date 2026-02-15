@@ -31,4 +31,5 @@ Value native_db_open(int arity, Value *args)
 
 void register_sqlite_native(Env *env)
 {
+    SQLITE_REGISTER(env,"__db_open",native_db_open);
 }
