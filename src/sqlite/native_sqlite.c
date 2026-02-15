@@ -59,6 +59,24 @@ Value native_db_execute(int arity, Value *args) {
 
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+Value native_db_connect(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_STRING) {
+        print_error("db_connect expects a string path.");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char* db_name = args[0].as.string;
+    sqlite3 *db;
+    
+    int rc = sqlite3_open_v2(db_name, &db, SQLITE_OPEN_READWRITE, NULL);
+
+    if (rc != SQLITE_OK) {
+        sqlite3_close(db);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    return (Value){VAL_FILE, {.file = (FILE*)db}};
+}
 
 void register_sqlite_native(Env *env)
 {
