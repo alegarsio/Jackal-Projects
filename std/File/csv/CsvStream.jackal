@@ -1,8 +1,14 @@
-class CsvStream {
-    
-    init(path : String){
+import std.File.Abstract.FileAbstractMethod
+
+class CsvStream , FileAbstractMethod{
+init(path : String){
         this.path = path
         this.seperate = ","
         this.result = []
     }
+
+    @override
+    func write(dest : String) -> Boolean =
+        __csv_write(dest, this.result) or "Error"
+    
 }
