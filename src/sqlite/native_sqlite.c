@@ -20,6 +20,10 @@
     } while (0)
 
 Value native_db_open(int arity, Value *args) {
+    static int call_count = 0;
+    call_count++;
+    printf("--- DEBUG: native_db_execute dipanggil ke-%d ---\n", call_count);
+
     if (arity < 1 || args[0].type != VAL_STRING) {
         print_error("db_open expects a string path.");
         return (Value){VAL_NIL, {0}};
@@ -39,21 +43,36 @@ Value native_db_open(int arity, Value *args) {
     
     return (Value){VAL_FILE, {.file = (FILE*)db}};
 }
+
 Value native_db_execute(int arity, Value *args) {
     if (arity < 2) {
         print_error("db_execute expects 2 arguments: (handle, sql_string)");
         return (Value){VAL_BOOL, {.boolean = false}};
     }
 
+    if (args[0].type == VAL_NIL || args[0].as.file == NULL) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    if (args[1].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
     sqlite3 *db = (sqlite3*)args[0].as.file;
     const char* sql = args[1].as.string;
-    char *err_msg = 0;
 
-    int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+    if (sql == NULL) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    char *err_msg = NULL;
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &err_msg);
 
     if (rc != SQLITE_OK) {
-        printf("SQL Error: %s\n", err_msg);
-        sqlite3_free(err_msg);
+        if (err_msg != NULL) {
+            printf("SQL Error: %s\n", err_msg);
+            sqlite3_free(err_msg);
+        }
         return (Value){VAL_BOOL, {.boolean = false}};
     }
 
