@@ -19,14 +19,25 @@
         }                                                                        \
     } while (0)
 
-Value native_db_open(int arity, Value *args)
-{
-    sqlite3 *db;
-    if (sqlite3_open(args[0].as.string, &db) != SQLITE_OK)
-    {
+Value native_db_open(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_STRING) {
+        print_error("db_open expects a string path.");
         return (Value){VAL_NIL, {0}};
     }
-    return (Value){VAL_FILE, {.file = (FILE *)db}};
+
+    const char* db_name = args[0].as.string;
+    sqlite3 *db;
+    int rc = sqlite3_open(db_name, &db);
+
+    if (rc != SQLITE_OK) {
+        printf("SQLite Error: %s\n", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    printf("Successfully connected to database: %s\n", db_name);
+    
+    return (Value){VAL_FILE, {.file = (FILE*)db}};
 }
 
 void register_sqlite_native(Env *env)
