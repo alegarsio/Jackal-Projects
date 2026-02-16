@@ -96,6 +96,54 @@ Value native_db_connect(int arity, Value *args) {
 
     return (Value){VAL_FILE, {.file = (FILE*)db}};
 }
+Value native_db_query(int arity, Value *args) {
+    if (arity < 2) {
+        print_error("db_query expects 2 arguments: (handle, sql_string)");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    sqlite3 *db = (sqlite3*)args[0].as.file;
+    const char* sql = args[1].as.string;
+    sqlite3_stmt *stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        printf("SQL Error: %s\n", sqlite3_errmsg(db));
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *results = init_value_array(); 
+    int col_count = sqlite3_column_count(stmt);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        HashMap *row = init_hash_map(); 
+
+        for (int i = 0; i < col_count; i++) {
+            const char *col_name = sqlite3_column_name(stmt, i);
+            Value val;
+
+            int type = sqlite3_column_type(stmt, i);
+            if (type == SQLITE_INTEGER) {
+                val = (Value){VAL_NUMBER, {.number = (double)sqlite3_column_int(stmt, i)}};
+            } else if (type == SQLITE_FLOAT) {
+                val = (Value){VAL_NUMBER, {.number = sqlite3_column_double(stmt, i)}};
+            } else if (type == SQLITE_TEXT) {
+                const char *text = (const char*)sqlite3_column_text(stmt, i);
+                val = (Value){VAL_STRING, {.string = strdup(text)}};
+            } else {
+                val = (Value){VAL_NIL, {0}};
+            }
+
+            hash_map_set(row, col_name, val);
+        }
+        
+        // Masukkan map baris ke dalam array hasil
+        Value row_val = {VAL_MAP, {.map = row}};
+        value_array_write(results, row_val);
+    }
+
+    sqlite3_finalize(stmt);
+    return (Value){VAL_ARRAY, {.array = results}};
+}
 
 void register_sqlite_native(Env *env)
 {
