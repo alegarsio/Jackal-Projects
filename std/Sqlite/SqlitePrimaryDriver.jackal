@@ -1,0 +1,18 @@
+import std.Sqlite.Abstract.SqliteAbstract
+
+class SqlitePrimaryDriver, SqliteAbstractMethod{
+
+    init(path : String){
+        this.path = path
+        this.handle = nil
+    }
+    
+    @override
+    func open() {
+        this.handle = __db_open(this.path)
+        return this
+    }
+
+    func get() = 
+        this.handle
+}

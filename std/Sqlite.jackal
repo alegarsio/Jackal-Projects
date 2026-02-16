@@ -1,0 +1,81 @@
+import std.Sqlite.SqlitePrimaryDriver
+
+class Table {
+
+    init(handle, tableName) {
+        this.handle = handle
+        this.tableName = tableName
+        this.sql = "SELECT * FROM " + tableName
+    }
+
+
+    func filter(column, op, value) {
+        this.sql = this.sql + " WHERE " + column + " " + op + " '" + value + "'"
+        return this
+    }
+
+    func get() 
+        return __db_query(this.handle, this.sql)
+    
+}
+
+/**
+ * Sqlite forward declaration object
+**/
+class Sqlite : SqlitePrimaryDriver {
+
+    func execute(query : String) 
+        return __db_execute(this.handle ,query) 
+    
+    func query(query : String)
+        return __db_query(this.handle , query)
+    
+    func connect() {
+        this.handle = __db_connect(this.path)
+        return this
+    }
+
+    func create(name, schema) {
+        let sql = "CREATE TABLE IF NOT EXISTS " + name + " (" + schema + ")"
+        return __db_execute(this.handle, sql)
+    }
+
+    func entity(name : String) {
+        return Table(this.handle, name)
+    }
+
+    func insert(table, columns, values) {
+        let sql = "INSERT INTO " + table + " (" + columns + ") VALUES (" + values + ")"
+        return __db_execute(this.handle, sql)
+    }
+
+    func findAll(sql : String) {
+        if (this.handle == nil) return []
+        return __db_query(this.handle, sql)
+    }
+
+    func findAll(tableName : String) {
+        if (this.handle == nil) {
+            println("Error: Database handle is nil. Call open() first.")
+            return []
+        }
+        
+        let sql = "SELECT * FROM " + tableName
+        return __db_query(this.handle, sql)
+    }
+
+    func close() {
+        if (this.handle != nil)
+            __db_close(this.handle)
+            this.handle = nil
+        return true
+    }
+    func pull() {
+        if (this.handle == nil) 
+            return []
+        let sql = "SELECT name FROM sqlite_master WHERE type='table'"
+        return __db_query(this.handle, sql)
+    }
+    
+}
+
