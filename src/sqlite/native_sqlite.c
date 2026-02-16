@@ -159,6 +159,25 @@ Value native_db_query(int arity, Value *args) {
     final_result.as.array = results;
     return final_result;
 }
+Value native_db_close(int arity, Value *args) {
+    if (arity < 1) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    if (args[0].type == VAL_NIL || args[0].as.file == NULL) {
+        return (Value){VAL_BOOL, {.boolean = true}};
+    }
+
+    sqlite3 *db = (sqlite3*)args[0].as.file;
+    int rc = sqlite3_close(db);
+
+    if (rc != SQLITE_OK) {
+        printf("SQL Error: Gagal menutup database. %s\n", sqlite3_errmsg(db));
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
