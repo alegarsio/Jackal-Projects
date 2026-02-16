@@ -95,29 +95,34 @@ Value native_db_connect(int arity, Value *args) {
     }
 
     return (Value){VAL_FILE, {.file = (FILE*)db}};
-}Value native_db_query(int arity, Value *args) {
+}
+Value native_db_query(int arity, Value *args) {
     if (arity < 2) {
         print_error("db_query expects 2 arguments: (handle, sql_string)");
         return (Value){VAL_NIL, {0}};
     }
 
     sqlite3 *db = (sqlite3*)args[0].as.file;
-    if (db == NULL) return (Value){VAL_NIL, {0}};
-
-    const char* sql = args[1].as.string;
-    sqlite3_stmt *stmt;
-
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
-        printf("SQL Error: %s\n", sqlite3_errmsg(db));
+    if (db == NULL) {
+        printf("--- NATIVE DEBUG: dbHandle is NULL ---\n");
         return (Value){VAL_NIL, {0}};
     }
 
-    // Menggunakan allocator array kamu
+    const char* sql = args[1].as.string;
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        printf("--- NATIVE DEBUG: Prepare Error: %s ---\n", sqlite3_errmsg(db));
+        return (Value){VAL_NIL, {0}};
+    }
+
     ValueArray *results = array_new(); 
     int col_count = sqlite3_column_count(stmt);
+    int row_count = 0;
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-        // Menggunakan allocator map kamu
+        row_count++;
+        
         HashMap *row = map_new(); 
 
         for (int i = 0; i < col_count; i++) {
@@ -136,8 +141,6 @@ Value native_db_connect(int arity, Value *args) {
                 val = (Value){VAL_NIL, {0}};
             }
 
-            // Fungsi map_set kamu akan otomatis menangani capacity yang 0 
-            // karena ada pengecekan (map->count + 1 > map->capacity * 0.75)
             map_set(row, col_name, val);
         }
         
@@ -145,9 +148,9 @@ Value native_db_connect(int arity, Value *args) {
         row_val.type = VAL_MAP;
         row_val.as.map = row;
         
-        // Memasukkan map baris ke array hasil
         array_append(results, row_val);
     }
+
 
     sqlite3_finalize(stmt);
 
@@ -156,11 +159,10 @@ Value native_db_connect(int arity, Value *args) {
     final_result.as.array = results;
     return final_result;
 }
-
 void register_sqlite_native(Env *env)
 {
+    SQLITE_REGISTER(env,"__db_query",native_db_query);
     SQLITE_REGISTER(env,"__db_open",native_db_open);
-    
     SQLITE_REGISTER(env,"__db_execute",native_db_execute);
     SQLITE_REGISTER(env,"__db_connect",native_db_connect);
 }
