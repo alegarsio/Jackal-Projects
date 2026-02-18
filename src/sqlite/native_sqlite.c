@@ -178,6 +178,58 @@ Value native_db_close(int arity, Value *args) {
 
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+Value native_db_create(int arity, Value *args) {
+    if (arity < 3 || args[2].type != VAL_MAP) {
+        printf("Runtime Error: create() butuh (handle, table_name, schema_map)\n");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    sqlite3 *db = (sqlite3*)args[0].as.file;
+    const char* table_name = args[1].as.string;
+    HashMap *schema = args[2].as.map;
+
+    char sql[2048]; 
+    snprintf(sql, sizeof(sql), "CREATE TABLE IF NOT EXISTS %s (", table_name);
+
+    bool first = true;
+    for (int i = 0; i < schema->capacity; i++) {
+        Entry *entry = &schema->entries[i];
+        if (entry->key == NULL) continue;
+
+        if (!first) strcat(sql, ", ");
+        
+        const char* column_name = entry->key;
+        const char* type_alias = entry->value.as.string;
+        const char* real_type = "TEXT";
+
+        if (strcmp(type_alias, "primary") == 0) {
+            real_type = "INTEGER PRIMARY KEY AUTOINCREMENT";
+        } else if (strcmp(type_alias, "int") == 0) {
+            real_type = "INTEGER";
+        } else if (strcmp(type_alias, "float") == 0) {
+            real_type = "REAL";
+        }
+
+        strcat(sql, column_name);
+        strcat(sql, " ");
+        strcat(sql, real_type);
+        
+        first = false;
+    }
+
+    strcat(sql, ")");
+
+    char *err_msg = 0;
+    int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+    if (rc != SQLITE_OK) {
+        printf("SQL Error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
