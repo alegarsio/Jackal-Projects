@@ -16,6 +16,11 @@ class Table {
 
     func get() 
         return __db_query(this.handle, this.sql)
+
+    func findAll() {
+        let fullSql = "SELECT * FROM " + this.tableName
+        return __db_query(this.handle, fullSql)
+    }
     
 }
 
@@ -34,7 +39,6 @@ class Sqlite : SqlitePrimaryDriver {
         this.handle = __db_connect(this.path)
         return this
     }
-
     func create(name, schema) {
         let sql = "CREATE TABLE IF NOT EXISTS " + name + " (" + schema + ")"
         return __db_execute(this.handle, sql)
@@ -47,11 +51,6 @@ class Sqlite : SqlitePrimaryDriver {
     func insert(table, columns, values) {
         let sql = "INSERT INTO " + table + " (" + columns + ") VALUES (" + values + ")"
         return __db_execute(this.handle, sql)
-    }
-
-    func findAll(sql : String) {
-        if (this.handle == nil) return []
-        return __db_query(this.handle, sql)
     }
 
     func findAll(tableName : String) {
