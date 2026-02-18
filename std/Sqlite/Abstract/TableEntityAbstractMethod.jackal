@@ -1,4 +1,4 @@
 trait TableEntityAbstractMethod{
     func filter() -> Instance ;
-    
+    func insert() -> Boolean ;
 }
