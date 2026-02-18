@@ -286,6 +286,52 @@ Value native_db_insert(int arity, Value *args) {
 
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+
+Value native_db_where(int arity, Value *args) {
+    if (arity < 2 || args[1].type != VAL_MAP) {
+        printf("Runtime Error: where() membutuhkan Map kriteria\n");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    HashMap *criteria = args[1].as.map;
+    char where_clause[1024] = " WHERE ";
+    bool first = true;
+
+    for (int i = 0; i < criteria->capacity; i++) {
+        Entry *entry = &criteria->entries[i];
+        if (entry->key == NULL) continue;
+
+        if (!first) strcat(where_clause, " AND ");
+
+        const char* column = entry->key;
+        const char* value_str = entry->value.as.string;
+        
+        char op[4] = "=";
+        const char* final_value = value_str;
+
+        if (value_str[0] == '>') {
+            strcpy(op, ">");
+            final_value = value_str + 1;
+        } else if (value_str[0] == '<') {
+            strcpy(op, "<");
+            final_value = value_str + 1;
+        } else if (value_str[0] == '!') {
+            strcpy(op, "!=");
+            final_value = value_str + 1;
+        }
+
+        strcat(where_clause, column);
+        strcat(where_clause, " ");
+        strcat(where_clause, op);
+        strcat(where_clause, " '");
+        strcat(where_clause, final_value);
+        strcat(where_clause, "'");
+
+        first = false;
+    }
+
+    return (Value){VAL_STRING, {.string = strdup(where_clause)}};
+}
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
