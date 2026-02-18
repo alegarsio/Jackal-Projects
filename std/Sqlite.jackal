@@ -18,6 +18,12 @@ class Table : TableEntity , TableEntityAbstractMethod{
         return __db_query(this.handle, fullSql)
     }
 
+    func insert(data) -> Boolean {
+        if (typeof(data) == "map")
+            return __db_insert(this.handle,this.tableName,data)
+        return false 
+    }
+
     func first() {
         let sql = this.sql + " LIMIT 1"
         let result = __db_query(this.handle, sql)
@@ -58,7 +64,7 @@ class Sqlite : SqlitePrimaryDriver {
     func create(name, schema) {
         if (typeof(schema) == "map")
             return __db_create(this.handle,name,schema)
-            
+
         let sql = "CREATE TABLE IF NOT EXISTS " + name + " (" + schema + ")"
         return __db_execute(this.handle, sql)
     }
