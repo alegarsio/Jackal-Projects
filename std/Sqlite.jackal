@@ -1,6 +1,6 @@
 import std.Sqlite.SqlitePrimaryDriver
 
-class Table {
+class Table  {
 
     init(handle, tableName) {
         this.handle = handle
@@ -30,6 +30,11 @@ class Table {
             return result[0] 
         }
         return nil
+    }
+
+    func limit(n) {
+        this.sql = this.sql + " LIMIT " + n.toString()
+        return this
     }
 
     func orderBy(column, direction) {
