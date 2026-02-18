@@ -21,8 +21,8 @@ class Table {
         let fullSql = "SELECT * FROM " + this.tableName
         return __db_query(this.handle, fullSql)
     }
+
     func first() {
-        
         let sql = this.sql + " LIMIT 1"
         let result = __db_query(this.handle, sql)
         
@@ -30,6 +30,11 @@ class Table {
             return result[0] 
         }
         return nil
+    }
+
+    func orderBy(column, direction) {
+        this.sql = this.sql + " ORDER BY " + column + " " + direction
+        return this
     }
     
 }
