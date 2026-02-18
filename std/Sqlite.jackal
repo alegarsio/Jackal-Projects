@@ -21,6 +21,16 @@ class Table {
         let fullSql = "SELECT * FROM " + this.tableName
         return __db_query(this.handle, fullSql)
     }
+    func first() {
+        
+        let sql = this.sql + " LIMIT 1"
+        let result = __db_query(this.handle, sql)
+        
+        if (result.length() > 0) {
+            return result[0] 
+        }
+        return nil
+    }
     
 }
 
