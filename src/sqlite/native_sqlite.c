@@ -286,51 +286,62 @@ Value native_db_insert(int arity, Value *args) {
 
     return (Value){VAL_BOOL, {.boolean = true}};
 }
-
 Value native_db_where(int arity, Value *args) {
-    if (arity < 2 || args[1].type != VAL_MAP) {
-        printf("Runtime Error: where() membutuhkan Map kriteria\n");
-        return (Value){VAL_NIL, {0}};
+    if (arity < 1 || args[0].type != VAL_MAP) {
+        return (Value){VAL_STRING, {.string = strdup("")}};
     }
 
-    HashMap *criteria = args[1].as.map;
-    char where_clause[1024] = " WHERE ";
+    HashMap *criteria = args[0].as.map;
+    
+    if (criteria->count == 0) {
+        return (Value){VAL_STRING, {.string = strdup("")}};
+    }
+
+    char buffer[1024] = " WHERE ";
     bool first = true;
 
     for (int i = 0; i < criteria->capacity; i++) {
         Entry *entry = &criteria->entries[i];
         if (entry->key == NULL) continue;
 
-        if (!first) strcat(where_clause, " AND ");
+        if (!first) strcat(buffer, " AND ");
 
-        const char* column = entry->key;
-        const char* value_str = entry->value.as.string;
+        strcat(buffer, entry->key);
         
         char op[4] = "=";
-        const char* final_value = value_str;
+        char val_content[256] = "";
 
-        if (value_str[0] == '>') {
-            strcpy(op, ">");
-            final_value = value_str + 1;
-        } else if (value_str[0] == '<') {
-            strcpy(op, "<");
-            final_value = value_str + 1;
-        } else if (value_str[0] == '!') {
-            strcpy(op, "!=");
-            final_value = value_str + 1;
+        if (entry->value.type == VAL_STRING) {
+            const char* str_val = entry->value.as.string;
+            
+            if (str_val[0] == '>' || str_val[0] == '<' || str_val[0] == '!') {
+                if (str_val[0] == '!') {
+                    strcpy(op, "!=");
+                } else {
+                    op[0] = str_val[0];
+                    op[1] = '\0';
+                }
+                strcpy(val_content, str_val + 1);
+            } else {
+                strcpy(val_content, str_val);
+            }
+            
+            strcat(buffer, " ");
+            strcat(buffer, op);
+            strcat(buffer, " '");
+            strcat(buffer, val_content);
+            strcat(buffer, "'");
+        } 
+        else if (entry->value.type == VAL_NUMBER) {
+            sprintf(val_content, "%g", entry->value.as.number);
+            strcat(buffer, " = ");
+            strcat(buffer, val_content);
         }
-
-        strcat(where_clause, column);
-        strcat(where_clause, " ");
-        strcat(where_clause, op);
-        strcat(where_clause, " '");
-        strcat(where_clause, final_value);
-        strcat(where_clause, "'");
 
         first = false;
     }
 
-    return (Value){VAL_STRING, {.string = strdup(where_clause)}};
+    return (Value){VAL_STRING, {.string = strdup(buffer)}};
 }
 void register_sqlite_native(Env *env)
 {
