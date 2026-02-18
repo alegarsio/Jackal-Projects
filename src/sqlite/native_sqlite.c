@@ -230,6 +230,62 @@ Value native_db_create(int arity, Value *args) {
 
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+Value native_db_insert(int arity, Value *args) {
+    if (arity < 3 || args[2].type != VAL_MAP) {
+        printf("Runtime Error: insert() butuh (handle, table_name, data_map)\n");
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    sqlite3 *db = (sqlite3*)args[0].as.file;
+    const char* table_name = args[1].as.string;
+    HashMap *data = args[2].as.map;
+
+    char columns[1024] = "";
+    char values[1024] = "";
+    bool first = true;
+
+    for (int i = 0; i < data->capacity; i++) {
+        Entry *entry = &data->entries[i];
+        if (entry->key == NULL) continue;
+
+        if (!first) {
+            strcat(columns, ", ");
+            strcat(values, ", ");
+        }
+
+        strcat(columns, entry->key);
+
+        if (entry->value.type == VAL_NUMBER) {
+            char num_str[32];
+            sprintf(num_str, "%g", entry->value.as.number);
+            strcat(values, num_str);
+        } else if (entry->value.type == VAL_STRING) {
+            strcat(values, "'");
+            strcat(values, entry->value.as.string);
+            strcat(values, "'");
+        } else if (entry->value.type == VAL_BOOL) {
+            strcat(values, entry->value.as.boolean ? "1" : "0");
+        } else {
+            strcat(values, "NULL");
+        }
+
+        first = false;
+    }
+
+    char sql[2048];
+    snprintf(sql, sizeof(sql), "INSERT INTO %s (%s) VALUES (%s)", table_name, columns, values);
+
+    char *err_msg = 0;
+    int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+
+    if (rc != SQLITE_OK) {
+        printf("SQL Error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
