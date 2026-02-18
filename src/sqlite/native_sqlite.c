@@ -237,4 +237,5 @@ void register_sqlite_native(Env *env)
     SQLITE_REGISTER(env,"__db_execute",native_db_execute);
     SQLITE_REGISTER(env,"__db_connect",native_db_connect);
     SQLITE_REGISTER(env,"__db_close",native_db_close);
+    SQLITE_REGISTER(env,"__db_create",native_db_create);
 }
