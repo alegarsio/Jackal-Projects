@@ -1,4 +1,4 @@
-class TableEntity {
+class Entity {
     init(handle, tableName) {
         this.handle = handle
         this.tableName = tableName
