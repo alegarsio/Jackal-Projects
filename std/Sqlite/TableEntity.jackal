@@ -1,0 +1,7 @@
+class TableEntity {
+    init(handle, tableName) {
+        this.handle = handle
+        this.tableName = tableName
+        this.sql = "SELECT * FROM " + tableName
+    }
+}

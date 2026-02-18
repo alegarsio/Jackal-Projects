@@ -1,14 +1,10 @@
 import std.Sqlite.SqlitePrimaryDriver
+import std.Sqlite.TableEntity
+import std.Sqlite.Abstract.TableEntityAbstractMethod;
 
-class Table  {
+class Table : TableEntity , TableEntityAbstractMethod{
 
-    init(handle, tableName) {
-        this.handle = handle
-        this.tableName = tableName
-        this.sql = "SELECT * FROM " + tableName
-    }
-
-
+    @override
     func filter(column, op, value) {
         this.sql = this.sql + " WHERE " + column + " " + op + " '" + value + "'"
         return this
@@ -60,6 +56,9 @@ class Sqlite : SqlitePrimaryDriver {
         return this
     }
     func create(name, schema) {
+        if (typeof(schema) == "map")
+            return __db_create(this.handle,name,schema)
+            
         let sql = "CREATE TABLE IF NOT EXISTS " + name + " (" + schema + ")"
         return __db_execute(this.handle, sql)
     }
