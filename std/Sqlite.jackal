@@ -11,6 +11,11 @@ class Table : Entity , TableEntityAbstractMethod{
         return this
     }
 
+    func join(target : String , relation : Map){
+        this.sql = this.sql + __db_innerJoin(target,relation)
+        return this
+    }
+
     func get() {
         let result = __db_query(this.handle, this.sql)
         this.sql = "SELECT * FROM " + this.tableName
