@@ -381,6 +381,39 @@ Value native_db_join(int arity, Value *args) {
 
     return (Value){VAL_STRING, {.string = strdup(buffer)}};
 }
+
+Value native_db_select(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_MAP) {
+        return (Value){VAL_STRING, {.string = strdup("*")}};
+    }
+
+    HashMap *columns = args[0].as.map;
+    if (columns->count == 0) {
+        return (Value){VAL_STRING, {.string = strdup("*")}};
+    }
+
+    char buffer[1024] = "";
+    bool first = true;
+
+    for (int i = 0; i < columns->capacity; i++) {
+        Entry *entry = &columns->entries[i];
+        if (entry->key == NULL) continue;
+
+        if (!first) strcat(buffer, ", ");
+
+        // Tambahkan nama kolom asli
+        strcat(buffer, entry->key); 
+        
+        if (entry->value.type == VAL_STRING) {
+            strcat(buffer, " AS ");
+            strcat(buffer, entry->value.as.string);
+        }
+        
+        first = false;
+    }
+
+    return (Value){VAL_STRING, {.string = strdup(buffer)}};
+}
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
