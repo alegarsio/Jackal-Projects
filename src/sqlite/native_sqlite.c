@@ -206,8 +206,16 @@ Value native_db_create(int arity, Value *args) {
             real_type = "INTEGER PRIMARY KEY AUTOINCREMENT";
         } else if (strcmp(type_alias, "int") == 0) {
             real_type = "INTEGER";
-        } else if (strcmp(type_alias, "float") == 0) {
+        } else if (strcmp(type_alias, "float") == 0 || strcmp(type_alias, "double") == 0) {
             real_type = "REAL";
+        } else if (strcmp(type_alias, "string") == 0 || strcmp(type_alias, "varchar") == 0) {
+            real_type = "VARCHAR(255)";
+        } else if (strcmp(type_alias, "text") == 0) {
+            real_type = "TEXT";
+        } else if (strcmp(type_alias, "bool") == 0 || strcmp(type_alias, "boolean") == 0) {
+            real_type = "INTEGER"; 
+        } else if (strcmp(type_alias, "datetime") == 0 || strcmp(type_alias, "timestamp") == 0) {
+            real_type = "DATETIME DEFAULT CURRENT_TIMESTAMP";
         }
 
         strcat(sql, column_name);
@@ -338,6 +346,36 @@ Value native_db_where(int arity, Value *args) {
             strcat(buffer, val_content);
         }
 
+        first = false;
+    }
+
+    return (Value){VAL_STRING, {.string = strdup(buffer)}};
+}
+Value native_db_join(int arity, Value *args) {
+    if (arity < 2 || args[1].type != VAL_MAP) {
+        return (Value){VAL_STRING, {.string = strdup("")}};
+    }
+
+    const char* target_table = args[0].as.string;
+    HashMap *relations = args[1].as.map;
+    
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), " INNER JOIN %s ON ", target_table);
+
+    bool first = true;
+    for (int i = 0; i < relations->capacity; i++) {
+        Entry *entry = &relations->entries[i];
+        if (entry->key == NULL) continue;
+
+        if (!first) strcat(buffer, " AND ");
+
+        strcat(buffer, entry->key); 
+        strcat(buffer, " = ");
+        
+        if (entry->value.type == VAL_STRING) {
+            strcat(buffer, entry->value.as.string); 
+        }
+        
         first = false;
     }
 
