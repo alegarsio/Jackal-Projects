@@ -401,7 +401,6 @@ Value native_db_select(int arity, Value *args) {
 
         if (!first) strcat(buffer, ", ");
 
-        // Tambahkan nama kolom asli
         strcat(buffer, entry->key); 
         
         if (entry->value.type == VAL_STRING) {
@@ -425,4 +424,5 @@ void register_sqlite_native(Env *env)
     SQLITE_REGISTER(env,"__db_insert",native_db_insert);
     SQLITE_REGISTER(env,"__db_filter",native_db_where);
     SQLITE_REGISTER(env,"__db_innerJoin",native_db_join);
+    SQLITE_REGISTER(env,"__db_select",native_db_select);
 }
