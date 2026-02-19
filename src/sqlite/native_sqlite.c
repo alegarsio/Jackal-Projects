@@ -391,4 +391,5 @@ void register_sqlite_native(Env *env)
     SQLITE_REGISTER(env,"__db_create",native_db_create);
     SQLITE_REGISTER(env,"__db_insert",native_db_insert);
     SQLITE_REGISTER(env,"__db_filter",native_db_where);
+    SQLITE_REGISTER(env,"__db_innerJoin",native_db_join);
 }
