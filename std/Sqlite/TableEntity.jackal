@@ -2,9 +2,10 @@ class Entity {
     init(handle, tableName) {
         this.handle = handle
         this.tableName = tableName
-        this.selectedColumns = "*"
-        this.sql = "SELECT * FROM " + tableName
-        this.joinClause = ""
+        this.selectedColumns = "*" 
         this.whereClause = ""
+        this.joinClause = ""
+        this.limitClause = ""
+        this.orderClause = ""
     }
 }
