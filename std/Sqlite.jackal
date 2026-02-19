@@ -2,6 +2,13 @@ import std.Sqlite.SqlitePrimaryDriver
 import std.Sqlite.TableEntity
 import std.Sqlite.Abstract.TableEntityAbstractMethod;
 
+
+/**
+ * JackQlite lightweight ORM is the part of jackal ecosystem that allows jackal for comunicate with sqlite database
+ * @author Alegrarsio gifta lesmana 
+**/
+
+
 class Table : Entity , TableEntityAbstractMethod{
 
     @override
