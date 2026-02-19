@@ -13,8 +13,7 @@ class Table : Entity , TableEntityAbstractMethod{
 
     @override
     func filter(criteria) {
-        let clause = __db_filter(criteria)
-        this.sql = this.sql + clause
+        this.whereClause = __db_filter(criteria)
         return this
     }
 
