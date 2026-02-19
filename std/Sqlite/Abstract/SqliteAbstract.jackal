@@ -1,4 +1,4 @@
 trait SqliteAbstractMethod{
-    func open() ;
+    func open()  ;
     func create() -> Boolean;
 }

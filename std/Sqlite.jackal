@@ -5,13 +5,17 @@ import std.Sqlite.Abstract.TableEntityAbstractMethod;
 class Table : Entity , TableEntityAbstractMethod{
 
     @override
-    func filter(column, op, value) {
-        this.sql = this.sql + " WHERE " + column + " " + op + " '" + value + "'"
+    func filter(criteria) {
+        let clause = __db_filter(criteria)
+        this.sql = this.sql + clause
         return this
     }
 
-    func get() 
-        return __db_query(this.handle, this.sql)
+    func get() {
+        let result = __db_query(this.handle, this.sql)
+        this.sql = "SELECT * FROM " + this.tableName
+        return result
+    }
 
     func findAll() {
         let fullSql = "SELECT * FROM " + this.tableName
@@ -61,15 +65,6 @@ class Sqlite : SqlitePrimaryDriver {
     func connect() {
         this.handle = __db_connect(this.path)
         return this
-    }
-    
-    @override
-    func create(name, schema) {
-        if (typeof(schema) == "map")
-            return __db_create(this.handle,name,schema)
-
-        let sql = "CREATE TABLE IF NOT EXISTS " + name + " (" + schema + ")"
-        return __db_execute(this.handle, sql)
     }
 
     func entity(name : String) {
