@@ -22,16 +22,28 @@ class Table : Entity , TableEntityAbstractMethod{
         this.sql = this.sql + __db_innerJoin(target,relation)
         return this
     }
+    
 
     func get() {
-        let result = __db_query(this.handle, this.sql)
-        this.sql = "SELECT * FROM " + this.tableName
+        let finalSql = "SELECT " + this.selectedColumns + " FROM " + this.tableName + this.whereClause + this.orderClause 
+        let result = __db_query(this.handle, finalSql)
+        
+        this.selectedColumns = "*"
+        this.whereClause = ""
+        this.limitClause = ""
+        this.orderClause = ""
+        
         return result
     }
 
     func findAll() {
         let fullSql = "SELECT * FROM " + this.tableName
         return __db_query(this.handle, fullSql)
+    }
+
+    func select(col){
+        this.selectedColumns = __db_select(col)
+        return this
     }
 
     @override
