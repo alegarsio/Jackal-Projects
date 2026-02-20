@@ -1,36 +1,38 @@
 import std.Sqlite.SqlitePrimaryDriver
 import std.Sqlite.TableEntity
 import std.Sqlite.Abstract.TableEntityAbstractMethod;
-
+import std.Sqlite.WhereBuilder
 
 /**
  * JackQlite lightweight ORM is the part of jackal ecosystem that allows jackal for comunicate with sqlite database
  * @author Alegrarsio gifta lesmana 
 **/
 
-
 class Table : Entity , TableEntityAbstractMethod{
 
     @override
-    func filter(criteria) {
-        this.whereClause = __db_filter(criteria)
-        return this
+    func filter(column) {
+        return WhereBuilder(this, column)
     }
 
     func join(target : String , relation : Map){
         this.sql = this.sql + __db_innerJoin(target,relation)
         return this
     }
+
+    func count() {
+        let sql = "SELECT COUNT(*) FROM " + this.tableName + this.whereClause
+        let total = __db_count(this.handle, sql)
+        this.resetState()
+        return total
+    }
     
 
     func get() {
         let finalSql = "SELECT " + this.selectedColumns + " FROM " + this.tableName + this.whereClause + this.orderClause 
         let result = __db_query(this.handle, finalSql)
-        
-        this.selectedColumns = "*"
-        this.whereClause = ""
-        this.limitClause = ""
-        this.orderClause = ""
+
+        this.resetState()
         
         return result
     }
