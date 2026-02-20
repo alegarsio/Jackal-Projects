@@ -32,7 +32,7 @@ class Table : Entity , TableEntityAbstractMethod{
         return OrderBuilder(this,col)
 
     func get() {
-        let finalSql = "SELECT " + this.selectedColumns + " FROM " + this.tableName + this.whereClause + this.orderClause 
+        let finalSql = "SELECT " + this.selectedColumns + " FROM " + this.tableName + this.whereClause + this.orderClause + this.limitClause + this.offsetClause
         let result = __db_query(this.handle, finalSql)
 
         this.resetState()
@@ -68,7 +68,7 @@ class Table : Entity , TableEntityAbstractMethod{
     }
 
     func limit(n) {
-        this.sql = this.sql + " LIMIT " + n.toString()
+        this.limitClause = " LIMIT " + n.toString()
         return this
     }
 
