@@ -50,6 +50,22 @@ class Table : Entity , TableEntityAbstractMethod{
         return this
     }
 
+    func update(data) {
+        if (this.whereClause == "") {
+            return 0
+        }
+
+        let rowsAffected = __db_update(
+            this.handle,
+            this.tableName,
+            data,
+            this.whereClause
+        )
+
+        this.resetState()
+        return rowsAffected
+    }
+
     @override
     func insert(data) -> Boolean {
         if (typeof(data) == "map")
@@ -70,6 +86,21 @@ class Table : Entity , TableEntityAbstractMethod{
     func limit(n) {
         this.limitClause = " LIMIT " + n.toString()
         return this
+    }
+
+    func delete() {
+        if (this.whereClause == "") {
+            return 0
+        }
+
+        let rowsAffected = __db_delete(
+            this.handle,
+            this.tableName,
+            this.whereClause
+        )
+
+        this.resetState()
+        return rowsAffected
     }
 
     
@@ -123,6 +154,8 @@ class Sqlite : SqlitePrimaryDriver {
         let sql = "SELECT name FROM sqlite_master WHERE type='table'"
         return __db_query(this.handle, sql)
     }
+
+    
     
 }
 
