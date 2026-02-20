@@ -498,4 +498,5 @@ void register_sqlite_native(Env *env)
     SQLITE_REGISTER(env,"__db_innerJoin",native_db_join);
     SQLITE_REGISTER(env,"__db_select",native_db_select);
     SQLITE_REGISTER(env,"__db_count",native_db_count);
+    SQLITE_REGISTER(env,"__db_update",native_db_update);
 }
