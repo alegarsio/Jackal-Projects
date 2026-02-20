@@ -8,4 +8,12 @@ class Entity {
         this.limitClause = ""
         this.orderClause = ""
     }
+
+    func resetState() {
+        this.selectedColumns = "*"
+        this.whereClause = ""
+        this.joinClause = ""
+        this.orderClause = ""
+        this.limitClause = ""
+    }
 }
