@@ -2,6 +2,7 @@ import std.Sqlite.SqlitePrimaryDriver
 import std.Sqlite.TableEntity
 import std.Sqlite.Abstract.TableEntityAbstractMethod;
 import std.Sqlite.WhereBuilder
+import std.Sqlite.OrderBuilder
 
 /**
  * JackQlite lightweight ORM is the part of jackal ecosystem that allows jackal for comunicate with sqlite database
@@ -27,6 +28,8 @@ class Table : Entity , TableEntityAbstractMethod{
         return total
     }
     
+    func orderBy(col : String) 
+        return OrderBuilder(this,col)
 
     func get() {
         let finalSql = "SELECT " + this.selectedColumns + " FROM " + this.tableName + this.whereClause + this.orderClause 
@@ -69,10 +72,7 @@ class Table : Entity , TableEntityAbstractMethod{
         return this
     }
 
-    func orderBy(column, direction) {
-        this.sql = this.sql + " ORDER BY " + column + " " + direction
-        return this
-    }
+    
     
 }
 
