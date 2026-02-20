@@ -437,6 +437,54 @@ Value native_db_count(int arg_count, Value* args) {
 }
 
 
+Value native_db_update(int arg_count, Value* args) {
+    if (arg_count < 4) return (Value){VAL_NUMBER, {.number = 0}};
+
+    sqlite3* db = (sqlite3*)args[0].as.string;
+    const char* table = args[1].as.string;
+    struct HashMap* map = args[2].as.map;
+    const char* where = args[3].as.string;
+
+    char sql[2048] = {0};
+    sprintf(sql, "UPDATE %s SET ", table);
+
+    int first = 1;
+    for (int i = 0; i < map->capacity; i++) {
+        if (map->entries[i].key == NULL) continue;
+        
+        if (!first) strcat(sql, ", ");
+        strcat(sql, map->entries[i].key);
+        strcat(sql, " = ?");
+        first = 0;
+    }
+    strcat(sql, where);
+
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        return (Value){VAL_NUMBER, {.number = 0}};
+    }
+
+    int index = 1;
+    for (int i = 0; i < map->capacity; i++) {
+        if (map->entries[i].key == NULL) continue;
+
+        Value val = map->entries[i].value;
+        if (val.type == VAL_NUMBER) {
+            sqlite3_bind_double(stmt, index++, val.as.number);
+        } else if (val.type == VAL_STRING) {
+            sqlite3_bind_text(stmt, index++, val.as.string, -1, SQLITE_TRANSIENT);
+        }
+    }
+
+    int affected = 0;
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        affected = sqlite3_changes(db);
+    }
+
+    sqlite3_finalize(stmt);
+    return (Value){VAL_NUMBER, {.number = (double)affected}};
+}
+
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
