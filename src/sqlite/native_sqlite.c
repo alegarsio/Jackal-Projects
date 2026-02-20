@@ -413,6 +413,30 @@ Value native_db_select(int arity, Value *args) {
 
     return (Value){VAL_STRING, {.string = strdup(buffer)}};
 }
+
+Value native_db_count(int arg_count, Value* args) {
+    if (arg_count < 2) return (Value){VAL_NUMBER, {.number = 0}};
+
+    sqlite3* db = (sqlite3*)args[0].as.string; 
+
+    const char* sql = args[1].as.string;
+
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        return (Value){VAL_NUMBER, {.number = 0}};
+    }
+
+    double count = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        count = (double)sqlite3_column_int(stmt, 0);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return (Value){VAL_NUMBER, {.number = count}};
+}
+
+
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
@@ -425,4 +449,5 @@ void register_sqlite_native(Env *env)
     SQLITE_REGISTER(env,"__db_filter",native_db_where);
     SQLITE_REGISTER(env,"__db_innerJoin",native_db_join);
     SQLITE_REGISTER(env,"__db_select",native_db_select);
+    
 }
