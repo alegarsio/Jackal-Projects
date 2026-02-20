@@ -4,11 +4,21 @@ class OrderBuilder : QueryComponent {
   
     func asc() {
         this.parent.orderClause = " ORDER BY " + this.column + " ASC"
-        return this.parent
+        return this 
     }
 
     func desc() {
         this.parent.orderClause = " ORDER BY " + this.column + " DESC"
-        return this.parent
+        return this 
+    }
+    
+    func nullsLast() {
+        this.parent.orderClause = this.parent.orderClause + " NULLS LAST"
+        return this.parent 
+    }
+
+    func nullsFirst() {
+        this.parent.orderClause = this.parent.orderClause + " NULLS FIRST"
+        return this.parent 
     }
 }
