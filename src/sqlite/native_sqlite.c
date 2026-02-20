@@ -485,6 +485,27 @@ Value native_db_update(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = (double)affected}};
 }
 
+Value native_db_delete(int arg_count, Value* args) {
+    if (arg_count < 3) return (Value){VAL_NUMBER, {.number = 0}};
+
+    sqlite3* db = (sqlite3*)args[0].as.string;
+    const char* table = args[1].as.string;
+    const char* where = args[2].as.string;
+
+    char sql[1024] = {0};
+    sprintf(sql, "DELETE FROM %s%s", table, where);
+
+    char* err_msg = 0;
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &err_msg);
+
+    int affected = 0;
+    if (rc == SQLITE_OK) {
+        affected = sqlite3_changes(db);
+    }
+
+    return (Value){VAL_NUMBER, {.number = (double)affected}};
+}
+
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
