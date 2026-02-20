@@ -1,0 +1,22 @@
+import std.Sqlite.QueryComponent
+
+class WhereBuilder : QueryComponent {
+
+    func gt(value) {
+        this.parent.whereClause = " WHERE " + this.column + " > " + value.toString()
+        return this.parent 
+    }
+
+    func lt(value) {
+        this.parent.whereClause = " WHERE " + this.column + " < " + value.toString()
+        return this.parent
+    }
+
+    func eq(value) {
+        let valStr = value.toString()
+        if (typeof(value) == "string") valStr = "'" + valStr + "'"
+        
+        this.parent.whereClause = " WHERE " + this.column + " = " + valStr
+        return this.parent
+    }
+}
