@@ -1,0 +1,58 @@
+class JFast {
+    init() {
+        this.routes = {}
+        
+    }
+
+    func route(path, method, data) {
+        if (this.routes[path] == nil) {
+            this.routes[path] = {}
+        }
+        
+        if (method == nil) {
+            method = "GET"
+        }
+
+        this.routes[path][method] = data
+    }
+
+    func get(path, data) {
+        this.route(path, "GET", data)
+    }
+
+    func post(path, data) {
+        this.route(path, "POST", data)
+    }
+
+    func start(port) {
+        if (__listen__(port)) {
+            println("Listening on: http://localhost:" + port.toString())
+        
+
+            while (true) {
+                let req = __accept__()
+                if (req != nil) {
+                    let m = req["method"]
+                    let p = req["path"]
+                    
+                    println("[Request] " + m + " " + p)
+                    
+                    let pathData = this.routes[p]
+                    if (pathData != nil) {
+                        let response = pathData[m]
+                        if (response != nil) {
+                            __send_json__(req, response)
+                            println("[Response] 200 OK")
+                        } else {
+                            __send_json__(req, {"error": "Method Not Allowed"})
+                            println("[Response] 405 Not Allowed")
+                        }
+                    } else {
+                        __send_json__(req, {"error": "Not Found"})
+                        println("[Response] 404 Not Found")
+                    }
+                }
+            }
+        }
+    }
+}
