@@ -122,6 +122,19 @@ Value native_json_pretty(int arity, Value *args) {
     return result;
 }
 
+Value native_json_encode(int arity, Value *args) {
+    if (arity < 1) return (Value){VAL_NIL, {0}};
+
+    cJSON *json = jackal_to_cjson(args[0]); 
+    char *json_str = cJSON_PrintUnformatted(json); // Tanpa spasi dan newline
+    
+    Value result = (Value){VAL_STRING, {.string = strdup(json_str)}};
+    
+    free(json_str);
+    cJSON_Delete(json);
+    return result;
+}
+
 void register_json_natives(Env *env)
 {
     JSON_REGISTER(env,"__json_parse",native_json_parse);
