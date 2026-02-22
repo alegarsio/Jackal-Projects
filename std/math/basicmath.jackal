@@ -1,15 +1,3 @@
 class BasicMathStream{
-    func abs(n : Int) -> Number = 
-        __math_abs(n) or throw "Error"
-    func sqrt(n : Int) -> Number =
-         __math_sqrt(n) or throw "Error"
-    func round(n : Int) -> Number = 
-        __math_round(n) or throw "Error"
-    func pow(base, exp) -> Number =
-        __math_pow(base,exp) or throw "Error"
-    func floor(n : Int) -> Number = 
-        __math_floor(n) or throw "Error"
-    func ceil(n : Int) -> Number =
-        __math_ceil(n) or throw "Error"
-    
+   
 }

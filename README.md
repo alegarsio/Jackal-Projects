@@ -108,6 +108,7 @@ let c: String = "hello"
 ```js
 let d: Number = 20
 ```
+
 ```js
 let array : Array<Int> = [1,2,3,4]
 let array : Array<String> = ["jack","davin","ale"]

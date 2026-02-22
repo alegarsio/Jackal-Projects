@@ -10,12 +10,13 @@ import std.stream;
 class ArrayList <T> , List{
 
     init() {
+        this.data = []
     }
 
     func iterator() -> Array{
         return data;
     }
-    
+
     /**
      * function add();
      * implements add function of interface List

@@ -1,0 +1,8 @@
+class CommandNotFoundException{
+    init() -> Void =
+        throw "Command Not Found"
+}
+class OsUnknownException{
+    init() -> Void = 
+        throw "Can not find the spesific Operating System"
+}

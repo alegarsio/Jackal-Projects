@@ -506,6 +506,9 @@ Value native_db_delete(int arg_count, Value* args) {
     return (Value){VAL_NUMBER, {.number = (double)affected}};
 }
 
+
+
+
 void register_sqlite_native(Env *env)
 {
     SQLITE_REGISTER(env,"__db_query",native_db_query);
@@ -520,4 +523,5 @@ void register_sqlite_native(Env *env)
     SQLITE_REGISTER(env,"__db_select",native_db_select);
     SQLITE_REGISTER(env,"__db_count",native_db_count);
     SQLITE_REGISTER(env,"__db_update",native_db_update);
+    SQLITE_REGISTER(env,"__db_delete",native_db_delete);
 }

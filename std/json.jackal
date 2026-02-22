@@ -3,4 +3,9 @@ object Json(){
     func parse(content) = 
         __json_parse(content) 
             or "Error"
+    func preety(content) -> String{
+        __json_preety(content) or "Error"
+    }
+    func encode(json : String)
+        return __json_encode(json)
 }

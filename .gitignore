@@ -14,17 +14,16 @@ Thumbs.db
 .codeviz/
 .hello.dSYM/
 
-da
-math.jackal
 hello.jackal
 test.jackal
 server.py
 temp.jackal
 index.html
-math.jackal
+
 
 *.jl
 *.jlo
+*.csv
 
 
 # VM and Compiler Source/Headers
@@ -36,3 +35,6 @@ src/compiler/
 
 *.py
 *.cpp
+*.db
+
+command.txt

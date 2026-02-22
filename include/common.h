@@ -343,6 +343,7 @@ typedef struct Value {
         StructDefinition *struct_def;       
         StructInstance *struct_instance;
         struct Env* env;
+        void* pointer;
         
     } as;
     struct GCObject* gc_info;

@@ -6,6 +6,7 @@ class Entity {
         this.whereClause = ""
         this.joinClause = ""
         this.limitClause = ""
+        this.offsetClause = ""
         this.orderClause = ""
     }
 

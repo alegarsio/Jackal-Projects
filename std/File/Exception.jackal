@@ -1,7 +1,0 @@
-import std.File.Abstract.FileException
-
-class FileNotFoundException : FileException, Exception{
-    @override
-    func flush() ->  String = 
-        this.path + "  " + this.message
-}

@@ -133,6 +133,54 @@ void array_free(ValueArray *arr)
     arr->count = 0;
     arr->capacity = 0;
 }
+
+char* value_to_string(Value value) {
+    char buffer[1024]; 
+
+    switch (value.type) {
+        case VAL_NIL:
+            return strdup("nil");
+
+        case VAL_NUMBER:
+      
+            if (is_integer_value(value)) {
+                snprintf(buffer, sizeof(buffer), "%lld", (long long)value.as.number);
+            } else {
+                snprintf(buffer, sizeof(buffer), "%g", value.as.number);
+            }
+            return strdup(buffer);
+
+        case VAL_BOOL:
+            return strdup(value.as.boolean ? "true" : "false");
+
+        case VAL_STRING:
+            return strdup(value.as.string);
+
+        case VAL_ARRAY:
+            return strdup("[Array]");
+
+        case VAL_MAP:
+            return strdup("[Map]");
+
+        case VAL_CLASS:
+            snprintf(buffer, sizeof(buffer), "<class %s>", value.as.class_obj->name);
+            return strdup(buffer);
+
+        case VAL_INSTANCE:
+            snprintf(buffer, sizeof(buffer), "<%s instance>", value.as.instance->class_val->as.class_obj->name);
+            return strdup(buffer);
+
+        case VAL_NATIVE:
+        case VAL_FUNCTION:
+            return strdup("<function>");
+
+        case VAL_FILE:
+            return strdup("<file>");
+
+        default:
+            return strdup("<unknown>");
+    }
+}
 /**
  * Prints a Value to stdout.
  * @param value The Value to be printed.
@@ -1477,7 +1525,7 @@ Value builtin_json_parse(int argCount, Value *args)
     return result;
 }
 
-static cJSON *jackalToCjson(Value value)
+cJSON *jackalToCjson(Value value)
 {
     if (value.type == VAL_NUMBER)
     {
@@ -1532,6 +1580,13 @@ static cJSON *jackalToCjson(Value value)
     }
 
     return cJSON_CreateNull();
+}
+
+char* value_to_json_string(Value val) {
+    cJSON* json = jackal_value_to_cjson(val);
+    char* str = cJSON_PrintUnformatted(json);
+    cJSON_Delete(json);
+    return str; 
 }
 
 Value builtin_json_stringify(int argCount, Value *args)
@@ -2919,45 +2974,7 @@ Value native_matrix_scalar_mul(int arg_count, Value *args)
     return (Value){VAL_ARRAY, {.array = result}};
 }
 
-Value native_read_csv(int arg_count, Value *args)
-{
-    const char *filename = args[0].as.string;
-    FILE *file = fopen(filename, "r");
-    if (!file)
-        return (Value){VAL_NIL};
 
-    ValueArray *matrix = array_new();
-    char line[4096];
-
-    while (fgets(line, sizeof(line), file))
-    {
-        line[strcspn(line, "\r\n")] = 0;
-        if (strlen(line) == 0)
-            continue;
-
-        ValueArray *row = array_new();
-        char *token = strtok(line, ",");
-
-        while (token)
-        {
-            char *end;
-            double val = strtod(token, &end);
-            if (end != token)
-            {
-                array_append(row, (Value){VAL_NUMBER, {.number = val}});
-            }
-            token = strtok(NULL, ",");
-        }
-
-        if (row->count > 0)
-        {
-            array_append(matrix, (Value){VAL_ARRAY, {.array = row}});
-        }
-    }
-
-    fclose(file);
-    return (Value){VAL_ARRAY, {.array = matrix}};
-}
 
 Value native_load_csv_smart(int arg_count, Value *args)
 {

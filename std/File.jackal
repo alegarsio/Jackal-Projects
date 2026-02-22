@@ -3,21 +3,30 @@ import std.File.FileStream
 @final 
 const SizeT : Int = 1024 
 
+@final
 class File : BasicFileStream {
     func exist() -> Boolean = 
-        __ioFile_exist(this.path) or throw "Error"
+        __ioFile_exist(this.path) 
+            or throw "Error"
     func append(content : String) -> Boolean = 
-         __ioFile_append(this.path,content) or throw "Error"
+         __ioFile_append(this.path,content) 
+            or throw "Error"
     func size() -> Number =
-        __ioFile_size(this.path) or throw "Error"
+        __ioFile_size(this.path)
+             or throw "Error"
     func sizeKB() -> Number = 
-        __ioFile_size(this.path) / SizeT or throw "Error"
+        __ioFile_size(this.path) / SizeT
+             or throw "Error"
     func sizeMB() -> Number =
-        this.sizeKB() / SizeT or throw "Error"   
+        this.sizeKB() / SizeT 
+            or throw "Error"   
     func create() -> Boolean {
         if (this.exist())
             throw "Error"
         return __ioFile_create(this.path)
     }
+    func remove() -> Boolean =
+        __ioFile_remove(this.path) 
+            or throw "Error"
        
 }

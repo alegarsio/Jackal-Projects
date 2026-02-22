@@ -5,6 +5,17 @@
  * this library is part of std/io lib the std/io/out ara deprecated
 **/
 
+
+/**
+ * range function represents the range operator but wrapped in method
+ * @param a with typeof number of Int
+ * @param b with typeof number of Int
+**/
+
+@static
+func range(a : Int , b : Int) -> Array
+    return a..b
+
 object input{
     func string(prompt : String) -> None = 
         __io_string(prompt) or "Error"
@@ -19,7 +30,7 @@ object input{
  * console object represents the std out function e.g., flush output
  * @author Alegrarsio Gifta Lesmana
 **/
-object console(){
+object print(){
 
     @deprecated
     func writeln(value) {

@@ -74,12 +74,13 @@ class Table : Entity , TableEntityAbstractMethod{
     }
 
     func first() {
-        let sql = this.sql + " LIMIT 1"
-        let result = __db_query(this.handle, sql)
+        this.limit(1)
+        let result = this.get()
         
         if (result.length() > 0) {
-            return result[0] 
+            return result[0]
         }
+        
         return nil
     }
 

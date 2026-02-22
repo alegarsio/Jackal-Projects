@@ -85,6 +85,7 @@ typedef struct Node {
     TokenKind op;
     
     char name[256];
+    char string_value[256];
     char super_name[64];
     char interface_name[64];
     char type_name[64];

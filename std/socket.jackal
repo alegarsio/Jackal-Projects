@@ -3,32 +3,56 @@ import std.network.err
 import std.network.Inet
 import sys.System
 
+/**
+ * represents the network constant 
+**/
 const AF_INET = 2
 const SOCK_STREAM = 1
 const SOCK_DGRAM = 2
 const LOCAL = "localhost"
 
+/**
+ * FormatException represents the error if ip address not in the correct format
+**/
 const FormatException = FormatInvalidException() 
+/**
+ * ConnectionError represents the error if connection are refused
+**/
 const ConnectionException = ConnectionError()
+
 @final
 const StateError = SocketStateError()
 
 @final
 class Tcp : BasicSocket, Inet {
 
-    func gethostname() -> String = socket_get_local_ip() != nil or LOCAL 
-    func gethostbyname() -> String = socket_resolve(this.host) or throw ConnectionException.NetworkConnectionError
+    func gethostname() -> String = 
+        socket_get_local_ip() != nil or LOCAL 
 
+    func gethostbyname() -> String 
+        socket_resolve(this.host) or throw ConnectionException.NetworkConnectionError
+        
     @override
-    func htons() -> Int = __net_htons(this.port) or throw FormatException.InvalidPortFormat
+    func htons() -> Int =
+         __net_htons(this.port) 
+            or throw FormatException.InvalidPortFormat
     @override
-    func aton() -> Int = __net_aton(this.host) or throw FormatException.InvalidAddressFormat
+    func aton() -> Int = 
+        __net_aton(this.host) 
+            or throw FormatException.InvalidAddressFormat
     @override
-    func ntoa() -> String = __net_ntoa(this.host) or throw FormatException.InvalidBinary
+    func ntoa() -> String = 
+        __net_ntoa(this.host) 
+            or throw FormatException.InvalidBinary
 
-    func connected() -> Boolean = this.fd != -1 or throw ConnectionException.NetworkConnectionError
+    func connected() -> Boolean = 
+            this.fd != -1 
+                 or throw ConnectionException.NetworkConnectionError
 
-    func setTimeout(ms : Number) -> Int = socket_set_timeout(this.fd, ms) != -1 or throw StateError.SocketNotConnected
+    func setTimeout(ms : Number) -> Int = 
+        socket_set_timeout(this.fd, ms) != -1 
+            or throw StateError.SocketNotConnected
+
     func receive(size) {
         if (this.fd == -1) return nil
 

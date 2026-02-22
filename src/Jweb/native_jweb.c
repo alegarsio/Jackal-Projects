@@ -101,34 +101,80 @@ Value native_web_send_response(int arity, Value* args) {
     free_value(json_str_val);
     return (Value){VAL_BOOL, {.boolean = true}};
 }
-
 Value native_match_route(int arity, Value *args) {
-    if (arity < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
-        return (Value){VAL_BOOL, {.boolean = 0}};
-    }
+    // Kita buat fleksibel: bisa 2 argumen (statik) atau 3 argumen (untuk isi req)
+    if (arity < 2) return (Value){VAL_BOOL, {.boolean = 0}};
 
-    const char* path = args[0].as.string;
-    const char* pattern = args[1].as.string;
+    // Jika arity 3, maka args[0]=req, args[1]=path, args[2]=pattern
+    // Jika arity 2, maka args[0]=path, args[1]=pattern
+    const char* path = (arity == 3) ? args[1].as.string : args[0].as.string;
+    const char* pattern = (arity == 3) ? args[2].as.string : args[1].as.string;
 
     if (strcmp(path, pattern) == 0) return (Value){VAL_BOOL, {.boolean = 1}};
 
-    while (*path != '\0' && *pattern != '\0') {
-        if (*pattern == '{') {
-            while (*pattern != '\0' && *pattern != '}') pattern++;
-            if (*pattern == '}') pattern++;
-            while (*path != '\0' && *path != '/') path++;
+    // Logic pencocokan dinamis
+    const char* p = path;
+    const char* pt = pattern;
+    HashMap* params = NULL;
+
+    if (arity == 3) params = map_new(); // Siapkan wadah ID kalau ada req
+
+    while (*p != '\0' && *pt != '\0') {
+        if (*pt == '{') {
+            // Ambil nama kunci di antara { dan }
+            pt++; 
+            const char* start_k = pt;
+            while (*pt != '}' && *pt != '\0') pt++;
+            char key[64] = {0};
+            strncpy(key, start_k, pt - start_k);
+            if (*pt == '}') pt++;
+
+            // Ambil nilainya dari path
+            const char* start_v = p;
+            while (*p != '/' && *p != '\0') p++;
+            char val[256] = {0};
+            strncpy(val, start_v, p - start_v);
+
+            // Simpan ke params
+            if (params) {
+                map_set(params, strdup(key), (Value){VAL_STRING, {.string = strdup(val)}});
+            }
         } else {
-            if (*path != *pattern) return (Value){VAL_BOOL, {.boolean = 0}};
-            path++;
-            pattern++;
+            if (*p != *pt) return (Value){VAL_BOOL, {.boolean = 0}};
+            p++;
+            pt++;
         }
     }
 
-    return (Value){VAL_BOOL, {.boolean = (*path == '\0' && *pattern == '\0')}};
+    bool matched = (*p == '\0' && *pt == '\0');
+
+    if (matched && arity == 3) {
+        map_set(args[0].as.map, "params", (Value){VAL_MAP, {.map = params}});
+    }
+
+    return (Value){VAL_BOOL, {.boolean = matched}};
 }
+
+
+Value native_map_set_manual(int arity, Value* args) {
+ 
+    if (arity < 3 || args[0].type != VAL_MAP || args[1].type != VAL_STRING) {
+        return (Value){VAL_NIL}; 
+    }
+
+    HashMap* map = args[0].as.map;
+    const char* key = args[1].as.string;
+    Value val = args[2];
+
+    map_set(map, key, val);
+
+    return val; 
+}
+
 
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
+    JWEB_REGISTER(env, "__map_set_manual__", native_map_set_manual);
     JWEB_REGISTER(env, "__accept__", native_web_poll);
     JWEB_REGISTER(env, "__send_json__", native_web_send_response);
     JWEB_REGISTER(env, "__match_route__", native_match_route);

@@ -9,6 +9,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <sql.h>
 
 const char *get_platform_name()
 {
@@ -306,6 +307,11 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
     Node *param = func->params_head;
     for (int i = 0; i < arg_count; i++)
     {
+        if (param == NULL || param->name == NULL)
+        {
+            printf("\033[1;31m[Error]\033[0m Parameter name is NULL for argument %d\n", i);
+            break;
+        }
         set_var(call_env, param->name, args[i], false, "");
         param = param->next;
     }
@@ -344,7 +350,7 @@ Value call_jackal_function(Env *env, Value func_val, int arg_count, Value *args)
         {
             type_matches = true;
         }
-        
+
         else if (strcmp(func->return_type, actual_type_name) == 0)
         {
             type_matches = true;
@@ -457,12 +463,15 @@ Value eval_node(Env *env, Node *n)
         while (entry)
         {
             Value val;
-            if (entry->kind == NODE_STRING) {
+            if (entry->kind == NODE_STRING)
+            {
                 val = (Value){VAL_STRING, {.string = strdup(entry->string_value)}};
-            } else {
+            }
+            else
+            {
                 val = (Value){VAL_NUMBER, {.number = entry->value}};
             }
-            
+
             set_var(en->values, entry->name, val, true, "");
             entry = entry->next;
         }
@@ -1044,38 +1053,41 @@ Value eval_node(Env *env, Node *n)
 
         return (Value){.type = VAL_NIL, .as = {0}};
     }
-   
-case NODE_WHERE: {
-    Value left_val = eval_node(env, n->left); 
-    
-    if (left_val.type != VAL_ARRAY) {
-        print_error("'where' operator can only be used on Arrays.");
-        free_value(left_val);
-        return (Value){VAL_NIL, {0}};
-    }
 
-    ValueArray *source = left_val.as.array;
-    ValueArray *filtered = array_new();
-    
-    Env *where_env = env_new(env);
+    case NODE_WHERE:
+    {
+        Value left_val = eval_node(env, n->left);
 
-    for (int i = 0; i < source->count; i++) {
-        set_var(where_env, "it", source->values[i], true, "");
-        
-        Value condition = eval_node(where_env, n->right);
-        
-        if (is_value_truthy(condition)) {
-            array_append(filtered, copy_value(source->values[i]));
+        if (left_val.type != VAL_ARRAY)
+        {
+            print_error("'where' operator can only be used on Arrays.");
+            free_value(left_val);
+            return (Value){VAL_NIL, {0}};
         }
-        
-        free_value(condition);
-        
-    }
 
-    env_free(where_env);
-    free_value(left_val);
-    return (Value){VAL_ARRAY, {.array = filtered}};
-}
+        ValueArray *source = left_val.as.array;
+        ValueArray *filtered = array_new();
+
+        Env *where_env = env_new(env);
+
+        for (int i = 0; i < source->count; i++)
+        {
+            set_var(where_env, "it", source->values[i], true, "");
+
+            Value condition = eval_node(where_env, n->right);
+
+            if (is_value_truthy(condition))
+            {
+                array_append(filtered, copy_value(source->values[i]));
+            }
+
+            free_value(condition);
+        }
+
+        env_free(where_env);
+        free_value(left_val);
+        return (Value){VAL_ARRAY, {.array = filtered}};
+    }
 
     case NODE_POST_INC:
     {
@@ -1826,35 +1838,35 @@ case NODE_WHERE: {
 
         return (Value){VAL_NIL, {0}};
     }
-case NODE_NAMESPACES:
-{
-    Env *ns_env = env_new(env); 
-    Node *stmt = n->left;
-    while (stmt)
+    case NODE_NAMESPACES:
     {
-        eval_node(ns_env, stmt);
-        stmt = stmt->next;
+        Env *ns_env = env_new(env);
+        Node *stmt = n->left;
+        while (stmt)
+        {
+            eval_node(ns_env, stmt);
+            stmt = stmt->next;
+        }
+
+        HashMap *ns_map = map_new();
+
+        Var *v = ns_env->vars;
+        while (v)
+        {
+            map_set(ns_map, v->name, v->value);
+            v = v->next;
+        }
+
+        Value ns_val;
+        ns_val.type = VAL_NAMESPACE;
+        ns_val.as.map = ns_map;
+
+        set_var(env, n->name, ns_val, true, "namespace");
+
+        env_free(ns_env);
+
+        return ns_val;
     }
-
-    HashMap *ns_map = map_new(); 
-
-    Var *v = ns_env->vars;
-    while (v)
-    {
-        map_set(ns_map, v->name, v->value);
-        v = v->next;
-    }
-
-    Value ns_val;
-    ns_val.type = VAL_NAMESPACE;
-    ns_val.as.map = ns_map;
-
-    set_var(env, n->name, ns_val, true, "namespace");
-
-    env_free(ns_env); 
-    
-    return ns_val;
-}
     case NODE_USING:
     {
         Node *target = n->left;
@@ -2003,37 +2015,78 @@ case NODE_NAMESPACES:
                     }
                     return (Value){VAL_NIL, {0}};
                 }
-                if (strcmp(get_node->name, "each") == 0) {
-    if (n->arity < 1) {
-        print_error("Error: each() expects a callback function.");
-        return (Value){VAL_NIL, {0}, NULL};
-    }
+                if (strcmp(get_node->name, "each") == 0)
+                {
+                    if (n->arity < 1)
+                    {
+                        print_error("Error: each() expects a callback function.");
+                        return (Value){VAL_NIL, {0}, NULL};
+                    }
 
-    // Ambil fungsi callback-nya
-    Value callback = eval_node(env, n->right);
-    
-    if (callback.type != VAL_FUNCTION && callback.type != VAL_NATIVE) {
-        print_error("Error: argument to each() must be a function.");
-        free_value(callback);
-        return (Value){VAL_NIL, {0}, NULL};
-    }
+                    // Ambil fungsi callback-nya
+                    Value callback = eval_node(env, n->right);
 
-    ValueArray* array = obj.as.array;
-    for (int i = 0; i < array->count; i++) {
-        // Siapkan argumen untuk callback (isi elemen array saat ini)
-        Value args[1] = { array->values[i] };
-        
-        // Panggil fungsi callback tersebut
-        // Asumsi kamu punya fungsi call_function(env, function, arg_count, args)
-        Value result = call_jackal_function(env, callback, 1, args);
-        
-        // Kita tidak butuh return value dari callback, jadi hapus
-        free_value(result);
-    }
+                    if (callback.type != VAL_FUNCTION && callback.type != VAL_NATIVE)
+                    {
+                        print_error("Error: argument to each() must be a function.");
+                        free_value(callback);
+                        return (Value){VAL_NIL, {0}, NULL};
+                    }
 
-    free_value(callback);
-    return (Value){VAL_NIL, {0}, NULL};
-}
+                    ValueArray *array = obj.as.array;
+                    for (int i = 0; i < array->count; i++)
+                    {
+                        // Siapkan argumen untuk callback (isi elemen array saat ini)
+                        Value args[1] = {array->values[i]};
+
+                        // Panggil fungsi callback tersebut
+                        // Asumsi kamu punya fungsi call_function(env, function, arg_count, args)
+                        Value result = call_jackal_function(env, callback, 1, args);
+
+                        free_value(result);
+                    }
+
+                    free_value(callback);
+                    return (Value){VAL_NIL, {0}, NULL};
+                }
+
+                if (strcmp(get_node->name, "contains") == 0)
+                {
+                    if (n->arity < 1)
+                    {
+                        print_error("Error: contains() expects at least 1 argument.");
+                        return (Value){VAL_BOOL, {.boolean = 0}};
+                    }
+
+                    // Ambil nilai yang dicari (misal: path rute)
+                    Value search_val = eval_node(env, n->right);
+
+                    if (search_val.type != VAL_STRING)
+                    {
+                        print_error("Error: contains() argument must be a string.");
+                        free_value(search_val);
+                        return (Value){VAL_BOOL, {.boolean = 0}};
+                    }
+
+                    ValueArray *array = obj.as.array;
+                    bool found = false;
+
+                    for (int i = 0; i < array->count; i++)
+                    {
+                        // Bandingkan string di dalam array dengan string yang dicari
+                        if (array->values[i].type == VAL_STRING)
+                        {
+                            if (strcmp(array->values[i].as.string, search_val.as.string) == 0)
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    free_value(search_val);
+                    return (Value){VAL_BOOL, {.boolean = found ? 1 : 0}};
+                }
 
                 if (strcmp(get_node->name, "pop") == 0)
                 {

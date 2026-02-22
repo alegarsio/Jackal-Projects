@@ -36,4 +36,12 @@ void set_var(Env* env, const char* name, Value value, bool is_const,const char* 
 void env_free(Env* env);
 
 int assign_var(Env* env, const char* name, Value value);
+
+void execute_source(const char *source, Env *env);
+
+void load_jackal_file(const char *path, Env *env);
+
+bool is_integer_value(Value val);
+
+char* value_to_string(Value value) ;
 #endif

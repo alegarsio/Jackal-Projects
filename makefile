@@ -8,7 +8,6 @@ ifeq ($(UNAME_S),Darwin)
     CJSON_LIBPATH = -L/opt/homebrew/lib
     CURL_CFLAGS = $(shell curl-config --cflags)
     CURL_LDFLAGS = $(shell curl-config --libs)
-    # SQLite di macOS sudah built-in, cukup panggil flag-nya
     SQLITE_LDFLAGS = -lsqlite3
 else
     CC = x86_64-w64-mingw32-gcc
@@ -46,6 +45,7 @@ SRC = src/common.c \
       src/Io/io_native.c \
       src/json/native_json.c \
       src/File/native_file.c \
+      src/Jweb/native_jweb.c \
       src/native/native_registry.c \
       src/socket/socket_native.c \
       src/main.c
