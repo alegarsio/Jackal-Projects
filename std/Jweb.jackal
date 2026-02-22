@@ -1,33 +1,32 @@
 class JFast {
     init() {
         this.routes = {}
-        
+        this.pats = []
     }
 
     func route(path, method, data) {
-        if (this.routes[path] == nil) {
-            this.routes[path] = {}
-        }
+        let r = this.routes
+        let p_list = this.pats
         
-        if (method == nil) {
-            method = "GET"
+        if (r[path] == nil) {
+            __map_set_manual__(r, path, {})
+            p_list.push(path)
         }
 
-        this.routes[path][method] = data
+        let target = r[path]
+        let m = method
+        if (m == nil) { m = "GET" }
+        
+        __map_set_manual__(target, m, data)
     }
 
     func get(path, data) {
         this.route(path, "GET", data)
     }
 
-    func post(path, data) {
-        this.route(path, "POST", data)
-    }
-
     func start(port) {
         if (__listen__(port)) {
-            println("Listening on: http://localhost:" + port.toString())
-        
+            println("Server: http://localhost:" + port.toString())
 
             while (true) {
                 let req = __accept__()
@@ -35,21 +34,28 @@ class JFast {
                     let m = req["method"]
                     let p = req["path"]
                     
-                    println("[Request] " + m + " " + p)
-                    
-                    let pathData = this.routes[p]
-                    if (pathData != nil) {
+                    let matchBox = []
+                    let all_pats = this.pats
+
+                    for pat in all_pats {
+                        if (__match_route__(p, pat)) {
+                            matchBox.push(pat)
+                            break
+                        }
+                    }
+
+                    if (matchBox.length() > 0) {
+                        let matched = matchBox[0]
+                        let pathData = this.routes[matched]
                         let response = pathData[m]
+                        
                         if (response != nil) {
                             __send_json__(req, response)
-                            println("[Response] 200 OK")
                         } else {
-                            __send_json__(req, {"error": "Method Not Allowed"})
-                            println("[Response] 405 Not Allowed")
+                            __send_json__(req, {"error": 405})
                         }
                     } else {
-                        __send_json__(req, {"error": "Not Found"})
-                        println("[Response] 404 Not Found")
+                        __send_json__(req, {"error": 404})
                     }
                 }
             }
