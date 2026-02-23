@@ -163,6 +163,21 @@ Value native_string_trim(int arg_count, Value* args) {
 
     return (Value){VAL_STRING, {.string = trimmed}, NULL};
 }
+
+Value native_str_contains(int arity, Value* args) {
+    if (arity < 2 || args[0].type != VAL_STRING || args[1].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    const char* haystack = args[0].as.string;
+    const char* needle = args[1].as.string;   
+
+    if (strstr(haystack, needle) != NULL) {
+        return (Value){VAL_BOOL, {.boolean = true}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = false}};
+}
 void register_string_natives(Env* env) {
     STRING_REGISTER(env, "__str_toUpper", native_string_uppercase);
     STRING_REGISTER(env, "__str_toLower", native_string_lowercase);
