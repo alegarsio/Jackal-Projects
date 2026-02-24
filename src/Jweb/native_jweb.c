@@ -72,7 +72,6 @@ Value native_web_poll(int arity, Value* args) {
     
     return (Value){VAL_MAP, {.map = req_map}};
 }
-
 Value native_web_send_response(int arity, Value* args) {
     if (arity < 2 || args[0].type != VAL_MAP) return (Value){VAL_NIL};
 
@@ -81,9 +80,12 @@ Value native_web_send_response(int arity, Value* args) {
     int client_socket = (int)socket_val.as.number;
     
     Value json_str_val = builtin_json_encode(1, &args[1]);
+    
     if (json_str_val.type != VAL_STRING) {
+        char* err = "{\"error\": \"JSON Encode Failed\"}";
+        send(client_socket, err, strlen(err), 0);
         close(client_socket);
-        return (Value){VAL_NIL};
+        return (Value){VAL_BOOL, {.boolean = false}};
     }
     
     char* json_body = json_str_val.as.string;
@@ -91,37 +93,32 @@ Value native_web_send_response(int arity, Value* args) {
     int response_len = sprintf(response, 
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: application/json\r\n"
-        "Content-Length: %ld\r\n"
+        "Content-Length: %zu\r\n"
         "Connection: close\r\n\r\n"
         "%s", strlen(json_body), json_body);
 
     send(client_socket, response, response_len, 0);
     close(client_socket);
     
-    free_value(json_str_val);
     return (Value){VAL_BOOL, {.boolean = true}};
 }
 Value native_match_route(int arity, Value *args) {
-    // Kita buat fleksibel: bisa 2 argumen (statik) atau 3 argumen (untuk isi req)
+  
     if (arity < 2) return (Value){VAL_BOOL, {.boolean = 0}};
 
-    // Jika arity 3, maka args[0]=req, args[1]=path, args[2]=pattern
-    // Jika arity 2, maka args[0]=path, args[1]=pattern
     const char* path = (arity == 3) ? args[1].as.string : args[0].as.string;
     const char* pattern = (arity == 3) ? args[2].as.string : args[1].as.string;
 
     if (strcmp(path, pattern) == 0) return (Value){VAL_BOOL, {.boolean = 1}};
 
-    // Logic pencocokan dinamis
     const char* p = path;
     const char* pt = pattern;
     HashMap* params = NULL;
 
-    if (arity == 3) params = map_new(); // Siapkan wadah ID kalau ada req
+    if (arity == 3) params = map_new(); 
 
     while (*p != '\0' && *pt != '\0') {
         if (*pt == '{') {
-            // Ambil nama kunci di antara { dan }
             pt++; 
             const char* start_k = pt;
             while (*pt != '}' && *pt != '\0') pt++;
@@ -129,13 +126,11 @@ Value native_match_route(int arity, Value *args) {
             strncpy(key, start_k, pt - start_k);
             if (*pt == '}') pt++;
 
-            // Ambil nilainya dari path
             const char* start_v = p;
             while (*p != '/' && *p != '\0') p++;
             char val[256] = {0};
             strncpy(val, start_v, p - start_v);
 
-            // Simpan ke params
             if (params) {
                 map_set(params, strdup(key), (Value){VAL_STRING, {.string = strdup(val)}});
             }
@@ -169,23 +164,6 @@ Value native_map_set_manual(int arity, Value* args) {
     map_set(map, key, val);
 
     return val; 
-}
-
-Value native_web_send_response(int arity, Value* args) {
-    if (arity < 2 || args[0].type != VAL_MAP || args[1].type != VAL_STRING) return (Value){VAL_NIL};
-    
-    int client_fd = (int)map_get_number(args[0].as.map, "fd"); // Ambil FD dari request map
-    const char* body = args[1].as.string;
-    int len = strlen(body);
-
-    char header[512];
-    sprintf(header, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\nConnection: close\r\n\r\n", len);
-    
-    send(client_fd, header, strlen(header), 0);
-    send(client_fd, body, len, 0);
-    
-    close(client_fd); 
-    return (Value){VAL_BOOL, {.boolean = true}};
 }
 
 
