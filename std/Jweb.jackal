@@ -38,7 +38,8 @@ class JFast {
                     let all_pats = this.pats
 
                     for pat in all_pats {
-                        if (__match_route__(p, pat)) {
+                       
+                        if (__match_route__(req, p, pat)) {
                             matchBox.push(pat)
                             break
                         }
@@ -50,7 +51,14 @@ class JFast {
                         let response = pathData[m]
                         
                         if (response != nil) {
-                            __send_json__(req, response)
+                            let params = req["params"]
+                            if (params != nil) {
+                                let id_val = params["id"]
+                                let final_data = response(id_val)
+                                __send_json__(req, final_data)
+                            } else {
+                                __send_json__(req, response)
+                            }
                         } else {
                             __send_json__(req, {"error": 405})
                         }
