@@ -171,6 +171,23 @@ Value native_map_set_manual(int arity, Value* args) {
     return val; 
 }
 
+Value native_web_send_response(int arity, Value* args) {
+    if (arity < 2 || args[0].type != VAL_MAP || args[1].type != VAL_STRING) return (Value){VAL_NIL};
+    
+    int client_fd = (int)map_get_number(args[0].as.map, "fd"); // Ambil FD dari request map
+    const char* body = args[1].as.string;
+    int len = strlen(body);
+
+    char header[512];
+    sprintf(header, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\nConnection: close\r\n\r\n", len);
+    
+    send(client_fd, header, strlen(header), 0);
+    send(client_fd, body, len, 0);
+    
+    close(client_fd); 
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
+
 
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
