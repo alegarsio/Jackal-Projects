@@ -1,79 +1,84 @@
-class Api {
-    init() {
-        this.routes = {}
-        this.pats = []
+import std.http.Router.StaticRouter
+import std.http.Abstract.RouterAbstractMethod
+
+class Api : StaticRouter , RouterAbstractMethod{
+
+    func uses(path, m_func) {
+        if (this.middlewares[path] == nil) {
+            __map_set_manual__(this.middlewares, path, [])
+        }
+        let list = this.middlewares[path]
+        list.push(m_func)
     }
 
-    func route(path, method, data) {
-        let r = this.routes
-        let p_list = this.pats
-        
-        if (r[path] == nil) {
-            __map_set_manual__(r, path, {})
-            p_list.push(path)
+    @override
+    func route(path, method, handler) {
+        if (this.routes[path] == nil) {
+            __map_set_manual__(this.routes, path, {})
+            this.pats.push(path)
         }
-
-        let target = r[path]
+        let target = this.routes[path]
         let m = method
         if (m == nil) { m = "GET" }
-        
-        __map_set_manual__(target, m, data)
+        __map_set_manual__(target, m, handler)
     }
 
-    @async
-    func get(path, data) =
-        this.route(path, "GET", data)
-
-    @async
-    func post(path,data) =
-        this.route(path,"POST",data)
+    @override
+    func get(path, handler) {
+        this.route(path, "GET", handler)
+    }
 
     func run(port) {
         if (__listen__(port)) {
-            println("Server: http://localhost:" + port.toString())
-            println("Waiting for connections...\n")
-
+            println("Jackal Server: http://localhost:" + port.toString())
             while (true) {
                 let req = __accept__()
                 if (req != nil) {
                     let m = req["method"]
                     let p = req["path"]
-                    let addr = req["address"] 
-                    if (addr == nil) { addr = "unknown" }
-
-                    let matchBox = []
-                    let all_pats = this.pats
-
-                    for pat in all_pats {
+                    let addr = req["address"]
+                    
+                    let matchedPat = nil
+                    for pat in this.pats {
                         if (__match_route__(req, p, pat)) {
-                            matchBox.push(pat)
+                            matchedPat = pat
                             break
                         }
                     }
 
-                    if (matchBox.length() > 0) {
-                        let matched = matchBox[0]
-                        let pathData = this.routes[matched]
-                        let response = pathData[m]
-                        
-                        if (response != nil) {
-                            
-                            println("[" + m + "] " + p + " from " + addr + " -> 200 OK")
-                            
-                            let params = req["params"]
-                            if (params != nil) {
-                                let id_val = params["id"]
-                                let final_data = response(id_val)
-                                __send_json__(req, final_data)
-                            } else {
-                                __send_json__(req, response)
+                    if (matchedPat != nil) {
+                        let m_list = this.middlewares[matchedPat]
+                        let allowed = true
+                        if (m_list != nil) {
+                            for m_func in m_list {
+                                let m_res = m_func(req)
+                                if (m_res != nil) {
+                                    println("[" + m + "] " + p + " -> 401 Unauthorized")
+                                    __send_json__(req, m_res)
+                                    allowed = false
+                                    break
+                                }
                             }
-                        } else {
-                            println("[" + m + "] " + p + " from " + addr + " -> 405 Method Not Allowed")
-                            __send_json__(req, {"error": 405})
+                        }
+
+                        if (allowed) {
+                            let pathData = this.routes[matchedPat]
+                            let handler = pathData[m]
+                            if (handler != nil) {
+                                println("[" + m + "] " + p + " -> 200 OK")
+                                let params = req["params"]
+                                if (params != nil) {
+                                    __send_json__(req, handler(params["id"]))
+                                } else {
+                                    __send_json__(req, handler)
+                                }
+                            } else {
+                                println("[" + m + "] " + p + " -> 405 Method Not Allowed")
+                                __send_json__(req, {"error": 405})
+                            }
                         }
                     } else {
-                        println("[" + m + "] " + p + " from " + addr + " -> 404 Not Found")
+                        println("[" + m + "] " + p + " -> 404 Not Found")
                         __send_json__(req, {"error": 404})
                     }
                 }
