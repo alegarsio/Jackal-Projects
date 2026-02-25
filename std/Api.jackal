@@ -22,9 +22,9 @@ class Api {
 
     func get(path, data) =
         this.route(path, "GET", data)
-
     
-    
+    func post(path,data) =
+        this.route(path,"POST",data)
 
     func run(port) {
         if (__listen__(port)) {
