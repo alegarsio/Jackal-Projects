@@ -1,0 +1,81 @@
+class Api {
+    init() {
+        this.routes = {}
+        this.pats = []
+    }
+
+    func route(path, method, data) {
+        let r = this.routes
+        let p_list = this.pats
+        
+        if (r[path] == nil) {
+            __map_set_manual__(r, path, {})
+            p_list.push(path)
+        }
+
+        let target = r[path]
+        let m = method
+        if (m == nil) { m = "GET" }
+        
+        __map_set_manual__(target, m, data)
+    }
+
+    func get(path, data) =
+        this.route(path, "GET", data)
+
+    
+    
+
+    func run(port) {
+        if (__listen__(port)) {
+            println("Server: http://localhost:" + port.toString())
+            println("Waiting for connections...\n")
+
+            while (true) {
+                let req = __accept__()
+                if (req != nil) {
+                    let m = req["method"]
+                    let p = req["path"]
+                    let addr = req["address"] 
+                    if (addr == nil) { addr = "unknown" }
+
+                    let matchBox = []
+                    let all_pats = this.pats
+
+                    for pat in all_pats {
+                        if (__match_route__(req, p, pat)) {
+                            matchBox.push(pat)
+                            break
+                        }
+                    }
+
+                    if (matchBox.length() > 0) {
+                        let matched = matchBox[0]
+                        let pathData = this.routes[matched]
+                        let response = pathData[m]
+                        
+                        if (response != nil) {
+                            
+                            println("[" + m + "] " + p + " from " + addr + " -> 200 OK")
+                            
+                            let params = req["params"]
+                            if (params != nil) {
+                                let id_val = params["id"]
+                                let final_data = response(id_val)
+                                __send_json__(req, final_data)
+                            } else {
+                                __send_json__(req, response)
+                            }
+                        } else {
+                            println("[" + m + "] " + p + " from " + addr + " -> 405 Method Not Allowed")
+                            __send_json__(req, {"error": 405})
+                        }
+                    } else {
+                        println("[" + m + "] " + p + " from " + addr + " -> 404 Not Found")
+                        __send_json__(req, {"error": 404})
+                    }
+                }
+            }
+        }
+    }
+}
