@@ -20,9 +20,11 @@ class Api {
         __map_set_manual__(target, m, data)
     }
 
+    @async
     func get(path, data) =
         this.route(path, "GET", data)
-    
+
+    @async
     func post(path,data) =
         this.route(path,"POST",data)
 
