@@ -182,6 +182,31 @@ char* read_file_to_string(const char* filename) {
     return string;
 }
 
+Value native_render_file(int arity, Value *args) {
+    if (arity != 1 || args[0].type != VAL_STRING) {
+        print_error("render_file expects (string path)");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    const char *path = args[0].as.string;
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        print_error("Could not open file: %s", path);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    fseek(file, 0, SEEK_END);
+    long fsize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *content = malloc(fsize + 1);
+    fread(content, fsize, 1, file);
+    fclose(file);
+    content[fsize] = 0;
+
+    Value result = (Value){VAL_STRING, {.string = content}};
+    return result;
+}
 
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
