@@ -207,7 +207,29 @@ Value native_render_file(int arity, Value *args) {
     Value result = (Value){VAL_STRING, {.string = content}};
     return result;
 }
+Value native_send_html(int arity, Value *args) {
+    if (arity != 2 || args[1].type != VAL_STRING) {
+        print_error("send_html expects (int socket, string content)");
+        return (Value){VAL_NIL, {0}};
+    }
 
+    int client_socket = (int)args[0].as.number;
+    const char *html_content = args[1].as.string;
+
+    char header[512];
+    int header_len = sprintf(header,
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: %zu\r\n"
+        "Connection: close\r\n"
+        "\r\n",
+        strlen(html_content));
+
+    send(client_socket, header, header_len, 0);
+    send(client_socket, html_content, strlen(html_content), 0);
+
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
     JWEB_REGISTER(env, "__map_set_manual__", native_map_set_manual);
