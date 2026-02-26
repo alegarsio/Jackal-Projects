@@ -28,6 +28,13 @@ class Api : StaticRouter , RouterAbstractMethod{
         this.route(path, "GET", handler)
     }
 
+    @override
+    func post(path,handler){
+        this.route(path,"GET",handler)
+    }
+
+    
+
     func run(port) {
         if (__listen__(port)) {
             println("Jackal Server: http://localhost:" + port.toString())
