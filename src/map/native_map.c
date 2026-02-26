@@ -20,6 +20,22 @@
         }                                                                        \
     } while (0)
 
-void register_map_natives(Env *env){
 
+    Value native_map_set_manual(int arity, Value* args) {
+ 
+    if (arity < 3 || args[0].type != VAL_MAP || args[1].type != VAL_STRING) {
+        return (Value){VAL_NIL}; 
+    }
+
+    HashMap* map = args[0].as.map;
+    const char* key = args[1].as.string;
+    Value val = args[2];
+
+    map_set(map, key, val);
+
+    return val; 
+}
+
+void register_map_natives(Env *env){
+    
 }
