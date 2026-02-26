@@ -1,0 +1,8 @@
+trait RouterAbstractMethod{
+    @async
+    func route(path : String , method : String , data : String) -> None ;
+    @async
+    func get(path : String , handler : Map) -> None ;
+    @async 
+    func post(path : String , handler : Map) -> None;
+}
