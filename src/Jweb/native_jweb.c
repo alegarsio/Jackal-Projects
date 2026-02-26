@@ -238,4 +238,5 @@ void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__match_route__", native_match_route);
     JWEB_REGISTER(env,"__render_file__",native_render_file);
     JWEB_REGISTER(env,"__send_html__",native_send_html);
+    JWEB_REGISTER(env,"__is_string__",native_send_html);
 }
