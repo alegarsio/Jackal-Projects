@@ -44,6 +44,9 @@
 
 #include "socket/net_utils.h"
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #define HTTP_DEFAULT_PORT 80
 #define BUFFER_SIZE 4096
 
@@ -844,26 +847,45 @@ void execute_source(const char *source, Env *env)
 /**
  * REPL initial
  */
-void runRepl(Env *env)
-{
+void runRepl(Env *env) {
     char line[1024];
-    printf("Jackal Beta Version  Shell\n");
-    printf("Type 'exit' to quit.\n");
+    char buffer[8192] = {0};
+    int brace_level = 0;
 
-    while (1)
-    {
-        printf(">> ");
+    printf("Jackal Interpreter v2.0 (Native C Engine)\n");
+    printf("Commands: .exit to quit, .clear to reset environment\n\n");
 
-        if (!fgets(line, sizeof(line), stdin))
-        {
-            printf("\n");
-            break;
+    while (1) {
+        if (brace_level == 0) printf(">> ");
+        else printf(".. ");
+
+        if (!fgets(line, sizeof(line), stdin)) break;
+
+        if (strncmp(line, ".exit", 5) == 0) break;
+        if (strncmp(line, ".clear", 6) == 0) {
+            env_free(env);
+            env = env_new(NULL);
+            register_all_natives(env);
+            buffer[0] = '\0';
+            brace_level = 0;
+            printf("Environment reset.\n");
+            continue;
         }
 
-        if (strncmp(line, "exit", 4) == 0)
-            break;
+        strcat(buffer, line);
 
-        execute_source(line, env);
+        for (int i = 0; line[i]; i++) {
+            if (line[i] == '{') brace_level++;
+            if (line[i] == '}') brace_level--;
+        }
+
+        if (brace_level <= 0) {
+
+            execute_source(buffer, env);
+
+            buffer[0] = '\0';
+            brace_level = 0;
+        }
     }
 }
 
@@ -912,7 +934,6 @@ int main(int argc, char **argv)
 
     if (argc == 1)
     {
-        Env *env = env_new(NULL);
 
         runRepl(env);
         env_free(env);
