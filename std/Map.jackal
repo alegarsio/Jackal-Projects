@@ -1,0 +1,18 @@
+object Map(){
+    func init() = __map_init_manual__()
+
+    func set(out, key, data) = __map_set_manual__(out, key, data)
+
+    func keys(obj) = __map_keys__(obj)
+
+    func wrap(data) {
+        let out = this.init()
+        
+        let all_keys = this.keys(data)
+        
+        for key in all_keys {
+            this.set(out, key, data[key])
+        }
+        return out
+    }
+}

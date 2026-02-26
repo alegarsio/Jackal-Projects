@@ -1,0 +1,62 @@
+class SimpleAPI {
+    init() {
+        this.routes = {}
+        this.pats = []
+    }
+
+    func add_route(method, path, handler) {
+        if (this.routes[path] == nil) {
+            __map_set_manual__(this.routes, path, {})
+            this.pats.push(path)
+        }
+        let m_map = this.routes[path]
+        __map_set_manual__(m_map, method, handler)
+    }
+
+    @async
+    func get(path, handler) =
+         this.add_route("GET", path, handler) or "Error"
+
+    @async
+    func post(path, handler) = 
+        this.add_route("POST", path, handler) or "Error"
+
+    func send_response(req, data) {
+        let json_str = __json_encode(data)
+        __send_response__(req, json_str)
+    }
+
+    @async
+    func listen(port) {
+        if (__listen__(port)) {
+            println("🌐 SimpleAPI running on port " + port.toString())
+            while (true) {
+                let req = __accept__()
+                if (req != nil) {
+                    this.dispatch(req)
+                }
+            }
+        }
+    }
+
+    func dispatch(req) {
+        let path = req["path"]
+        let method = req["method"]
+        let all_pats = this.pats
+
+        for pattern in all_pats {
+            if (__match_route__(req, path, pattern)) {
+                let handlers = this.routes[pattern]
+                let target_handler = handlers[method]
+                
+                if (target_handler != nil) {
+                    let result = target_handler(req)
+                    this.send_response(req, result)
+                    return nil 
+                }
+            }
+        }
+
+        this.send_response(req, {"error": "Not Found", "code": 404})
+    }
+}
