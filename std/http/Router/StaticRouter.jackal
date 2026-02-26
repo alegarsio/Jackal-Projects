@@ -1,0 +1,12 @@
+class StaticRouter{
+    init() {
+        this.routes = {}
+        this.pats = []
+        this.middlewares = {}
+    }
+}
+
+
+
+
+
