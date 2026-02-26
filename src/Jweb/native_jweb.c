@@ -166,6 +166,22 @@ Value native_map_set_manual(int arity, Value* args) {
     return val; 
 }
 
+char* read_file_to_string(const char* filename) {
+    FILE* f = fopen(filename, "rb");
+    if (f == NULL) return NULL;
+
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char* string = malloc(fsize + 1);
+    fread(string, fsize, 1, f);
+    fclose(f);
+
+    string[fsize] = 0;
+    return string;
+}
+
 
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
