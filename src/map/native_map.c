@@ -37,5 +37,5 @@
 }
 
 void register_map_natives(Env *env){
-    
+        JWEB_REGISTER(env, "__map_set_manual__", native_map_set_manual);
 }
