@@ -20,8 +20,12 @@
         }                                                                        \
     } while (0)
 
+ Value native_map_init_manual(int arity, Value *args) {
+    Value map = (Value){VAL_MAP, {.map = map_new()}};
+    return map;
+}
 
-    Value native_map_set_manual(int arity, Value* args) {
+Value native_map_set_manual(int arity, Value* args) {
  
     if (arity < 3 || args[0].type != VAL_MAP || args[1].type != VAL_STRING) {
         return (Value){VAL_NIL}; 
@@ -37,5 +41,5 @@
 }
 
 void register_map_natives(Env *env){
-        JWEB_REGISTER(env, "__map_set_manual__", native_map_set_manual);
+        MAP_REGISTER(env, "__map_set_manual__", native_map_set_manual);
 }
