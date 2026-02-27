@@ -11,7 +11,7 @@
         set_var(env, name, (Value){VAL_NATIVE, {.native = func}}, true, "");     \
     } while (0)
 
-#ifdef USE_MYSQL
+
 #include <mysql/mysql.h>
 
 Value native_mysql_connect(int arity, Value* args) {
@@ -25,14 +25,6 @@ Value native_mysql_connect(int arity, Value* args) {
     return (Value){VAL_NUMBER, {.number = (uintptr_t)conn}};
 }
 
-#else
-
-Value native_mysql_connect(int arity, Value* args) {
-    printf("Jackal Error: MySQL support is not enabled in this binary.\n");
-    return (Value){VAL_NIL};
-}
-
-#endif
 
 void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_connect__", native_mysql_connect);
