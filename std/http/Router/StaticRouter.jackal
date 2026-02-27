@@ -3,6 +3,7 @@ class StaticRouter{
         this.routes = {}
         this.pats = []
         this.middlewares = {}
+        this.current_prefix = ""
     }
 }
 
