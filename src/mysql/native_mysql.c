@@ -52,7 +52,7 @@ Value native_mysql_query(int arity, Value* args) {
     MYSQL_FIELD *fields = mysql_fetch_fields(result);
     MYSQL_ROW row;
 
-    ValueArray* va = value_array_new();
+    ValueArray* va = array_new();
 
     while ((row = mysql_fetch_row(result))) {
         HashMap* map = map_new();
@@ -68,12 +68,61 @@ Value native_mysql_query(int arity, Value* args) {
             map_set(map, fields[i].name, val);
         }
         
-        value_array_push(va, (Value){VAL_MAP, {.map = map}});
+        array_append(va, (Value){VAL_MAP, {.map = map}});
     }
 
     mysql_free_result(result);
 
     return (Value){VAL_ARRAY, {.array = va}};
+}
+
+Value native_mysql_create_table(int arity, Value* args) {
+    if (arity < 3 || args[0].type != VAL_NUMBER || args[2].type != VAL_MAP) {
+        return (Value){VAL_NIL};
+    }
+
+    MYSQL *conn = (MYSQL*)(uintptr_t)args[0].as.number;
+    const char* table_name = args[1].as.string;
+    HashMap* columns = args[2].as.map;
+
+    char sql[2048];
+    sprintf(sql, "CREATE TABLE IF NOT EXISTS %s (", table_name);
+
+    for (int i = 0; i < columns->capacity; i++) {
+        if (columns->entries[i].key != NULL) {
+            strcat(sql, columns->entries[i].key);
+            strcat(sql, " ");
+
+            const char* user_type = columns->entries[i].value.as.string;
+            
+            if (strcmp(user_type, "int") == 0) {
+                strcat(sql, "INT");
+            } else if (strcmp(user_type, "string") == 0) {
+                strcat(sql, "VARCHAR(255)");
+            } else if (strcmp(user_type, "text") == 0) {
+                strcat(sql, "TEXT");
+            } else if (strcmp(user_type, "primary") == 0) {
+                strcat(sql, "INT AUTO_INCREMENT PRIMARY KEY");
+            } else {
+                strcat(sql, user_type);
+            }
+
+            strcat(sql, ", ");
+        }
+    }
+
+    int len = strlen(sql);
+    if (len > 0 && sql[len - 2] == ',') {
+        sql[len - 2] = '\0';
+    }
+    strcat(sql, ");");
+
+    if (mysql_query(conn, sql)) {
+        fprintf(stderr, "MySQL Create Error: %s\n", mysql_error(conn));
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = 1}};
 }
 
 void register_mysql_natives(Env *env) {
