@@ -78,4 +78,5 @@ Value native_mysql_query(int arity, Value* args) {
 
 void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_connect__", native_mysql_connect);
+    MSQL_REGISTER(env, "__mysql_query__", native_mysql_query);
 }
