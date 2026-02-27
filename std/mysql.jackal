@@ -1,3 +1,13 @@
+class Table{
+
+	init(handle, tableName) {
+        this.handle = handle
+        this.tableName = tableName
+    }
+
+	func insert(data : Map) -> Boolean = __mysql_insert__(this.handle,this.tableName,data)
+}
+
 class Mysql{
 	init(host , user , pass ){
 		this.host = host
@@ -6,11 +16,10 @@ class Mysql{
 		this.conn = nil
 	}
 
-
-	func create(name : String, schema : Map) = 
+	func create(name : String, schema : Map) -> Boolean = 
 		__mysql_create__(this.conn , name , schema);
-
 	
+	func entity(name : String)  = Table(this.conn,name)
 
 	func connect(db : String) {
 		this.conn = __mysql_connect__(this.host, this.user, this.pass, db)
