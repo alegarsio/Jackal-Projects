@@ -126,6 +126,59 @@ Value native_mysql_create_table(int arity, Value* args) {
 }
 
 
+Value native_mysql_insert(int arity, Value* args) {
+    if (arity < 3 || args[0].type != VAL_NUMBER || args[2].type != VAL_MAP) {
+        return (Value){VAL_NIL};
+    }
+
+    MYSQL *conn = (MYSQL*)(uintptr_t)args[0].as.number;
+    const char* table_name = args[1].as.string;
+    HashMap* data = args[2].as.map;
+
+    char sql[4096];
+    char columns[2048] = "";
+    char values[2048] = "";
+
+    sprintf(sql, "INSERT INTO %s (", table_name);
+
+    for (int i = 0; i < data->capacity; i++) {
+        if (data->entries[i].key != NULL) {
+            strcat(columns, data->entries[i].key);
+            strcat(columns, ", ");
+
+            Value val = data->entries[i].value;
+            if (val.type == VAL_STRING) {
+                strcat(values, "'");
+                strcat(values, val.as.string);
+                strcat(values, "'");
+            } else if (val.type == VAL_NUMBER) {
+                char num_str[32];
+                sprintf(num_str, "%g", val.as.number);
+                strcat(values, num_str);
+            } else if (val.type == VAL_BOOL) {
+                strcat(values, val.as.boolean ? "1" : "0");
+            } else {
+                strcat(values, "NULL");
+            }
+            strcat(values, ", ");
+        }
+    }
+
+    columns[strlen(columns) - 2] = '\0';
+    values[strlen(values) - 2] = '\0';
+
+    strcat(sql, columns);
+    strcat(sql, ") VALUES (");
+    strcat(sql, values);
+    strcat(sql, ");");
+
+    if (mysql_query(conn, sql)) {
+        fprintf(stderr, "MySQL Insert Error: %s\n", mysql_error(conn));
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = 1}};
+}
 
 void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_connect__", native_mysql_connect);
