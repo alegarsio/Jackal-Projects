@@ -1,26 +1,36 @@
 import std.http.Router.StaticRouter
 import std.http.Abstract.RouterAbstractMethod
 
-class Api : StaticRouter , RouterAbstractMethod{
+class Api : StaticRouter, RouterAbstractMethod {
+
+
+    func group(prefix) {
+        let sub = Api()
+        sub.routes = this.routes
+        sub.pats = this.pats
+        sub.middlewares = this.middlewares
+        sub.current_prefix = this.current_prefix + prefix
+        return sub
+    }
 
     func uses(path, m_func) {
-        if (this.middlewares[path] == nil) {
-            __map_set_manual__(this.middlewares, path, [])
+        let fullPath = this.current_prefix + path
+        if (this.middlewares[fullPath] == nil) {
+            __map_set_manual__(this.middlewares, fullPath, [])
         }
-        let list = this.middlewares[path]
+        let list = this.middlewares[fullPath]
         list.push(m_func)
     }
 
     @override
     func route(path, method, handler) {
-        if (this.routes[path] == nil) {
-            __map_set_manual__(this.routes, path, {})
-            this.pats.push(path)
+        let fullPath = this.current_prefix + path
+        if (this.routes[fullPath] == nil) {
+            __map_set_manual__(this.routes, fullPath, {})
+            this.pats.push(fullPath)
         }
-        let target = this.routes[path]
-        let m = method
-        if (m == nil) { m = "GET" }
-        __map_set_manual__(target, m, handler)
+        let target = this.routes[fullPath]
+        __map_set_manual__(target, method, handler)
     }
 
     @override
@@ -29,11 +39,9 @@ class Api : StaticRouter , RouterAbstractMethod{
     }
 
     @override
-    func post(path,handler){
-        this.route(path,"GET",handler)
+    func post(path, handler) {
+        this.route(path, "POST", handler)
     }
-
-    
 
     func run(port) {
         if (__listen__(port)) {
@@ -43,7 +51,6 @@ class Api : StaticRouter , RouterAbstractMethod{
                 if (req != nil) {
                     let m = req["method"]
                     let p = req["path"]
-                    let addr = req["address"]
                     
                     let matchedPat = nil
                     for pat in this.pats {
