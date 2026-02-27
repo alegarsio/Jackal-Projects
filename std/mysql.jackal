@@ -6,6 +6,12 @@ class Mysql{
 		this.conn = nil
 	}
 
+
+	func create(name : String, schema : Map) = 
+		__mysql_create__(this.conn , name , schema);
+
+	
+
 	func connect(db : String) {
 		this.conn = __mysql_connect__(this.host, this.user, this.pass, db)
         
@@ -15,7 +21,15 @@ class Mysql{
         }
         return this
 	}
-	func result() 
-		return this.conn
+	func query(sql : String){
+		if (this.conn == nil){
+			println("Error : Database connection not estabilished")
+			return nil
+		}
+		return __mysql_query__(this.conn, sql)
+	}
+
+	func result() = 
+		this.conn != nil 
 	
 }
