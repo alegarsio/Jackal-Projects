@@ -53,6 +53,8 @@ Value native_web_poll(int arity, Value* args) {
 
     if (client_socket < 0) return (Value){VAL_NIL};
 
+    char* ip_address = inet_ntoa(client_addr.sin_addr);
+
     char buffer[4096] = {0};
     read(client_socket, buffer, sizeof(buffer) - 1);
 
@@ -69,6 +71,7 @@ Value native_web_poll(int arity, Value* args) {
     map_set(req_map, "method", (Value){VAL_STRING, {.string = strdup(method)}});
     map_set(req_map, "path", (Value){VAL_STRING, {.string = strdup(full_path)}});
     map_set(req_map, "socket_fd", (Value){VAL_NUMBER, {.number = (double)client_socket}});
+    map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(ip_address)}});
     
     return (Value){VAL_MAP, {.map = req_map}};
 }
@@ -151,20 +154,6 @@ Value native_match_route(int arity, Value *args) {
 }
 
 
-Value native_map_set_manual(int arity, Value* args) {
- 
-    if (arity < 3 || args[0].type != VAL_MAP || args[1].type != VAL_STRING) {
-        return (Value){VAL_NIL}; 
-    }
-
-    HashMap* map = args[0].as.map;
-    const char* key = args[1].as.string;
-    Value val = args[2];
-
-    map_set(map, key, val);
-
-    return val; 
-}
 
 char* read_file_to_string(const char* filename) {
     FILE* f = fopen(filename, "rb");
@@ -232,11 +221,9 @@ Value native_send_html(int arity, Value *args) {
 }
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
-    JWEB_REGISTER(env, "__map_set_manual__", native_map_set_manual);
     JWEB_REGISTER(env, "__accept__", native_web_poll);
     JWEB_REGISTER(env, "__send_json__", native_web_send_response);
     JWEB_REGISTER(env, "__match_route__", native_match_route);
     JWEB_REGISTER(env,"__render_file__",native_render_file);
     JWEB_REGISTER(env,"__send_html__",native_send_html);
-    JWEB_REGISTER(env,"__is_string__",native_send_html);
 }
