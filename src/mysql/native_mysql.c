@@ -125,7 +125,10 @@ Value native_mysql_create_table(int arity, Value* args) {
     return (Value){VAL_BOOL, {.boolean = 1}};
 }
 
+
+
 void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_connect__", native_mysql_connect);
     MSQL_REGISTER(env, "__mysql_query__", native_mysql_query);
+    MSQL_REGISTER(env,"__mysql_create__",native_mysql_create_table);
 }
