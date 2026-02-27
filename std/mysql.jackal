@@ -1,0 +1,21 @@
+class Mysql{
+	init(host , user , pass ){
+		this.host = host
+		this.user = user
+		this.pass = pass
+		this.conn = nil
+	}
+
+	func connect(db : String) {
+		this.conn = __mysql_connect__(this.host, this.user, this.pass, db)
+        
+        if (this.conn == nil) {
+            println("Error: Could not connect to database '" + db + "'")
+            return nil
+        }
+        return this
+	}
+	func result() 
+		return this.conn
+	
+}
