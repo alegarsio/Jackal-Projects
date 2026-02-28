@@ -1,0 +1,6 @@
+class QueryComponent {
+    init(parent, column) {
+        this.parent = parent
+        this.column = column
+    }
+}
