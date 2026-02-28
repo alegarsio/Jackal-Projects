@@ -237,31 +237,33 @@ Value native_mysql_find_all(int arity, Value* args) {
 
 Value native_mysql_select_builder(int arity, Value* args) {
 #if HAS_MYSQL
-    if (arity == 0) return (Value){VAL_STRING, {.string = strdup("*")}};
+    if (arity == 0 || args[0].type == VAL_NIL) return (Value){VAL_STRING, {.string = strdup("*")}};
 
     char buffer[2048] = "";
-    
-    for (int i = 0; i < arity; i++) {
-        if (args[i].type == VAL_MAP) {
-            HashMap* map = args[i].as.map;
-            for (int j = 0; j < map->capacity; j++) {
-                if (map->entries[j].key != NULL) {
-                    if (strlen(buffer) + strlen(map->entries[j].key) + 10 < 2048) {
-                        strcat(buffer, map->entries[j].key);
-                        strcat(buffer, " AS ");
-                        if (map->entries[j].value.type == VAL_STRING) {
-                            strcat(buffer, map->entries[j].value.as.string);
-                        }
-                        strcat(buffer, ", ");
-                    }
+    Value input = args[0];
+
+    if (input.type == VAL_MAP) {
+        HashMap* map = input.as.map;
+        for (int j = 0; j < map->capacity; j++) {
+            if (map->entries[j].key != NULL) {
+                strcat(buffer, map->entries[j].key);
+                strcat(buffer, " AS ");
+                if (map->entries[j].value.type == VAL_STRING) {
+                    strcat(buffer, map->entries[j].value.as.string);
                 }
-            }
-        } else if (args[i].type == VAL_STRING) {
-            if (strlen(buffer) + strlen(args[i].as.string) + 2 < 2048) {
-                strcat(buffer, args[i].as.string);
                 strcat(buffer, ", ");
             }
         }
+    } else if (input.type == VAL_ARRAY) {
+        ValueArray* arr = input.as.array;
+        for (int i = 0; i < arr->count; i++) {
+            if (arr->values[i].type == VAL_STRING) {
+                strcat(buffer, arr->values[i].as.string);
+                strcat(buffer, ", ");
+            }
+        }
+    } else if (input.type == VAL_STRING) {
+        strcat(buffer, input.as.string);
     }
 
     int len = strlen(buffer);
@@ -270,7 +272,6 @@ Value native_mysql_select_builder(int arity, Value* args) {
     }
 
     if (strlen(buffer) == 0) return (Value){VAL_STRING, {.string = strdup("*")}};
-
     return (Value){VAL_STRING, {.string = strdup(buffer)}};
 #else
     return (Value){VAL_STRING, {.string = strdup("*")}};
