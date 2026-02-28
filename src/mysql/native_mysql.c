@@ -3,7 +3,15 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <string.h>
 #include "env.h"
+
+#if __has_include(<mysql/mysql.h>)
+    #include <mysql/mysql.h>
+    #define HAS_MYSQL 1
+#else
+    #define HAS_MYSQL 0
+#endif
 
 #define MSQL_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -12,9 +20,8 @@
     } while (0)
 
 
-#include <mysql/mysql.h>
-
 Value native_mysql_connect(int arity, Value* args) {
+#if HAS_MYSQL
     if (arity < 4) return (Value){VAL_NIL};
 
     MYSQL *conn = mysql_init(NULL);
@@ -23,9 +30,14 @@ Value native_mysql_connect(int arity, Value* args) {
         return (Value){VAL_NIL};
     }
     return (Value){VAL_NUMBER, {.number = (uintptr_t)conn}};
+#else
+    fprintf(stderr, "Error: MySQL support not compiled into Jackal.\n");
+    return (Value){VAL_NIL};
+#endif
 }
 
 Value native_mysql_query(int arity, Value* args) {
+#if HAS_MYSQL
     if (arity < 2 || args[0].type != VAL_NUMBER) {
         return (Value){VAL_NIL};
     }
@@ -56,7 +68,6 @@ Value native_mysql_query(int arity, Value* args) {
 
     while ((row = mysql_fetch_row(result))) {
         HashMap* map = map_new();
-
         for (int i = 0; i < num_fields; i++) {
             Value val;
             if (row[i]) {
@@ -64,19 +75,20 @@ Value native_mysql_query(int arity, Value* args) {
             } else {
                 val = (Value){VAL_NIL};
             }
-            
             map_set(map, fields[i].name, val);
         }
-        
         array_append(va, (Value){VAL_MAP, {.map = map}});
     }
 
     mysql_free_result(result);
-
     return (Value){VAL_ARRAY, {.array = va}};
+#else
+    return (Value){VAL_NIL};
+#endif
 }
 
 Value native_mysql_create_table(int arity, Value* args) {
+#if HAS_MYSQL
     if (arity < 3 || args[0].type != VAL_NUMBER || args[2].type != VAL_MAP) {
         return (Value){VAL_NIL};
     }
@@ -95,38 +107,32 @@ Value native_mysql_create_table(int arity, Value* args) {
 
             const char* user_type = columns->entries[i].value.as.string;
             
-            if (strcmp(user_type, "int") == 0) {
-                strcat(sql, "INT");
-            } else if (strcmp(user_type, "string") == 0) {
-                strcat(sql, "VARCHAR(255)");
-            } else if (strcmp(user_type, "text") == 0) {
-                strcat(sql, "TEXT");
-            } else if (strcmp(user_type, "primary") == 0) {
-                strcat(sql, "INT AUTO_INCREMENT PRIMARY KEY");
-            } else {
-                strcat(sql, user_type);
-            }
+            if (strcmp(user_type, "int") == 0) strcat(sql, "INT");
+            else if (strcmp(user_type, "string") == 0) strcat(sql, "VARCHAR(255)");
+            else if (strcmp(user_type, "text") == 0) strcat(sql, "TEXT");
+            else if (strcmp(user_type, "primary") == 0) strcat(sql, "INT AUTO_INCREMENT PRIMARY KEY");
+            else strcat(sql, user_type);
 
             strcat(sql, ", ");
         }
     }
 
     int len = strlen(sql);
-    if (len > 0 && sql[len - 2] == ',') {
-        sql[len - 2] = '\0';
-    }
+    if (len > 0 && sql[len - 2] == ',') sql[len - 2] = '\0';
     strcat(sql, ");");
 
     if (mysql_query(conn, sql)) {
         fprintf(stderr, "MySQL Create Error: %s\n", mysql_error(conn));
         return (Value){VAL_BOOL, {.boolean = 0}};
     }
-
     return (Value){VAL_BOOL, {.boolean = 1}};
+#else
+    return (Value){VAL_BOOL, {.boolean = 0}};
+#endif
 }
 
-
 Value native_mysql_insert(int arity, Value* args) {
+#if HAS_MYSQL
     if (arity < 3 || args[0].type != VAL_NUMBER || args[2].type != VAL_MAP) {
         return (Value){VAL_NIL};
     }
@@ -176,11 +182,14 @@ Value native_mysql_insert(int arity, Value* args) {
         fprintf(stderr, "MySQL Insert Error: %s\n", mysql_error(conn));
         return (Value){VAL_BOOL, {.boolean = 0}};
     }
-
     return (Value){VAL_BOOL, {.boolean = 1}};
+#else
+    return (Value){VAL_BOOL, {.boolean = 0}};
+#endif
 }
 
 Value native_mysql_find_all(int arity, Value* args) {
+#if HAS_MYSQL
     if (arity < 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_STRING) {
         return (Value){VAL_NIL};
     }
@@ -203,7 +212,7 @@ Value native_mysql_find_all(int arity, Value* args) {
     MYSQL_FIELD *fields = mysql_fetch_fields(result);
     MYSQL_ROW row;
 
-    ValueArray* va = value_array_new();
+    ValueArray* va = array_new();
 
     while ((row = mysql_fetch_row(result))) {
         HashMap* map = map_new();
@@ -216,16 +225,20 @@ Value native_mysql_find_all(int arity, Value* args) {
             }
             map_set(map, fields[i].name, val);
         }
-        value_array_push(va, (Value){VAL_MAP, {.map = map}});
+        array_append(va, (Value){VAL_MAP, {.map = map}});
     }
 
     mysql_free_result(result);
     return (Value){VAL_ARRAY, {.array = va}};
+#else
+    return (Value){VAL_NIL};
+#endif
 }
 
 void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_connect__", native_mysql_connect);
     MSQL_REGISTER(env, "__mysql_query__", native_mysql_query);
-    MSQL_REGISTER(env,"__mysql_create__",native_mysql_create_table);
-    MSQL_REGISTER(env,"__mysql_insert__",native_mysql_insert);
+    MSQL_REGISTER(env, "__mysql_create__", native_mysql_create_table);
+    MSQL_REGISTER(env, "__mysql_insert__", native_mysql_insert);
+    MSQL_REGISTER(env, "__mysql_findall__", native_mysql_find_all);
 }
