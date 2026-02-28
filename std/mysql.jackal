@@ -1,11 +1,17 @@
-class Table{
+import std.Sqlite.QueryComponent
+import std.Sqlite.TableEntity
 
-	init(handle, tableName) {
-        this.handle = handle
-        this.tableName = tableName
-    }
+class Table : Entity{
 
-	func insert(data : Map) -> Boolean = __mysql_insert__(this.handle,this.tableName,data)
+	func filter(col : String) =
+		WhereBuilder(this , col) or "Error"
+
+	func insert(data : Map) -> Boolean = 
+		__mysql_insert__(this.handle,this.tableName,data)
+
+	func findAll() -> Array<Map> = 
+		__mysql_findall__(this.handle,this.tableName)
+	
 }
 
 class Mysql{
