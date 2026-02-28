@@ -1,0 +1,20 @@
+class Entity {
+    init(handle, tableName) {
+        this.handle = handle
+        this.tableName = tableName
+        this.selectedColumns = "*" 
+        this.whereClause = ""
+        this.joinClause = ""
+        this.limitClause = ""
+        this.offsetClause = ""
+        this.orderClause = ""
+    }
+
+    func resetState() {
+        this.selectedColumns = "*"
+        this.whereClause = ""
+        this.joinClause = ""
+        this.orderClause = ""
+        this.limitClause = ""
+    }
+}
