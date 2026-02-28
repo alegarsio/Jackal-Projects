@@ -235,6 +235,48 @@ Value native_mysql_find_all(int arity, Value* args) {
 #endif
 }
 
+Value native_mysql_select_builder(int arity, Value* args) {
+#if HAS_MYSQL
+    if (arity == 0) return (Value){VAL_STRING, {.string = strdup("*")}};
+
+    char buffer[2048] = "";
+    
+    for (int i = 0; i < arity; i++) {
+        if (args[i].type == VAL_MAP) {
+            HashMap* map = args[i].as.map;
+            for (int j = 0; j < map->capacity; j++) {
+                if (map->entries[j].key != NULL) {
+                    if (strlen(buffer) + strlen(map->entries[j].key) + 10 < 2048) {
+                        strcat(buffer, map->entries[j].key);
+                        strcat(buffer, " AS ");
+                        if (map->entries[j].value.type == VAL_STRING) {
+                            strcat(buffer, map->entries[j].value.as.string);
+                        }
+                        strcat(buffer, ", ");
+                    }
+                }
+            }
+        } else if (args[i].type == VAL_STRING) {
+            if (strlen(buffer) + strlen(args[i].as.string) + 2 < 2048) {
+                strcat(buffer, args[i].as.string);
+                strcat(buffer, ", ");
+            }
+        }
+    }
+
+    int len = strlen(buffer);
+    if (len > 1 && buffer[len - 2] == ',') {
+        buffer[len - 2] = '\0';
+    }
+
+    if (strlen(buffer) == 0) return (Value){VAL_STRING, {.string = strdup("*")}};
+
+    return (Value){VAL_STRING, {.string = strdup(buffer)}};
+#else
+    return (Value){VAL_STRING, {.string = strdup("*")}};
+#endif
+}
+
 void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_connect__", native_mysql_connect);
     MSQL_REGISTER(env, "__mysql_query__", native_mysql_query);
