@@ -5,4 +5,6 @@ trait RouterAbstractMethod{
     func get(path : String , handler : Map) -> None ;
     @async 
     func post(path : String , handler : Map) -> None;
+    @async 
+    func uses(path : String , m_func : String ) -> None; 
 }
