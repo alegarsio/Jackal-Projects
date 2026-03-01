@@ -1,6 +1,4 @@
-import std.Sqlite.QueryComponent
-
-
+import std.orm.Query.QueryComponent
 class WhereBuilder : QueryComponent {
 
     func gt(value) {

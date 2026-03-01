@@ -1,17 +1,43 @@
-import std.Sqlite.QueryComponent
-import std.Sqlite.TableEntity
+import std.orm.Query.QueryComponent
+import std.orm.Entity.BasicEntity
+import std.mysql.WhereBuilder
 
-class Table : Entity{
+class Table : Entity {
 
-	func filter(col : String) =
-		WhereBuilder(this , col) or "Error"
+    func filter(col : String) {
+        return WhereBuilder(this, col)
+    }
 
-	func insert(data : Map) -> Boolean = 
-		__mysql_insert__(this.handle,this.tableName,data)
+    func select(fields) {
+        this.selectedColumns = __mysql_select_(fields)
+        return this
+    }
 
-	func findAll() -> Array<Map> = 
-		__mysql_findall__(this.handle,this.tableName)
-	
+    func limit(n : Int) {
+        this.limitClause = " LIMIT " + n.toString()
+        return this
+    }
+
+    func get() {
+        let sql = "SELECT " + this.selectedColumns + 
+                  " FROM " + this.tableName + 
+                  this.whereClause + 
+                  this.limitClause
+        
+        let result = __mysql_query__(this.handle, sql)
+        this.resetState() 
+        return result
+    }
+
+    func insert(data : Map) -> Boolean {
+        return __mysql_insert__(this.handle, this.tableName, data)
+    }
+
+    func findAll() {
+        let result = __mysql_findall__(this.handle, this.tableName)
+        this.resetState()
+        return result
+    }
 }
 
 class Mysql{
