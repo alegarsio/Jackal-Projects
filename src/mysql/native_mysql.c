@@ -339,6 +339,7 @@ Value native_mysql_delete(int arity, Value* args) {
         return (Value){VAL_BOOL, {.boolean = 0}};
     }
 
+    
     MYSQL *conn = (MYSQL*)(uintptr_t)args[0].as.number;
     const char* table_name = args[1].as.string;
     const char* where_clause = (arity > 2) ? args[2].as.string : "";
