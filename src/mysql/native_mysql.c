@@ -278,6 +278,61 @@ Value native_mysql_select_builder(int arity, Value* args) {
 #endif
 }
 
+Value native_mysql_update(int arity, Value* args) {
+#if HAS_MYSQL
+    if (arity < 4 || args[0].type != VAL_NUMBER || args[2].type != VAL_MAP) {
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
+
+    MYSQL *conn = (MYSQL*)(uintptr_t)args[0].as.number;
+    const char* table_name = args[1].as.string;
+    HashMap* data = args[2].as.map;
+    const char* where_clause = args[3].as.string;
+
+    char sql[4096] = "";
+    char set_part[2048] = "";
+
+    for (int i = 0; i < data->capacity; i++) {
+        if (data->entries[i].key != NULL) {
+            strcat(set_part, data->entries[i].key);
+            strcat(set_part, " = ");
+
+            Value val = data->entries[i].value;
+            if (val.type == VAL_STRING) {
+                strcat(set_part, "'");
+                strcat(set_part, val.as.string);
+                strcat(set_part, "'");
+            } else if (val.type == VAL_NUMBER) {
+                char num_str[32];
+                sprintf(num_str, "%g", val.as.number);
+                strcat(set_part, num_str);
+            } else if (val.type == VAL_BOOL) {
+                strcat(set_part, val.as.boolean ? "1" : "0");
+            } else {
+                strcat(set_part, "NULL");
+            }
+            strcat(set_part, ", ");
+        }
+    }
+
+    int set_len = strlen(set_part);
+    if (set_len > 1 && set_part[set_len - 2] == ',') {
+        set_part[set_len - 2] = '\0';
+    }
+
+    snprintf(sql, sizeof(sql), "UPDATE %s SET %s %s", table_name, set_part, where_clause);
+
+    if (mysql_query(conn, sql)) {
+        fprintf(stderr, "MySQL Update Error: %s\n", mysql_error(conn));
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = 1}};
+#else
+    return (Value){VAL_BOOL, {.boolean = 0}};
+#endif
+}
+
 void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_connect__", native_mysql_connect);
     MSQL_REGISTER(env, "__mysql_query__", native_mysql_query);
