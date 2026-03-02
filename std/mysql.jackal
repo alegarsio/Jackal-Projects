@@ -18,6 +18,12 @@ class Table : Entity {
         return __mysql_update__(this.handle, this.tableName, data, this.whereClause)
     }
 
+
+    func delete(data : Map){
+        this.resetState()
+        return __mysql_delete__(this.handle, this.tableName, this.whereClause)
+    }
+
     func limit(n : Int) {
         this.limitClause = " LIMIT " + n.toString()
         return this
