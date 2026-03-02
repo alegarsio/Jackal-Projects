@@ -13,6 +13,11 @@ class Table : Entity {
         return this
     }
 
+    func update(data : Map) {
+        this.resetState()
+        return __mysql_update__(this.handle, this.tableName, data, this.whereClause)
+    }
+
     func limit(n : Int) {
         this.limitClause = " LIMIT " + n.toString()
         return this
