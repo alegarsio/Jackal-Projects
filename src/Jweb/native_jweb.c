@@ -1,4 +1,5 @@
 #include "Jweb/native_jweb.h"
+#include "json/native_json.h"
 #include <stdio.h>      
 #include <stdlib.h>     
 #include <string.h>     
@@ -7,6 +8,7 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h>   
 #include <fcntl.h>       
+#include "eval.h"
 
 int global_server_fd = -1;
 
@@ -54,15 +56,11 @@ Value native_web_poll(int arity, Value* args) {
     if (client_socket < 0) return (Value){VAL_NIL};
 
     char* ip_address = inet_ntoa(client_addr.sin_addr);
-
-    char buffer[4096] = {0};
+    char buffer[8192] = {0};
     read(client_socket, buffer, sizeof(buffer) - 1);
 
     char method[16], full_path[1024];
-    if (sscanf(buffer, "%15s %1023s", method, full_path) < 2) {
-        close(client_socket);
-        return (Value){VAL_NIL};
-    }
+    sscanf(buffer, "%15s %1023s", method, full_path);
 
     char *query = strchr(full_path, '?');
     if (query) { *query = '\0'; }
@@ -72,37 +70,61 @@ Value native_web_poll(int arity, Value* args) {
     map_set(req_map, "path", (Value){VAL_STRING, {.string = strdup(full_path)}});
     map_set(req_map, "socket_fd", (Value){VAL_NUMBER, {.number = (double)client_socket}});
     map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(ip_address)}});
+
+    char *body_start = strstr(buffer, "\r\n\r\n");
+    if (body_start) {
+        body_start += 4;
+        
+        Value json_arg = (Value){VAL_STRING, {.string = body_start}};
+        Value body_map = native_json_parse(1, &json_arg); 
+        
+        map_set(req_map, "body", body_map);
+    } else {
+        map_set(req_map, "body", (Value){VAL_NIL});
+    }
     
     return (Value){VAL_MAP, {.map = req_map}};
 }
 Value native_web_send_response(int arity, Value* args) {
-    if (arity < 2 || args[0].type != VAL_MAP) return (Value){VAL_NIL};
+    if (arity < 2) return (Value){VAL_NIL};
 
     Value socket_val;
-    if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
+    if (args[0].type == VAL_MAP) {
+        if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
+    } else {
+        socket_val = args[0];
+    }
     int client_socket = (int)socket_val.as.number;
-    
-    Value json_str_val = builtin_json_encode(1, &args[1]);
-    
-    if (json_str_val.type != VAL_STRING) {
-        char* err = "{\"error\": \"JSON Encode Failed\"}";
-        send(client_socket, err, strlen(err), 0);
-        close(client_socket);
-        return (Value){VAL_BOOL, {.boolean = false}};
+
+    Value data_to_encode = args[1];
+    Value result_from_func = {VAL_NIL};
+
+    if (data_to_encode.type == VAL_FUNCTION || data_to_encode.type == VAL_NATIVE) {
+        Value callback_args[1] = { args[0] }; 
+        result_from_func = call_jackal_function(NULL, data_to_encode, 1, callback_args);
+        data_to_encode = result_from_func;
+    }
+
+    Value json_str_val = builtin_json_encode(1, &data_to_encode);
+
+    if (json_str_val.type == VAL_STRING) {
+        char* json_body = json_str_val.as.string;
+        char response[8192];
+        int response_len = sprintf(response, 
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Content-Length: %zu\r\n"
+            "Connection: close\r\n\r\n"
+            "%s", strlen(json_body), json_body);
+
+        send(client_socket, response, response_len, 0);
+    }
+
+    if (result_from_func.type != VAL_NIL) {
+        free_value(result_from_func);
     }
     
-    char* json_body = json_str_val.as.string;
-    char response[8192];
-    int response_len = sprintf(response, 
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "Content-Length: %zu\r\n"
-        "Connection: close\r\n\r\n"
-        "%s", strlen(json_body), json_body);
-
-    send(client_socket, response, response_len, 0);
     close(client_socket);
-    
     return (Value){VAL_BOOL, {.boolean = true}};
 }
 Value native_match_route(int arity, Value *args) {
