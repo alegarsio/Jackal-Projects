@@ -365,4 +365,5 @@ void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_findall__", native_mysql_find_all);
     MSQL_REGISTER(env, "__mysql_select_", native_mysql_select_builder);
     MSQL_REGISTER(env,"__mysql_update__",native_mysql_update);
+    MSQL_REGISTER(env,"__mysql_delete__",native_mysql_delete);
 }
