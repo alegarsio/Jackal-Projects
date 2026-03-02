@@ -333,6 +333,30 @@ Value native_mysql_update(int arity, Value* args) {
 #endif
 }
 
+Value native_mysql_delete(int arity, Value* args) {
+#if HAS_MYSQL
+    if (arity < 2 || args[0].type != VAL_NUMBER) {
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
+
+    MYSQL *conn = (MYSQL*)(uintptr_t)args[0].as.number;
+    const char* table_name = args[1].as.string;
+    const char* where_clause = (arity > 2) ? args[2].as.string : "";
+
+    char sql[2048] = "";
+    snprintf(sql, sizeof(sql), "DELETE FROM %s%s", table_name, where_clause);
+
+    if (mysql_query(conn, sql)) {
+        fprintf(stderr, "MySQL Delete Error: %s\n", mysql_error(conn));
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    }
+
+    return (Value){VAL_BOOL, {.boolean = 1}};
+#else
+    return (Value){VAL_BOOL, {.boolean = 0}};
+#endif
+}
+
 void register_mysql_natives(Env *env) {
     MSQL_REGISTER(env, "__mysql_connect__", native_mysql_connect);
     MSQL_REGISTER(env, "__mysql_query__", native_mysql_query);
