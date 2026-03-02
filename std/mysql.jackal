@@ -1,12 +1,15 @@
 import std.orm.Query.QueryComponent
 import std.orm.Entity.BasicEntity
+import std.mysql.OrderBuilder
 import std.mysql.WhereBuilder
 
 class Table : Entity {
 
-    func filter(col : String) {
+    func filter(col : String) 
         return WhereBuilder(this, col)
-    }
+    
+    func order(col : String) 
+        return OrderBuilder(this,col)
 
     func select(fields) {
         this.selectedColumns = __mysql_select_(fields)
@@ -18,8 +21,7 @@ class Table : Entity {
         return __mysql_update__(this.handle, this.tableName, data, this.whereClause)
     }
 
-
-    func delete(data : Map){
+    func delete(){
         this.resetState()
         return __mysql_delete__(this.handle, this.tableName, this.whereClause)
     }
@@ -33,6 +35,7 @@ class Table : Entity {
         let sql = "SELECT " + this.selectedColumns + 
                   " FROM " + this.tableName + 
                   this.whereClause + 
+                  this.orderClause +
                   this.limitClause
         
         let result = __mysql_query__(this.handle, sql)
