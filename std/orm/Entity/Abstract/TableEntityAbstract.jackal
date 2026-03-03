@@ -1,0 +1,5 @@
+trait TableEntityAbstractMethod{
+    func filter(col : String)  ;
+    func insert(data : Map) -> Boolean;
+    
+}
