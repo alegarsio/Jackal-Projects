@@ -1,8 +1,19 @@
 import std.http.Router.StaticRouter
 import std.http.Abstract.RouterAbstractMethod
+import std.SnapEngine.ViewEngine.core
+
+func render(req, file, data) = 
+    req["view"].render(file, data)
+
+func params(req, key) {
+    let p_data = req["params"]
+    if (p_data != nil && p_data[key] != nil) {
+        return p_data[key]
+    }
+    return nil
+}
 
 class Api : StaticRouter, RouterAbstractMethod {
-
 
     func group(prefix) {
         let sub = Api()
@@ -13,6 +24,7 @@ class Api : StaticRouter, RouterAbstractMethod {
         return sub
     }
 
+    @override
     func uses(path, m_func) {
         let fullPath = this.current_prefix + path
         if (this.middlewares[fullPath] == nil) {
@@ -49,8 +61,15 @@ class Api : StaticRouter, RouterAbstractMethod {
             while (true) {
                 let req = __accept__()
                 if (req != nil) {
+                    if (req["body"] == nil) {
+                        req["body"] = {}
+                    }
+
+                    req["view"] = View(req)
+
                     let m = req["method"]
                     let p = req["path"]
+                    let addr = req["address"]
                     
                     let matchedPat = nil
                     for pat in this.pats {
@@ -67,7 +86,7 @@ class Api : StaticRouter, RouterAbstractMethod {
                             for m_func in m_list {
                                 let m_res = m_func(req)
                                 if (m_res != nil) {
-                                    println("[" + m + "] " + p + " -> 401 Unauthorized")
+                                    println("[" + addr + "] " + m + " " + p + " -> 401 Unauthorized")
                                     __send_json__(req, m_res)
                                     allowed = false
                                     break
@@ -79,20 +98,18 @@ class Api : StaticRouter, RouterAbstractMethod {
                             let pathData = this.routes[matchedPat]
                             let handler = pathData[m]
                             if (handler != nil) {
-                                println("[" + m + "] " + p + " -> 200 OK")
-                                let params = req["params"]
-                                if (params != nil) {
-                                    __send_json__(req, handler(params["id"]))
-                                } else {
-                                    __send_json__(req, handler)
+                                println("[" + addr + "] " + m + " " + p + " -> 200 OK")
+                                let response = handler(req)
+                                if (response != nil) {
+                                    __send_json__(req, response)
                                 }
                             } else {
-                                println("[" + m + "] " + p + " -> 405 Method Not Allowed")
+                                println("[" + addr + "] " + m + " " + p + " -> 405 Method Not Allowed")
                                 __send_json__(req, {"error": 405})
                             }
                         }
                     } else {
-                        println("[" + m + "] " + p + " -> 404 Not Found")
+                        println("[" + addr + "] " + m + " " + p + " -> 404 Not Found")
                         __send_json__(req, {"error": 404})
                     }
                 }
