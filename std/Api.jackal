@@ -1,11 +1,12 @@
 import std.http.Router.StaticRouter
 import std.http.Abstract.RouterAbstractMethod
 import std.SnapEngine.ViewEngine.core
+import std.http.response
 
 func render(req, file, data) = 
     req["view"].render(file, data)
 
-func params(req, key) {
+func param(req, key) {
     let p_data = req["params"]
     if (p_data != nil && p_data[key] != nil) {
         return p_data[key]
