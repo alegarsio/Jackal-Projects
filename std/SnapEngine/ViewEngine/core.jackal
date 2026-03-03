@@ -1,0 +1,20 @@
+import std.SnapEngine.ViewEngine.Abstract.templateComponent
+
+class View : TemplateComponent{
+
+    func render(fileName, data) {
+        let path = this.basePath + fileName
+        let html = __render_file__(path, data)
+        
+        if (html == nil) {
+            println("Error: Template " + path + " tidak ditemukan!")
+            return false
+        }
+
+        return __send_html__(this.socket, html)
+    }
+
+    func raw(htmlString) {
+        return __send_html__(this.socket, htmlString)
+    }
+}
