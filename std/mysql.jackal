@@ -1,29 +1,34 @@
 import std.orm.Query.QueryComponent
 import std.orm.Entity.BasicEntity
+import std.orm.Entity.Abstract.TableEntityAbstract
 import std.mysql.OrderBuilder
 import std.mysql.WhereBuilder
 
-class Table : Entity {
+class Table : Entity , TableEntityAbstractMethod {
 
-    func filter(col : String) 
-        return WhereBuilder(this, col)
+    func filter(col : String)  = 
+        WhereBuilder(this, col)
     
-    func order(col : String) 
-        return OrderBuilder(this,col)
+    func order(col : String) = 
+        OrderBuilder(this,col)
 
     func select(fields) {
         this.selectedColumns = __mysql_select_(fields)
         return this
     }
 
-    func update(data : Map) {
+        func update(data : Map) {
+        let result = __mysql_update__(this.handle, this.tableName, data, this.whereClause)
         this.resetState()
-        return __mysql_update__(this.handle, this.tableName, data, this.whereClause)
+        return result
     }
 
     func delete(){
+        let result = __mysql_update__(this.handle, this.tableName, this.whereClause)
+        
         this.resetState()
-        return __mysql_delete__(this.handle, this.tableName, this.whereClause)
+        
+        return result
     }
 
     func limit(n : Int) {

@@ -1,7 +1,6 @@
 import std.orm.Query.QueryComponent
 
 class OrderBuilder : QueryComponent {
-
     func asc() {
         this.parent.orderClause = " ORDER BY " + this.column + " ASC"
         return this.parent
