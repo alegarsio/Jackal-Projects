@@ -192,28 +192,60 @@ char* read_file_to_string(const char* filename) {
     string[fsize] = 0;
     return string;
 }
-
 Value native_render_file(int arity, Value *args) {
-    if (arity != 1 || args[0].type != VAL_STRING) {
-        print_error("render_file expects (string path)");
-        return (Value){VAL_NIL, {0}};
+    if (arity < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
+
+    char *content = read_file_to_string(args[0].as.string);
+    if (!content) return (Value){VAL_NIL};
+
+    if (arity == 2 && args[1].type == VAL_MAP) {
+        HashMap *data = args[1].as.map;
+        
+        for (int i = 0; i < data->capacity; i++) {
+            Entry *entry = &data->entries[i];
+            if (entry->key != NULL) {
+                char placeholder[128];
+                sprintf(placeholder, "{{%s}}", entry->key);
+                
+                char *val_str = value_to_string(entry->value);
+                
+                char *result;
+                char *ins;    
+                char *tmp;    
+                int len_rep;  
+                int len_with; 
+                int len_front;
+                int count;    
+
+                len_rep = strlen(placeholder);
+                len_with = strlen(val_str);
+
+                ins = content;
+                for (count = 0; (tmp = strstr(ins, placeholder)); ++count) {
+                    ins = tmp + len_rep;
+                }
+
+                tmp = result = malloc(strlen(content) + (len_with - len_rep) * count + 1);
+
+                if (!result) {
+                    free(val_str);
+                    continue;
+                }
+
+                while (count--) {
+                    ins = strstr(content, placeholder);
+                    len_front = ins - content;
+                    tmp = strncpy(tmp, content, len_front) + len_front;
+                    tmp = strcpy(tmp, val_str) + len_with;
+                    content += len_front + len_rep;
+                }
+                strcpy(tmp, content);
+                
+                content = result; 
+                free(val_str);
+            }
+        }
     }
-
-    const char *path = args[0].as.string;
-    FILE *file = fopen(path, "rb");
-    if (!file) {
-        print_error("Could not open file: %s", path);
-        return (Value){VAL_NIL, {0}};
-    }
-
-    fseek(file, 0, SEEK_END);
-    long fsize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    char *content = malloc(fsize + 1);
-    fread(content, fsize, 1, file);
-    fclose(file);
-    content[fsize] = 0;
 
     Value result = (Value){VAL_STRING, {.string = content}};
     return result;
