@@ -11,6 +11,8 @@
 #include"sqlite/native_sqlite.h"
 #include"Jweb/native_jweb.h"
 #include"map/native_map.h"
+#include "mysql/native_mysql.h"
+
 
 /**
  * Register DEFAULT is now DEPRECATED
@@ -139,4 +141,5 @@ void register_all_natives(Env* env) {
     register_sqlite_native(env);
     register_jweb_natives(env);
     register_map_natives(env);
+    register_mysql_natives(env);
 }
