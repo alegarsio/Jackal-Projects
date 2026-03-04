@@ -1,0 +1,25 @@
+class Model {
+    init(db, table) {
+        this.db = db
+        this.table = table
+        this.primaryKey = "id"
+        this.selectedColumns = "*"
+        this.whereClause = ""
+        this.params = []
+    }
+
+    func where(column) {
+        return WhereBuilder(this, column)
+    }
+
+    func get() {
+        let sql = "SELECT " + this.selectedColumns + " FROM " + this.table + this.whereClause
+        let result = this.db.query(sql, this.params)
+        
+        this.whereClause = ""
+        this.params = []
+        this.selectedColumns = "*"
+        
+        return result
+    }
+}
