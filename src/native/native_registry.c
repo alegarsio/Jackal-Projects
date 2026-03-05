@@ -59,7 +59,7 @@ void register_all_natives(Env* env) {
     SAFE_REGISTER(env, "_io_plot", builtin_plot);
 
     // SAFE_REGISTER(env, "__array_distinct", builtin_array_distinct);
-    SAFE_REGISTER(env, "__array_anyMatch", builtin_array_anyMatch);
+    // SAFE_REGISTER(env, "__array_anyMatch", builtin_array_anyMatch);
     SAFE_REGISTER(env, "__array_map", builtin_array_map);
     SAFE_REGISTER(env, "__array_filter", builtin_array_filter);
     SAFE_REGISTER(env, "__array_reduce", builtin_array_reduce);
