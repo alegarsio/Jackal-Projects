@@ -26,7 +26,7 @@ class Api : StaticRouter, RouterAbstractMethod {
     }
 
     @override
-    func uses(path, m_func) {
+    func middleware(path, m_func) {
         let fullPath = this.current_prefix + path
         if (this.middlewares[fullPath] == nil) {
             __map_set_manual__(this.middlewares, fullPath, [])
