@@ -10,6 +10,13 @@ class BaseModel {
         __map_set_manual__(this.schema, name, type)
     }
 
+    func create() {
+        if (this.db != nil) {
+            this.db.create(this.tableName, this.schema)
+        }
+        return this 
+    }
+
     func sync() {
         this.isSynced = true
         return this.db.create(this.tableName, this.schema)
