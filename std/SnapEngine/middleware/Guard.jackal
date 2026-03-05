@@ -1,0 +1,19 @@
+class Guard {
+    init(secretToken) {
+        this.secret = secretToken
+    }
+
+    func auth(req) {
+        let token = req["body"]["token"]
+        
+        if (token != this.secret) {
+            return {
+                "status": 401,
+                "error": "Token Salah atau Tidak Terdaftar!"
+            }
+        }
+        
+        req["user_id"] = 100
+        return nil
+    }
+}
