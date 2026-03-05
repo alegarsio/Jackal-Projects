@@ -54,6 +54,7 @@ SRC = src/common.c \
       src/String/string_native.c \
       src/System/system_native.c \
       src/math/native_math.c \
+      src/array/native_array.c \
       src/http/native_http.c \
       src/sqlite/native_sqlite.c \
       src/csv/native_csv.c \
