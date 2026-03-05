@@ -2,6 +2,7 @@ import std.http.Router.StaticRouter
 import std.http.Abstract.RouterAbstractMethod
 import std.SnapEngine.ViewEngine.core
 import std.http.response
+import std.SnapEngine.middleware.Guard
 
 func render(req, file, data) = 
     req["view"].render(file, data)
