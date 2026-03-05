@@ -3,6 +3,9 @@ import std.orm.Entity.BasicEntity
 import std.orm.Entity.Abstract.TableEntityAbstract
 import std.mysql.OrderBuilder
 import std.mysql.WhereBuilder
+import std.orm.BaseModel.Model
+
+class Model : BaseModel {}
 
 class Table : Entity , TableEntityAbstractMethod {
 
