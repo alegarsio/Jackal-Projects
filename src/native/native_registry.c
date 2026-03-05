@@ -12,6 +12,7 @@
 #include"Jweb/native_jweb.h"
 #include"map/native_map.h"
 #include "mysql/native_mysql.h"
+#include "array/native_array.h"
 
 
 /**
@@ -57,7 +58,7 @@ void register_all_natives(Env* env) {
     SAFE_REGISTER(env, "__io_json", builtin_print_json);
     SAFE_REGISTER(env, "_io_plot", builtin_plot);
 
-    SAFE_REGISTER(env, "__array_distinct", builtin_array_distinct);
+    // SAFE_REGISTER(env, "__array_distinct", builtin_array_distinct);
     SAFE_REGISTER(env, "__array_anyMatch", builtin_array_anyMatch);
     SAFE_REGISTER(env, "__array_map", builtin_array_map);
     SAFE_REGISTER(env, "__array_filter", builtin_array_filter);
@@ -142,4 +143,5 @@ void register_all_natives(Env* env) {
     register_jweb_natives(env);
     register_map_natives(env);
     register_mysql_natives(env);
+    register_array_natives(env);
 }
