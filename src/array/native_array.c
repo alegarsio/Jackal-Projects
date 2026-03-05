@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <float.h>
 #include "env.h"
+#include "eval.h"
 
 #define ARRAY_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -50,6 +51,34 @@ Value builtin_array_distinct(int argCount, Value *args)
     }
     return (Value){VAL_ARRAY, {.array = new_arr}};
 }
+
+Value builtin_array_anyMatch(int argCount, Value *args)
+{
+    if (argCount != 2 || args[0].type != VAL_ARRAY)
+    {
+        print_error("anyMatch() requires 2 arguments: (Array, Callback).");
+        return (Value){VAL_NUMBER, {.number = 0.0}};
+    }
+
+    ValueArray *arr = args[0].as.array;
+    Value callback = args[1];
+
+    for (int i = 0; i < arr->count; i++)
+    {
+        Value current_val = arr->values[i];
+
+        Value res = call_jackal_function(NULL, callback, 1, &current_val);
+
+        if (is_value_truthy(res))
+        {
+            free_value(res);
+            return (Value){VAL_NUMBER, {.number = 1.0}};
+        }
+        free_value(res);
+    }
+    return (Value){VAL_NUMBER, {.number = 0.0}};
+}
+
 void register_array_natives(Env *env){
-    ARRAY_REGISTER(env,"__array_distinc",builtin_array_distinct);
+    ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
 }
