@@ -6,5 +6,5 @@ trait RouterAbstractMethod{
     @async 
     func post(path : String , handler : Map) -> None;
     @async 
-    func uses(path : String , m_func : String ) -> None; 
+    func middleware(path : String , m_func : String ) -> None; 
 }
