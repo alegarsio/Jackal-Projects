@@ -1,4 +1,4 @@
-class Model {
+class BaseModel {
     func identify(db, tableName) {
         this.db = db
         this.tableName = tableName
