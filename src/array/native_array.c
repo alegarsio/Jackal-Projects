@@ -81,4 +81,5 @@ Value builtin_array_anyMatch(int argCount, Value *args)
 
 void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
+    ARRAY_REGISTER(env,"__array_anyMatch",builtin_array_anyMatch);
 }
