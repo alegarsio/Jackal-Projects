@@ -1,25 +1,41 @@
-class Model {
-    init(db, table) {
-        this.db = db
-        this.table = table
-        this.primaryKey = "id"
-        this.selectedColumns = "*"
-        this.whereClause = ""
-        this.params = []
+class BaseModel {
+    init() {
+        this.table = ""
+        this.values = {}
     }
 
-    func where(column) {
-        return WhereBuilder(this, column)
+    func set(key, val) {
+        __map_set_manual__(this.values, key, val)
+        return this
     }
 
-    func get() {
-        let sql = "SELECT " + this.selectedColumns + " FROM " + this.table + this.whereClause
-        let result = this.db.query(sql, this.params)
-        
-        this.whereClause = ""
-        this.params = []
-        this.selectedColumns = "*"
-        
-        return result
+    func save(conn) {
+        let keys = ""
+        let vals = ""
+        let first = true
+
+        for k in this.values {
+            if (!first) {
+                keys = keys + ", "
+                vals = vals + ", "
+            }
+            keys = keys + k
+            
+            let v = this.values[k]
+            if (v.isString()) {
+                vals = vals + "'" + v + "'"
+            } else {
+                vals = vals + v.toString()
+            }
+            first = false
+        }
+
+        let sql = "INSERT INTO " + this.table + " (" + keys + ") VALUES (" + vals + ");"
+        return __mysql_query__(conn, sql)
+    }
+
+    func all(conn) {
+        let sql = "SELECT * FROM " + this.table + ";"
+        return __mysql_query__(conn, sql)
     }
 }
