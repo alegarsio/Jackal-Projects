@@ -4,6 +4,22 @@ import std.SnapEngine.ViewEngine.core
 import std.http.response
 import std.SnapEngine.middleware.Guard
 
+class Auth : Guard {
+    func auth(req) {
+        let token = req["body"]["token"]
+        
+        if (token != this.secret) {
+            return {
+                "status": 401,
+                "error": "Token Salah atau Tidak Terdaftar!"
+            }
+        }
+        
+        req["user_id"] = 100
+        return nil
+    }
+}
+
 func render(req, file, data) = 
     req["view"].render(file, data)
 
