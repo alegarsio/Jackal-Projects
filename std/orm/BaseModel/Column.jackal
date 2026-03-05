@@ -1,0 +1,21 @@
+class BaseColumn {
+    init(type, options) {
+        this.type = type
+        this.primary_key = options["primary_key"]
+        this.default = options["default"]
+        this.length = options["length"]
+    }
+
+    func Integer(options) {
+        return Column("INTEGER", options)
+    }
+
+    func String(len, options) {
+        options["length"] = len
+        return Column("STRING", options)
+    }
+
+    func Boolean(options) {
+        return Column("BOOLEAN", options)
+    }
+}
