@@ -1,41 +1,24 @@
-class BaseModel {
-    init() {
-        this.table = ""
-        this.values = {}
+class Model {
+    func identify(db, tableName) {
+        this.db = db
+        this.tableName = tableName
+        this.schema = {}
+        this.isSynced = false
     }
 
-    func set(key, val) {
-        __map_set_manual__(this.values, key, val)
-        return this
+    func column(name, type) {
+        __map_set_manual__(this.schema, name, type)
     }
 
-    func save(conn) {
-        let keys = ""
-        let vals = ""
-        let first = true
+    func sync() {
+        this.isSynced = true
+        return this.db.create(this.tableName, this.schema)
+    }
 
-        for k in this.values {
-            if (!first) {
-                keys = keys + ", "
-                vals = vals + ", "
-            }
-            keys = keys + k
-            
-            let v = this.values[k]
-            if (v.isString()) {
-                vals = vals + "'" + v + "'"
-            } else {
-                vals = vals + v.toString()
-            }
-            first = false
+    func query() {
+        if (!this.isSynced) {
+            this.sync()
         }
-
-        let sql = "INSERT INTO " + this.table + " (" + keys + ") VALUES (" + vals + ");"
-        return __mysql_query__(conn, sql)
-    }
-
-    func all(conn) {
-        let sql = "SELECT * FROM " + this.table + ";"
-        return __mysql_query__(conn, sql)
+        return this.db.entity(this.tableName)
     }
 }
