@@ -318,6 +318,47 @@ static Node *parse_array_literal(Parser *P)
     n->left = items_head;
     return n;
 }
+static bool match(Parser *P, TokenKind kind) {
+    if (P->current.kind == kind) {
+        next(P);
+        return true;
+    }
+    return false;
+}
+static Node *parse_arrow_function(Parser *P) {
+    Node *n = new_node(NODE_FUNC_EXPR);
+    next(P); 
+
+    int arity = 0;
+    if (P->current.kind != TOKEN_RPAREN) {
+        do {
+            if (P->current.kind != TOKEN_IDENT) {
+                print_error("Expected parameter name");
+            }
+            Node *param = new_node(NODE_IDENT);
+            strcpy(param->name, P->current.text);
+            param->next = n->left;
+            n->left = param;
+            arity++;
+            next(P);
+        } while (match(P, TOKEN_COMMA));
+    }
+
+    if (!match(P, TOKEN_RPAREN)) print_error("Expected ')' after parameters");
+    if (!match(P, TOKEN_ARROW)) print_error("Expected '=>' after parameters");
+
+    n->arity = arity;
+
+    if (P->current.kind == TOKEN_LBRACE) {
+        n->right = parse_block(P);
+    } else {
+        Node *ret_stmt = new_node(NODE_RETURN_STMT);
+        ret_stmt->left = parse_expr(P);
+        n->right = ret_stmt;
+    }
+
+    return n;
+}
 
 /**
  * @brief Parses a primary expression.
@@ -326,7 +367,6 @@ static Node *parse_array_literal(Parser *P)
  */
 static Node *parse_primary(Parser *P)
 {
-
     if (P->current.kind == TOKEN_NUMBER)
     {
         Node *n = new_node(NODE_NUMBER);
@@ -335,9 +375,6 @@ static Node *parse_primary(Parser *P)
         return n;
     }
 
-    /**
-     * True Token
-     */
     if (P->current.kind == TOKEN_TRUE)
     {
         next(P);
@@ -345,10 +382,6 @@ static Node *parse_primary(Parser *P)
         n->value = 1.0;
         return n;
     }
-
-    /**
-     * False Token
-     */
 
     if (P->current.kind == TOKEN_FALSE)
     {
@@ -382,10 +415,6 @@ static Node *parse_primary(Parser *P)
         return parse_array_literal(P);
     }
 
-    if (P->current.kind == TOKEN_AS)
-    {
-
-    }
     if (P->current.kind == TOKEN_LBRACE)
     {
         return parse_map_literal(P);
@@ -406,17 +435,46 @@ static Node *parse_primary(Parser *P)
         next(P);
         return n;
     }
+
     if (P->current.kind == TOKEN_LPAREN)
     {
+        size_t saved_pos = P->lexer->pos;
+        Token saved_token = P->current;
+
+        int i = 0;
+        bool is_arrow = false;
+        int paren_depth = 0;
+
+        while (P->lexer->src[P->lexer->pos + i] != '\0') {
+            char c = P->lexer->src[P->lexer->pos + i];
+            if (c == '(') paren_depth++;
+            else if (c == ')') {
+                if (paren_depth == 0) {
+                    int j = i + 1;
+                    while (isspace(P->lexer->src[P->lexer->pos + j])) j++;
+                    if (P->lexer->src[P->lexer->pos + j] == '=' && P->lexer->src[P->lexer->pos + j + 1] == '>') {
+                        is_arrow = true;
+                    }
+                    break;
+                }
+                paren_depth--;
+            }
+            i++;
+        }
+
+        if (is_arrow) {
+            return parse_arrow_function(P);
+        }
+
         next(P);
         Node *n = parse_expr(P);
         if (P->current.kind == TOKEN_RPAREN)
             next(P);
         return n;
     }
+
     return NULL;
 }
-
 static Node *parse_template_declaration(Parser *P)
 {
     if (P->current.kind != TOKEN_LESS)
@@ -2021,7 +2079,7 @@ static Node *parse_use(Parser *P) {
     next(P);
     return n;
 }
-static Node *parse_extension_def(Parser *P) {
+ Node *parse_extension_def(Parser *P) {
     next(P); 
     
     if (P->current.kind != TOKEN_IDENT) {
@@ -2266,6 +2324,7 @@ static Node *parse_match_stmt(Parser *P)
     n->right = cases_head;
     return n;
 }
+
 
 static Node *parse_interface_def(Parser *P)
 {
