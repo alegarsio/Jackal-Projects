@@ -1,11 +1,18 @@
 import std.orm.Query.QueryComponent
-import std.orm.Entity.BasicEntity
-import std.orm.Entity.Abstract.TableEntityAbstract
-import std.mysql.OrderBuilder
-import std.mysql.WhereBuilder
 import std.orm.BaseModel.Model
 
+import std.orm.Entity.BasicEntity
+import std.orm.Entity.Abstract.TableEntityAbstract
+
+import std.mysql.OrderBuilder
+import std.mysql.WhereBuilder
+
 class Model : BaseModel {}
+
+const String = "string"
+const Primary = "primary"
+const Int = "int"
+
 
 class Table : Entity , TableEntityAbstractMethod {
 
@@ -39,7 +46,7 @@ class Table : Entity , TableEntityAbstractMethod {
         return this
     }
 
-    func get() {
+    func collect() {
         let sql = "SELECT " + this.selectedColumns + 
                   " FROM " + this.tableName + 
                   this.whereClause + 
