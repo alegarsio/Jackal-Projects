@@ -199,10 +199,12 @@ Value builtin_array_sort(int argCount, Value *args)
     return (Value){VAL_ARRAY, {.array = new_arr}};
 }
 
+
 void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
     ARRAY_REGISTER(env,"__array_anyMatch",builtin_array_anyMatch);
     ARRAY_REGISTER(env,"__array_map",builtin_array_map);
     ARRAY_REGISTER(env,"__array_filter",builtin_array_filter);
     ARRAY_REGISTER(env,"__array_reduce",builtin_array_reduce);
+    ARRAY_REGISTER(env,"__array_sort",builtin_array_sort);
 }
