@@ -168,4 +168,5 @@ void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_anyMatch",builtin_array_anyMatch);
     ARRAY_REGISTER(env,"__array_map",builtin_array_map);
     ARRAY_REGISTER(env,"__array_filter",builtin_array_filter);
+    ARRAY_REGISTER(env,"__array_reduce",builtin_array_reduce);
 }
