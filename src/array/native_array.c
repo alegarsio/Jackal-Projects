@@ -199,6 +199,39 @@ Value builtin_array_sort(int argCount, Value *args)
     return (Value){VAL_ARRAY, {.array = new_arr}};
 }
 
+Value builtin_array_mean(int argCount, Value *args)
+{
+    if (args == NULL)
+        return (Value){VAL_NIL, {0}};
+
+    Value receiver = args[-1];
+    if (receiver.type != VAL_ARRAY)
+        return (Value){VAL_NIL, {0}};
+
+    ValueArray *arr = receiver.as.array;
+    if (arr == NULL || arr->values == NULL)
+        return (Value){VAL_NIL, {0}};
+
+    double sum = 0;
+    int count = 0;
+    for (int i = 0; i < arr->count; i++)
+    {
+        if (arr->values[i].type == VAL_NUMBER)
+        {
+            sum += arr->values[i].as.number;
+            count++;
+        }
+    }
+
+    double result = (count > 0) ? (sum / count) : 0;
+
+    ValueArray *resArr = array_new();
+    array_append(resArr, (Value){VAL_NUMBER, {.number = result}});
+
+    return (Value){VAL_ARRAY, {.array = resArr}};
+}
+
+
 
 void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
