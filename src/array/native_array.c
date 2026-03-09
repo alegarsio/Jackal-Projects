@@ -125,6 +125,44 @@ Value builtin_array_filter(int argCount, Value *args)
 
     return (Value){VAL_ARRAY, {.array = new_arr}};
 }
+
+Value builtin_array_reduce(int argCount, Value *args)
+{
+    if (argCount < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
+    {
+        print_error("reduce() expects at least (Array, Callback).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *arr = args[0].as.array;
+    Value callback = args[1];
+    Value accumulator;
+    int start_index = 0;
+
+    if (argCount == 3)
+    {
+        accumulator = copy_value(args[2]);
+        start_index = 0;
+    }
+    else
+    {
+        if (arr->count == 0)
+            return (Value){VAL_NIL, {0}};
+        accumulator = copy_value(arr->values[0]);
+        start_index = 1;
+    }
+
+    for (int i = start_index; i < arr->count; i++)
+    {
+        Value cb_args[2] = {accumulator, arr->values[i]};
+        Value next_acc = call_jackal_function(NULL, callback, 2, cb_args);
+        free_value(accumulator);
+        accumulator = next_acc;
+    }
+
+    return accumulator;
+}
+
 void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
     ARRAY_REGISTER(env,"__array_anyMatch",builtin_array_anyMatch);
