@@ -163,6 +163,42 @@ Value builtin_array_reduce(int argCount, Value *args)
     return accumulator;
 }
 
+Value builtin_array_sort(int argCount, Value *args)
+{
+    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
+    {
+        print_error("sorted() expects (Array, Callback).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *old_arr = args[0].as.array;
+    ValueArray *new_arr = array_new();
+    for (int i = 0; i < old_arr->count; i++)
+    {
+        array_append(new_arr, copy_value(old_arr->values[i]));
+    }
+
+    for (int i = 0; i < new_arr->count - 1; i++)
+    {
+        for (int j = 0; j < new_arr->count - i - 1; j++)
+        {
+            Value cb_args[2] = {new_arr->values[j], new_arr->values[j + 1]};
+
+            Value result = call_jackal_function(NULL, args[1], 2, cb_args);
+
+            if (result.type == VAL_NUMBER && result.as.number > 0)
+            {
+                Value temp = new_arr->values[j];
+                new_arr->values[j] = new_arr->values[j + 1];
+                new_arr->values[j + 1] = temp;
+            }
+            free_value(result);
+        }
+    }
+
+    return (Value){VAL_ARRAY, {.array = new_arr}};
+}
+
 void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
     ARRAY_REGISTER(env,"__array_anyMatch",builtin_array_anyMatch);
