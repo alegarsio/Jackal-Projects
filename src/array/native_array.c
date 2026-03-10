@@ -278,4 +278,5 @@ void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_reduce",builtin_array_reduce);
     ARRAY_REGISTER(env,"__array_sort",builtin_array_sort);
     ARRAY_REGISTER(env,"__array_mean",builtin_array_mean);
+    ARRAY_REGISTER(env,"__array_max",builtin_array_max);
 }
