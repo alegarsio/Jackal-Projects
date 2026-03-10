@@ -4,7 +4,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
-#include <float.h>
 #include "env.h"
 #include "eval.h"
 
@@ -232,6 +231,44 @@ Value builtin_array_mean(int argCount, Value *args)
 }
 
 
+
+Value builtin_array_max(int argCount, Value *args)
+{
+    if (args == NULL)
+        return (Value){VAL_NIL, {0}};
+
+    Value receiver = args[-1];
+    if (receiver.type != VAL_ARRAY)
+        return (Value){VAL_NIL, {0}};
+
+    ValueArray *arr = receiver.as.array;
+    if (arr == NULL || arr->values == NULL || arr->count == 0)
+        return (Value){VAL_NIL, {0}};
+
+    double maxVal = -1.7976931348623158e+308;
+    int found = 0;
+
+    for (int i = 0; i < arr->count; i++)
+    {
+        if (arr->values[i].type == VAL_NUMBER)
+        {
+            double current = arr->values[i].as.number;
+            if (!found || current > maxVal)
+            {
+                maxVal = current;
+                found = 1;
+            }
+        }
+    }
+
+    if (!found)
+        return (Value){VAL_NIL, {0}};
+
+    ValueArray *resArr = array_new();
+    array_append(resArr, (Value){VAL_NUMBER, {.number = maxVal}});
+
+    return (Value){VAL_ARRAY, {.array = resArr}};
+}
 
 void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
