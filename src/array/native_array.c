@@ -270,6 +270,33 @@ Value builtin_array_max(int argCount, Value *args)
     return (Value){VAL_ARRAY, {.array = resArr}};
 }
 
+Value builtin_array_limit(int argCount, Value *args)
+{
+
+    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_NUMBER)
+    {
+        print_error("limit() requires (Array, Number).");
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *old_arr = args[0].as.array;
+    int limit = (int)args[1].as.number;
+
+    if (limit < 0)
+        limit = 0;
+
+    int count_to_copy = (limit < old_arr->count) ? limit : old_arr->count;
+
+    ValueArray *new_arr = array_new();
+    for (int i = 0; i < count_to_copy; i++)
+    {
+
+        array_append(new_arr, copy_value(old_arr->values[i]));
+    }
+
+    return (Value){VAL_ARRAY, {.array = new_arr}};
+}
+
 void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
     ARRAY_REGISTER(env,"__array_anyMatch",builtin_array_anyMatch);
