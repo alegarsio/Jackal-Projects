@@ -335,4 +335,6 @@ void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_mean",builtin_array_mean);
     ARRAY_REGISTER(env,"__array_max",builtin_array_max);
     ARRAY_REGISTER(env,"__array_limit",builtin_array_limit);
+    ARRAY_REGISTER(env,"__array_to_tree",builtin_array_to_tree);
+    
 }
