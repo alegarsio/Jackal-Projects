@@ -1,16 +1,15 @@
-@final
-const PI : Float = 3.141592653589793
-@final 
+const PI : Float = __math_PI
+
 const E : Float = 2.718281828459045
-@final
+
 const SQRT : Float = 1.414213562373095
-@final
+
 const LN2  : Float  = 0.693147180559945
-@final
+
 const LN10 : Float  = 2.302585092994046
-@final
+
 const INF = 1.0 / 0.0
-@final
+
 const NAN = 0.0 / 0.0
 
 object Math {
