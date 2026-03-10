@@ -297,6 +297,34 @@ Value builtin_array_limit(int argCount, Value *args)
     return (Value){VAL_ARRAY, {.array = new_arr}};
 }
 
+
+Value builtin_array_to_tree(int argCount, Value *args)
+{
+    if (argCount < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_STRING)
+    {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    ValueArray *src = args[0].as.array;
+    char *mode = args[1].as.string;
+    ValueArray *result = array_new();
+
+    if (strcmp(mode, "inorder") == 0)
+    {
+        inorder_traverse_logic(src, result, 0);
+    }
+    else if (strcmp(mode, "preorder") == 0)
+    {
+        preorder_traverse_logic(src, result, 0);
+    }
+    else if (strcmp(mode, "postorder") == 0)
+    {
+        postorder_traverse_logic(src, result, 0);
+    }
+
+    return (Value){VAL_ARRAY, {.array = result}};
+}
+
 void register_array_natives(Env *env){
     ARRAY_REGISTER(env,"__array_distinct",builtin_array_distinct);
     ARRAY_REGISTER(env,"__array_anyMatch",builtin_array_anyMatch);
