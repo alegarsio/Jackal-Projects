@@ -1,0 +1,13 @@
+class BasicVector2 {
+    init(x, y) {
+        this.x = x
+        this.y = y
+    }
+
+    func add(v) {
+        let newX = this.x + v.x
+        let newY = this.y + v.y
+        
+        return BasicVector2(newX, newY)
+    }
+}
