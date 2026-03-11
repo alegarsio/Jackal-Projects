@@ -4,17 +4,11 @@ class BasicVector2 {
         this.y = y
     }
 
-    func dot(v : BasicVector2) {
-       let newx = this.x * v.x
-       let newy = this.y * v.y
+    func dot(v : BasicVector2) -> BasicVector2 = 
+        BasicVector2((this.x * v.x), (this.y * v.y))
 
-       return BasicVector2(newx , newy)
-    }
+    func add(v : BasicVector2) -> BasicVector2 = 
+        BasicVector2((this.x + v.x) , (this.y + v.y))
 
-    func add(v) {
-        let newX = this.x + v.x
-        let newY = this.y + v.y
-        
-        return BasicVector2(newX, newY)
-    }
+    
 }
