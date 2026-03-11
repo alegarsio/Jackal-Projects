@@ -1,3 +1,5 @@
+import std.math.vector.BasicVector2
+
 const PI : Float = __math_PI
 
 const E : Float = 2.718281828459045
@@ -11,6 +13,7 @@ const LN10 : Float  = 2.302585092994046
 const INF = 1.0 / 0.0
 
 const NAN = 0.0 / 0.0
+
 
 object Math {
     func abs(n : Int) -> Number = 
@@ -50,4 +53,14 @@ object Math {
     func isNan(n) -> Boolean = 
         __math_isnan(n) or throw "Error"
 
+}
+
+class Vector2 : BasicVector2 {
+    func normalize(){
+        let mag = Math.sqrt(this.x * this.x + this.y * this.y)
+        if (mag > 0) {
+            return Vector2(this.x / mag, this.y / mag)
+        }
+        return Vector2(0, 0)
+    }
 }
