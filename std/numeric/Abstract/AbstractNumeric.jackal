@@ -1,0 +1,6 @@
+trait AbstractNumericMethod{
+    func add() ;
+    func dot() ;
+    func sub() ;
+    func dev() ;
+}
