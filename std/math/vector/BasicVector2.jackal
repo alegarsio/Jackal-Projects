@@ -14,7 +14,8 @@ class BasicVector2 : Coordinate , AbstractNumericMethod {
     @override
     func sub(v : BasicVector2) -> BasicVector2 = 
         BasicVector2((this.x - v.x) , (this.y - v.y))
-    
+
+    @override
     func dev(v : BasicVector2) -> BasicVector2 = 
         BasicVector2((this.x / v.x), (this.y / v.y))
 
