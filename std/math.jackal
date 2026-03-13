@@ -56,7 +56,11 @@ object Math {
 }
 
 class Vector2 : BasicVector2 {
-    func normalize(){
+
+    func length() -> Number = 
+        Math.sqrt((this.x * this.x) + (this.y * this.y))
+        
+    func normalize() -> Vector {
         let mag = Math.sqrt(this.x * this.x + this.y * this.y)
         if (mag > 0) {
             return Vector2(this.x / mag, this.y / mag)
