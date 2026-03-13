@@ -408,7 +408,7 @@ void print_error(const char *format, ...);
  */
 typedef struct {
     TokenKind kind;
-    char text[64];
+    char text[1024];
     double number;
 } Token;
 

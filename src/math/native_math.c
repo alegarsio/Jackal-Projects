@@ -13,6 +13,7 @@
         } \
     } while (0)
 
+
 Value native_math_abs(int arg_count, Value* args) {
     if (arg_count < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NUMBER, {.number = 0}};
     return (Value){VAL_NUMBER, {.number = fabs(args[0].as.number)}};

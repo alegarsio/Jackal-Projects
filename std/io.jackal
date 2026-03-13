@@ -12,11 +12,11 @@
  * @param b with typeof number of Int
 **/
 
-@static
 func range(a : Int , b : Int) -> Array
     return a..b
 
-object input{
+
+object input(){
     func string(prompt : String) -> None = 
         __io_string(prompt) or "Error"
     func number(prompt : String) -> None = 
@@ -30,7 +30,7 @@ object input{
  * console object represents the std out function e.g., flush output
  * @author Alegrarsio Gifta Lesmana
 **/
-object print(){
+object console(){
 
     @deprecated
     func writeln(value) {

@@ -7,4 +7,6 @@
 
 void register_json_natives(Env* env);
 
+Value native_json_parse(int arity, Value *args);
+
 #endif

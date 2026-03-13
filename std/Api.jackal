@@ -1,23 +1,26 @@
 import std.http.Router.StaticRouter
 import std.http.Abstract.RouterAbstractMethod
-import std.SnapEngine.ViewEngine.core
 import std.http.response
+/**
+ * SnapEngine Core 
+**/
 import std.SnapEngine.middleware.Guard
+import std.SnapEngine.ViewEngine.core
 
 class Auth : Guard {
     func auth(req) {
-        let token = req["body"]["token"]
-        
+        let body = req["body"]
+        let token = body["token"]
         if (token != this.secret) {
-            return {
-                "status": 401,
-                "error": "Token Salah atau Tidak Terdaftar!"
-            }
+        return {
+            "status": 401,
+            "error": "Akses Ditolak: Token Salah!"
         }
-        
-        req["user_id"] = 100
-        return nil
     }
+    
+    return nil
+    }
+    
 }
 
 func render(req, file, data) = 

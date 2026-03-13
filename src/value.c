@@ -234,7 +234,7 @@ void print_value(Value value)
             print_value(value.as.array->values[i]);
             if (i < value.as.array->count - 1)
             {
-                printf(","); // Hanya koma, tanpa spasi ekstra agar bersih
+                printf(","); 
             }
         }
     
@@ -295,7 +295,6 @@ void free_value(Value value)
     switch (value.type)
     {
     case VAL_STRING:
-        free(value.as.string);
         break;
     case VAL_FUNCTION:
         free(value.as.function);
@@ -628,7 +627,7 @@ static Entry *find_entry(Entry *entries, int capacity, const char *key)
         if (entry->key == NULL)
         {
             if (entry->value.type == VAL_NIL)
-                return entry; // Empty found
+                return entry; 
         }
         else if (strcmp(entry->key, key) == 0)
         {
@@ -1103,211 +1102,211 @@ Value builtin_map_values(int argCount, Value *args)
     return (Value){VAL_ARRAY, {.array = values_array}};
 }
 
-Value builtin_array_distinct(int argCount, Value *args)
-{
-    if (argCount != 1 || args[0].type != VAL_ARRAY)
-    {
-        print_error("distinct() requires an Array.");
-        return (Value){VAL_NIL, {0}};
-    }
+// Value builtin_array_distinct(int argCount, Value *args)
+// {
+//     if (argCount != 1 || args[0].type != VAL_ARRAY)
+//     {
+//         print_error("distinct() requires an Array.");
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    ValueArray *old_arr = args[0].as.array;
-    ValueArray *new_arr = array_new();
+//     ValueArray *old_arr = args[0].as.array;
+//     ValueArray *new_arr = array_new();
 
-    for (int i = 0; i < old_arr->count; i++)
-    {
-        bool is_dup = false;
-        for (int j = 0; j < new_arr->count; j++)
-        {
-            Value eq = eval_equals(old_arr->values[i], new_arr->values[j]);
-            if (eq.as.number == 1.0)
-            {
-                is_dup = true;
-                break;
-            }
-        }
-        if (!is_dup)
-        {
-            array_append(new_arr, copy_value(old_arr->values[i]));
-        }
-    }
-    return (Value){VAL_ARRAY, {.array = new_arr}};
-}
+//     for (int i = 0; i < old_arr->count; i++)
+//     {
+//         bool is_dup = false;
+//         for (int j = 0; j < new_arr->count; j++)
+//         {
+//             Value eq = eval_equals(old_arr->values[i], new_arr->values[j]);
+//             if (eq.as.number == 1.0)
+//             {
+//                 is_dup = true;
+//                 break;
+//             }
+//         }
+//         if (!is_dup)
+//         {
+//             array_append(new_arr, copy_value(old_arr->values[i]));
+//         }
+//     }
+//     return (Value){VAL_ARRAY, {.array = new_arr}};
+// }
 
-Value builtin_array_anyMatch(int argCount, Value *args)
-{
-    if (argCount != 2 || args[0].type != VAL_ARRAY)
-    {
-        print_error("anyMatch() requires 2 arguments: (Array, Callback).");
-        return (Value){VAL_NUMBER, {.number = 0.0}};
-    }
+// Value builtin_array_anyMatch(int argCount, Value *args)
+// {
+//     if (argCount != 2 || args[0].type != VAL_ARRAY)
+//     {
+//         print_error("anyMatch() requires 2 arguments: (Array, Callback).");
+//         return (Value){VAL_NUMBER, {.number = 0.0}};
+//     }
 
-    ValueArray *arr = args[0].as.array;
-    Value callback = args[1];
+//     ValueArray *arr = args[0].as.array;
+//     Value callback = args[1];
 
-    for (int i = 0; i < arr->count; i++)
-    {
-        Value current_val = arr->values[i];
+//     for (int i = 0; i < arr->count; i++)
+//     {
+//         Value current_val = arr->values[i];
 
-        Value res = call_jackal_function(NULL, callback, 1, &current_val);
+//         Value res = call_jackal_function(NULL, callback, 1, &current_val);
 
-        if (is_value_truthy(res))
-        {
-            free_value(res);
-            return (Value){VAL_NUMBER, {.number = 1.0}};
-        }
-        free_value(res);
-    }
-    return (Value){VAL_NUMBER, {.number = 0.0}};
-}
+//         if (is_value_truthy(res))
+//         {
+//             free_value(res);
+//             return (Value){VAL_NUMBER, {.number = 1.0}};
+//         }
+//         free_value(res);
+//     }
+//     return (Value){VAL_NUMBER, {.number = 0.0}};
+// }
 
-Value builtin_array_map(int argCount, Value *args)
-{
-    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
-    {
-        print_error("map() expects (Array, Callback).");
-        return (Value){VAL_NIL, {0}};
-    }
+// Value builtin_array_map(int argCount, Value *args)
+// {
+//     if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
+//     {
+//         print_error("map() expects (Array, Callback).");
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    ValueArray *old_arr = args[0].as.array;
-    Value callback = args[1];
-    ValueArray *new_arr = array_new();
+//     ValueArray *old_arr = args[0].as.array;
+//     Value callback = args[1];
+//     ValueArray *new_arr = array_new();
 
-    for (int i = 0; i < old_arr->count; i++)
-    {
-        Value arg = old_arr->values[i];
-        Value new_val = call_jackal_function(NULL, callback, 1, &arg);
-        array_append(new_arr, new_val);
-    }
+//     for (int i = 0; i < old_arr->count; i++)
+//     {
+//         Value arg = old_arr->values[i];
+//         Value new_val = call_jackal_function(NULL, callback, 1, &arg);
+//         array_append(new_arr, new_val);
+//     }
 
-    return (Value){VAL_ARRAY, {.array = new_arr}};
-}
+//     return (Value){VAL_ARRAY, {.array = new_arr}};
+// }
 
-Value builtin_array_filter(int argCount, Value *args)
-{
-    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
-    {
-        print_error("filter() expects (Array, Callback).");
-        return (Value){VAL_NIL, {0}};
-    }
+// Value builtin_array_filter(int argCount, Value *args)
+// {
+//     if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
+//     {
+//         print_error("filter() expects (Array, Callback).");
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    ValueArray *old_arr = args[0].as.array;
-    Value callback = args[1];
-    ValueArray *new_arr = array_new();
+//     ValueArray *old_arr = args[0].as.array;
+//     Value callback = args[1];
+//     ValueArray *new_arr = array_new();
 
-    for (int i = 0; i < old_arr->count; i++)
-    {
-        Value arg = old_arr->values[i];
-        Value result = call_jackal_function(NULL, callback, 1, &arg);
-        if (is_value_truthy(result))
-        {
-            array_append(new_arr, copy_value(arg));
-        }
-        free_value(result);
-    }
+//     for (int i = 0; i < old_arr->count; i++)
+//     {
+//         Value arg = old_arr->values[i];
+//         Value result = call_jackal_function(NULL, callback, 1, &arg);
+//         if (is_value_truthy(result))
+//         {
+//             array_append(new_arr, copy_value(arg));
+//         }
+//         free_value(result);
+//     }
 
-    return (Value){VAL_ARRAY, {.array = new_arr}};
-}
+//     return (Value){VAL_ARRAY, {.array = new_arr}};
+// }
 
-Value builtin_array_reduce(int argCount, Value *args)
-{
-    if (argCount < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
-    {
-        print_error("reduce() expects at least (Array, Callback).");
-        return (Value){VAL_NIL, {0}};
-    }
+// Value builtin_array_reduce(int argCount, Value *args)
+// {
+//     if (argCount < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
+//     {
+//         print_error("reduce() expects at least (Array, Callback).");
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    ValueArray *arr = args[0].as.array;
-    Value callback = args[1];
-    Value accumulator;
-    int start_index = 0;
+//     ValueArray *arr = args[0].as.array;
+//     Value callback = args[1];
+//     Value accumulator;
+//     int start_index = 0;
 
-    if (argCount == 3)
-    {
-        accumulator = copy_value(args[2]);
-        start_index = 0;
-    }
-    else
-    {
-        if (arr->count == 0)
-            return (Value){VAL_NIL, {0}};
-        accumulator = copy_value(arr->values[0]);
-        start_index = 1;
-    }
+//     if (argCount == 3)
+//     {
+//         accumulator = copy_value(args[2]);
+//         start_index = 0;
+//     }
+//     else
+//     {
+//         if (arr->count == 0)
+//             return (Value){VAL_NIL, {0}};
+//         accumulator = copy_value(arr->values[0]);
+//         start_index = 1;
+//     }
 
-    for (int i = start_index; i < arr->count; i++)
-    {
-        Value cb_args[2] = {accumulator, arr->values[i]};
-        Value next_acc = call_jackal_function(NULL, callback, 2, cb_args);
-        free_value(accumulator);
-        accumulator = next_acc;
-    }
+//     for (int i = start_index; i < arr->count; i++)
+//     {
+//         Value cb_args[2] = {accumulator, arr->values[i]};
+//         Value next_acc = call_jackal_function(NULL, callback, 2, cb_args);
+//         free_value(accumulator);
+//         accumulator = next_acc;
+//     }
 
-    return accumulator;
-}
+//     return accumulator;
+// }
 
-Value builtin_array_sort(int argCount, Value *args)
-{
-    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
-    {
-        print_error("sorted() expects (Array, Callback).");
-        return (Value){VAL_NIL, {0}};
-    }
+// Value builtin_array_sort(int argCount, Value *args)
+// {
+//     if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_FUNCTION)
+//     {
+//         print_error("sorted() expects (Array, Callback).");
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    ValueArray *old_arr = args[0].as.array;
-    ValueArray *new_arr = array_new();
-    for (int i = 0; i < old_arr->count; i++)
-    {
-        array_append(new_arr, copy_value(old_arr->values[i]));
-    }
+//     ValueArray *old_arr = args[0].as.array;
+//     ValueArray *new_arr = array_new();
+//     for (int i = 0; i < old_arr->count; i++)
+//     {
+//         array_append(new_arr, copy_value(old_arr->values[i]));
+//     }
 
-    for (int i = 0; i < new_arr->count - 1; i++)
-    {
-        for (int j = 0; j < new_arr->count - i - 1; j++)
-        {
-            Value cb_args[2] = {new_arr->values[j], new_arr->values[j + 1]};
+//     for (int i = 0; i < new_arr->count - 1; i++)
+//     {
+//         for (int j = 0; j < new_arr->count - i - 1; j++)
+//         {
+//             Value cb_args[2] = {new_arr->values[j], new_arr->values[j + 1]};
 
-            Value result = call_jackal_function(NULL, args[1], 2, cb_args);
+//             Value result = call_jackal_function(NULL, args[1], 2, cb_args);
 
-            if (result.type == VAL_NUMBER && result.as.number > 0)
-            {
-                Value temp = new_arr->values[j];
-                new_arr->values[j] = new_arr->values[j + 1];
-                new_arr->values[j + 1] = temp;
-            }
-            free_value(result);
-        }
-    }
+//             if (result.type == VAL_NUMBER && result.as.number > 0)
+//             {
+//                 Value temp = new_arr->values[j];
+//                 new_arr->values[j] = new_arr->values[j + 1];
+//                 new_arr->values[j + 1] = temp;
+//             }
+//             free_value(result);
+//         }
+//     }
 
-    return (Value){VAL_ARRAY, {.array = new_arr}};
-}
+//     return (Value){VAL_ARRAY, {.array = new_arr}};
+// }
 
-Value builtin_array_limit(int argCount, Value *args)
-{
+// Value builtin_array_limit(int argCount, Value *args)
+// {
 
-    if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_NUMBER)
-    {
-        print_error("limit() requires (Array, Number).");
-        return (Value){VAL_NIL, {0}};
-    }
+//     if (argCount != 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_NUMBER)
+//     {
+//         print_error("limit() requires (Array, Number).");
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    ValueArray *old_arr = args[0].as.array;
-    int limit = (int)args[1].as.number;
+//     ValueArray *old_arr = args[0].as.array;
+//     int limit = (int)args[1].as.number;
 
-    if (limit < 0)
-        limit = 0;
+//     if (limit < 0)
+//         limit = 0;
 
-    int count_to_copy = (limit < old_arr->count) ? limit : old_arr->count;
+//     int count_to_copy = (limit < old_arr->count) ? limit : old_arr->count;
 
-    ValueArray *new_arr = array_new();
-    for (int i = 0; i < count_to_copy; i++)
-    {
+//     ValueArray *new_arr = array_new();
+//     for (int i = 0; i < count_to_copy; i++)
+//     {
 
-        array_append(new_arr, copy_value(old_arr->values[i]));
-    }
+//         array_append(new_arr, copy_value(old_arr->values[i]));
+//     }
 
-    return (Value){VAL_ARRAY, {.array = new_arr}};
-}
+//     return (Value){VAL_ARRAY, {.array = new_arr}};
+// }
 
 Value builtin_os_platform(int argCount, Value *args)
 {
@@ -1377,75 +1376,75 @@ Value builtin_map_get(int argCount, Value *args)
 
     return (Value){VAL_NIL, {0}};
 }
-Value builtin_array_mean(int argCount, Value *args)
-{
-    if (args == NULL)
-        return (Value){VAL_NIL, {0}};
+// Value builtin_array_mean(int argCount, Value *args)
+// {
+//     if (args == NULL)
+//         return (Value){VAL_NIL, {0}};
 
-    Value receiver = args[-1];
-    if (receiver.type != VAL_ARRAY)
-        return (Value){VAL_NIL, {0}};
+//     Value receiver = args[-1];
+//     if (receiver.type != VAL_ARRAY)
+//         return (Value){VAL_NIL, {0}};
 
-    ValueArray *arr = receiver.as.array;
-    if (arr == NULL || arr->values == NULL)
-        return (Value){VAL_NIL, {0}};
+//     ValueArray *arr = receiver.as.array;
+//     if (arr == NULL || arr->values == NULL)
+//         return (Value){VAL_NIL, {0}};
 
-    double sum = 0;
-    int count = 0;
-    for (int i = 0; i < arr->count; i++)
-    {
-        if (arr->values[i].type == VAL_NUMBER)
-        {
-            sum += arr->values[i].as.number;
-            count++;
-        }
-    }
+//     double sum = 0;
+//     int count = 0;
+//     for (int i = 0; i < arr->count; i++)
+//     {
+//         if (arr->values[i].type == VAL_NUMBER)
+//         {
+//             sum += arr->values[i].as.number;
+//             count++;
+//         }
+//     }
 
-    double result = (count > 0) ? (sum / count) : 0;
+//     double result = (count > 0) ? (sum / count) : 0;
 
-    ValueArray *resArr = array_new();
-    array_append(resArr, (Value){VAL_NUMBER, {.number = result}});
+//     ValueArray *resArr = array_new();
+//     array_append(resArr, (Value){VAL_NUMBER, {.number = result}});
 
-    return (Value){VAL_ARRAY, {.array = resArr}};
-}
+//     return (Value){VAL_ARRAY, {.array = resArr}};
+// }
 
-Value builtin_array_max(int argCount, Value *args)
-{
-    if (args == NULL)
-        return (Value){VAL_NIL, {0}};
+// Value builtin_array_max(int argCount, Value *args)
+// {
+//     if (args == NULL)
+//         return (Value){VAL_NIL, {0}};
 
-    Value receiver = args[-1];
-    if (receiver.type != VAL_ARRAY)
-        return (Value){VAL_NIL, {0}};
+//     Value receiver = args[-1];
+//     if (receiver.type != VAL_ARRAY)
+//         return (Value){VAL_NIL, {0}};
 
-    ValueArray *arr = receiver.as.array;
-    if (arr == NULL || arr->values == NULL || arr->count == 0)
-        return (Value){VAL_NIL, {0}};
+//     ValueArray *arr = receiver.as.array;
+//     if (arr == NULL || arr->values == NULL || arr->count == 0)
+//         return (Value){VAL_NIL, {0}};
 
-    double maxVal = -1.7976931348623158e+308;
-    int found = 0;
+//     double maxVal = -1.7976931348623158e+308;
+//     int found = 0;
 
-    for (int i = 0; i < arr->count; i++)
-    {
-        if (arr->values[i].type == VAL_NUMBER)
-        {
-            double current = arr->values[i].as.number;
-            if (!found || current > maxVal)
-            {
-                maxVal = current;
-                found = 1;
-            }
-        }
-    }
+//     for (int i = 0; i < arr->count; i++)
+//     {
+//         if (arr->values[i].type == VAL_NUMBER)
+//         {
+//             double current = arr->values[i].as.number;
+//             if (!found || current > maxVal)
+//             {
+//                 maxVal = current;
+//                 found = 1;
+//             }
+//         }
+//     }
 
-    if (!found)
-        return (Value){VAL_NIL, {0}};
+//     if (!found)
+//         return (Value){VAL_NIL, {0}};
 
-    ValueArray *resArr = array_new();
-    array_append(resArr, (Value){VAL_NUMBER, {.number = maxVal}});
+//     ValueArray *resArr = array_new();
+//     array_append(resArr, (Value){VAL_NUMBER, {.number = maxVal}});
 
-    return (Value){VAL_ARRAY, {.array = resArr}};
-}
+//     return (Value){VAL_ARRAY, {.array = resArr}};
+// }
 static Value cjsonToJackal(cJSON *item)
 {
     Value val;
@@ -1861,32 +1860,32 @@ void postorder_traverse_logic(ValueArray *source, ValueArray *dest, int index)
     array_append(dest, copy_value(source->values[index]));
 }
 
-Value builtin_array_to_tree(int argCount, Value *args)
-{
-    if (argCount < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_STRING)
-    {
-        return (Value){VAL_NIL, {0}};
-    }
+// Value builtin_array_to_tree(int argCount, Value *args)
+// {
+//     if (argCount < 2 || args[0].type != VAL_ARRAY || args[1].type != VAL_STRING)
+//     {
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    ValueArray *src = args[0].as.array;
-    char *mode = args[1].as.string;
-    ValueArray *result = array_new();
+//     ValueArray *src = args[0].as.array;
+//     char *mode = args[1].as.string;
+//     ValueArray *result = array_new();
 
-    if (strcmp(mode, "inorder") == 0)
-    {
-        inorder_traverse_logic(src, result, 0);
-    }
-    else if (strcmp(mode, "preorder") == 0)
-    {
-        preorder_traverse_logic(src, result, 0);
-    }
-    else if (strcmp(mode, "postorder") == 0)
-    {
-        postorder_traverse_logic(src, result, 0);
-    }
+//     if (strcmp(mode, "inorder") == 0)
+//     {
+//         inorder_traverse_logic(src, result, 0);
+//     }
+//     else if (strcmp(mode, "preorder") == 0)
+//     {
+//         preorder_traverse_logic(src, result, 0);
+//     }
+//     else if (strcmp(mode, "postorder") == 0)
+//     {
+//         postorder_traverse_logic(src, result, 0);
+//     }
 
-    return (Value){VAL_ARRAY, {.array = result}};
-}
+//     return (Value){VAL_ARRAY, {.array = result}};
+// }
 
 Value native_plot(int arg_count, Value *args)
 {

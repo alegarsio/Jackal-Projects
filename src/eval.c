@@ -433,7 +433,9 @@ Value eval_node(Env *env, Node *n)
     case NODE_FUNC_EXPR:
     {
         Func *func = jackal_allocate_gc(sizeof(Func));
+        
         strcpy(func->return_type, n->return_type);
+        
         func->params_head = n->left;
         func->body_head = n->right;
         func->env = env;
@@ -905,42 +907,41 @@ Value eval_node(Env *env, Node *n)
         return copy_value(v->value);
     }
 
-    case NODE_ASSIGN:
+  case NODE_ASSIGN:
+{
+    Var *v = find_var(env, n->name);
+
+    if (v == NULL)
     {
-        Var *v = find_var(env, n->name);
-
-        if (v == NULL)
-        {
-            print_error("Runtime Error: Variable '%s' is not defined.", n->name);
-            return (Value){VAL_NIL, {0}};
-        }
-
-        if (v->is_final || v->is_const)
-        {
-            print_error("Fatal Error: Variable '%s' is marked @final or const and cannot be modified.", n->name);
-            return (Value){VAL_NIL, {0}};
-        }
-
-        Value val = eval_node(env, n->left);
-
-        if (v->expected_type[0] != '\0')
-        {
-            const char *actual_type = get_value_type_name(val);
-            if (strcmp(v->expected_type, actual_type) != 0)
-            {
-                print_error("Type Mismatch: Cannot assign '%s' to variable '%s' of type '%s'",
-                            actual_type, v->name, v->expected_type);
-                free_value(val);
-                return (Value){VAL_NIL, {0}};
-            }
-        }
-
-        free_value(v->value);
-        v->value = copy_value(val);
-
-        return v->value;
+        print_error("Runtime Error: Variable '%s' is not defined.", n->name);
+        return (Value){VAL_NIL, {0}};
     }
 
+    if (v->is_final || v->is_const)
+    {
+        print_error("Fatal Error: Variable '%s' is marked @final or const and cannot be modified.", n->name);
+        return (Value){VAL_NIL, {0}};
+    }
+
+    Value val = eval_node(env, n->right);
+
+    if (v->expected_type[0] != '\0')
+    {
+        const char *actual_type = get_value_type_name(val);
+        if (strcmp(v->expected_type, actual_type) != 0)
+        {
+            print_error("Type Mismatch: Cannot assign '%s' to variable '%s' of type '%s'",
+                        actual_type, v->name, v->expected_type);
+            free_value(val);
+            return (Value){VAL_NIL, {0}};
+        }
+    }
+
+    free_value(v->value);
+    v->value = copy_value(val);
+
+    return v->value;
+}
     case NODE_CONSTDECL:
     {
         Value val = eval_node(env, n->right);
@@ -2023,7 +2024,6 @@ Value eval_node(Env *env, Node *n)
                         return (Value){VAL_NIL, {0}, NULL};
                     }
 
-                    // Ambil fungsi callback-nya
                     Value callback = eval_node(env, n->right);
 
                     if (callback.type != VAL_FUNCTION && callback.type != VAL_NATIVE)
@@ -2036,11 +2036,9 @@ Value eval_node(Env *env, Node *n)
                     ValueArray *array = obj.as.array;
                     for (int i = 0; i < array->count; i++)
                     {
-                        // Siapkan argumen untuk callback (isi elemen array saat ini)
                         Value args[1] = {array->values[i]};
 
-                        // Panggil fungsi callback tersebut
-                        // Asumsi kamu punya fungsi call_function(env, function, arg_count, args)
+                        
                         Value result = call_jackal_function(env, callback, 1, args);
 
                         free_value(result);
@@ -2058,7 +2056,6 @@ Value eval_node(Env *env, Node *n)
                         return (Value){VAL_BOOL, {.boolean = 0}};
                     }
 
-                    // Ambil nilai yang dicari (misal: path rute)
                     Value search_val = eval_node(env, n->right);
 
                     if (search_val.type != VAL_STRING)
@@ -2073,7 +2070,6 @@ Value eval_node(Env *env, Node *n)
 
                     for (int i = 0; i < array->count; i++)
                     {
-                        // Bandingkan string di dalam array dengan string yang dicari
                         if (array->values[i].type == VAL_STRING)
                         {
                             if (strcmp(array->values[i].as.string, search_val.as.string) == 0)

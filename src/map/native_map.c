@@ -71,4 +71,5 @@ Value native_map_keys(int arity, Value* args) {
 void register_map_natives(Env *env){
         MAP_REGISTER(env, "__map_set_manual__", native_map_set_manual);
         MAP_REGISTER(env, "__map_init_manual__", native_map_init_manual);
+        MAP_REGISTER(env, "__map_key_manual__", native_map_init_manual);
 }

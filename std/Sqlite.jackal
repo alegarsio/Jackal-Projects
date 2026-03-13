@@ -7,7 +7,7 @@ import std.Sqlite.OrderBuilder
 /**
  * JackQlite lightweight ORM is the part of jackal ecosystem that allows jackal for comunicate with sqlite database
  * @author Alegrarsio gifta lesmana 
-**/
+**/x
 
 class Table : Entity , TableEntityAbstractMethod{
 

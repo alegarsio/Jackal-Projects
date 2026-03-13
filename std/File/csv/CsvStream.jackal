@@ -1,6 +1,7 @@
 import std.File.Abstract.FileAbstractMethod
 
 class CsvStream , FileAbstractMethod{
+    
 init(path : String){
         this.path = path
         this.seperate = ","

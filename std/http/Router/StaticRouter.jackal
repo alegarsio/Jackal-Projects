@@ -4,6 +4,7 @@ class StaticRouter{
         this.pats = []
         this.middlewares = {}
         this.current_prefix = ""
+        this.lastPath = ""
     }
 }
 

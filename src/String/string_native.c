@@ -186,5 +186,5 @@ void register_string_natives(Env* env) {
     STRING_REGISTER(env, "__str_contains", native_string_contains);
     STRING_REGISTER(env, "__str_replace", native_string_replace);
     STRING_REGISTER(env, "__str_trim", native_string_trim);
-    
+    STRING_REGISTER(env,"__str_contains__",native_string_contains);
 }

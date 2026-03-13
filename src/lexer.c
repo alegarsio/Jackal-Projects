@@ -180,6 +180,8 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_STEP;
         else if (strcmp(tk.text, "break") == 0)
             tk.kind = TOKEN_BREAK;
+        // else if (strcmp(tk.text,"type") == 0)
+        //     tk.kind = TOKEN_TYPE;
         else if (strcmp(tk.text, "continue") == 0)
             tk.kind = TOKEN_CONTINUE;
         else if (strcmp(tk.text, "when") == 0)
@@ -218,8 +220,6 @@ Token lexer_next(Lexer *L)
             tk.kind = TOKEN_WHERE;
         else if (strcmp(tk.text,"pack") == 0)
             tk.kind = TOKEN_PACK;
-        else if (strcmp(tk.text,"use") == 0)
-            tk.kind = TOKEN_USE;
         else if (strcmp(tk.text,"any") == 0)
             tk.kind = TOKEN_ANY;
         else if (strcmp(tk.text,"with") == 0)

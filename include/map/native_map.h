@@ -5,5 +5,5 @@
 #include "env.h"
 #include "value.h"
 
-void register_map_native(Env* env);
+void register_map_natives(Env* env);
 #endif

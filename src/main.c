@@ -551,25 +551,25 @@ Value builtin_jackal_sleep(int argCount, Value *args)
  * (Beta)
  */
 
-Value builtin_math_sqrt(int argCount, Value *args)
-{
-    if (argCount != 1 || args[0].type != VAL_NUMBER)
-    {
-        print_error("sqrt() requires one number argument.");
-        return (Value){VAL_NIL, {0}};
-    }
-    return (Value){VAL_NUMBER, {.number = sqrt(args[0].as.number)}};
-}
+// Value builtin_math_sqrt(int argCount, Value *args)
+// {
+//     if (argCount != 1 || args[0].type != VAL_NUMBER)
+//     {
+//         print_error("sqrt() requires one number argument.");
+//         return (Value){VAL_NIL, {0}};
+//     }
+//     return (Value){VAL_NUMBER, {.number = sqrt(args[0].as.number)}};
+// }
 
-Value builtin_math_pow(int argCount, Value *args)
-{
-    if (argCount != 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_NUMBER)
-    {
-        print_error("pow() requires two number arguments (base, exponent).");
-        return (Value){VAL_NIL, {0}};
-    }
-    return (Value){VAL_NUMBER, {.number = pow(args[0].as.number, args[1].as.number)}};
-}
+// Value builtin_math_pow(int argCount, Value *args)
+// {
+//     if (argCount != 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_NUMBER)
+//     {
+//         print_error("pow() requires two number arguments (base, exponent).");
+//         return (Value){VAL_NIL, {0}};
+//     }
+//     return (Value){VAL_NUMBER, {.number = pow(args[0].as.number, args[1].as.number)}};
+// }
 
 /**
  * @brief Built-in function typeof

@@ -358,3 +358,5 @@ Value builtin_json_encode(int argCount, Value *args);
 cJSON *jackal_value_to_cjson(Value jackal_val);
 
 char* value_to_json_string(Value val);
+
+char* value_to_string(Value value);

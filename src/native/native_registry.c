@@ -40,8 +40,8 @@ void register_all_natives(Env* env) {
     SAFE_REGISTER(env, "__typeof", builtin_type);
     SAFE_REGISTER(env, "systems", builtin_system);
 
-    SAFE_REGISTER(env, "__math_sqrt", builtin_math_sqrt);
-    SAFE_REGISTER(env, "__math_pow", builtin_math_pow);
+    // SAFE_REGISTER(env, "__math_sqrt", builtin_math_sqrt);
+    // SAFE_REGISTER(env, "__math_pow", builtin_math_pow);
     SAFE_REGISTER(env, "fmod", builtin_math_fmod);
     SAFE_REGISTER(env, "achos", native_math_acos);
 
@@ -60,15 +60,15 @@ void register_all_natives(Env* env) {
 
     // SAFE_REGISTER(env, "__array_distinct", builtin_array_distinct);
     // SAFE_REGISTER(env, "__array_anyMatch", builtin_array_anyMatch);
-    SAFE_REGISTER(env, "__array_map", builtin_array_map);
-    SAFE_REGISTER(env, "__array_filter", builtin_array_filter);
-    SAFE_REGISTER(env, "__array_reduce", builtin_array_reduce);
-    SAFE_REGISTER(env, "__array_sort", builtin_array_sort);
+    // SAFE_REGISTER(env, "__array_map", builtin_array_map);
+    // SAFE_REGISTER(env, "__array_filter", builtin_array_filter);
+    // SAFE_REGISTER(env, "__array_reduce", builtin_array_reduce);
+    // SAFE_REGISTER(env, "__array_sort", builtin_array_sort);
     SAFE_REGISTER(env, "__array_statistics", builtin_array_statistics);
-    SAFE_REGISTER(env, "__array_mean", builtin_array_mean);
-    SAFE_REGISTER(env, "__array_max", builtin_array_max);
-    SAFE_REGISTER(env, "__array_to_tree", builtin_array_to_tree);
-    SAFE_REGISTER(env, "__array_limit", builtin_array_limit);
+    // SAFE_REGISTER(env, "__array_mean", builtin_array_mean);
+    // SAFE_REGISTER(env, "__array_max", builtin_array_max);
+    // SAFE_REGISTER(env, "__array_to_tree", builtin_array_to_tree);
+    // SAFE_REGISTER(env, "__array_limit", builtin_array_limit);
 
     SAFE_REGISTER(env, "__knn", native_knn_nd);
     SAFE_REGISTER(env, "__accuracy", native_accuracy);
@@ -99,6 +99,7 @@ void register_all_natives(Env* env) {
     SAFE_REGISTER(env, "__tensor_sum", native_tensor_sum);
     SAFE_REGISTER(env, "__tenso_mean", native_tensor_mean);
     SAFE_REGISTER(env, "__tensor_dot", native_tensor_dot);
+    
     SAFE_REGISTER(env, "__vector_dot", native_vector_dot);
     SAFE_REGISTER(env, "__vector_num", native_vector_norm);
 
