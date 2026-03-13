@@ -59,12 +59,18 @@ class Vector2 : BasicVector2 {
 
     func length() -> Number = 
         Math.sqrt((this.x * this.x) + (this.y * this.y))
-        
-    func normalize() -> Vector {
+
+    func normalize() -> Vector2 {
         let mag = Math.sqrt(this.x * this.x + this.y * this.y)
         if (mag > 0) {
             return Vector2(this.x / mag, this.y / mag)
         }
         return Vector2(0, 0)
+    }
+
+    func limit(max : Int) -> Vector2 {
+        if (this.length() > max)
+            return this.normalize().mul(max)
+        return this
     }
 }
