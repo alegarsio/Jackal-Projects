@@ -60,6 +60,9 @@ class Vector2 : BasicVector2 {
     func length() -> Number = 
         Math.sqrt((this.x * this.x) + (this.y * this.y))
 
+    func magSq() -> Number = 
+        (this.x * this.x) + (this.y * this.y)
+    
     func reflect(normal : BasicVector2) -> BasicVector2   {
         let d = this.dot(normal)
         return this.sub(normal.mul(2 * d))
