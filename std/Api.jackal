@@ -23,6 +23,7 @@ class Auth : Guard {
     
 }
 
+
 func render(req, file, data) = 
     req["view"].render(file, data)
 
@@ -80,6 +81,10 @@ class Api : StaticRouter, RouterAbstractMethod {
     @override
     func post(path, handler) {
         this.route(path, "POST", handler)
+    }
+
+    func put(path, handler) {
+        this.route(path,"PUT",handler)
     }
 
     func run(port) {
