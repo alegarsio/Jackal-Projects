@@ -9,7 +9,7 @@
 #include <arpa/inet.h>   
 #include <fcntl.h>       
 #include "eval.h"
-#include "value.h"
+
 int global_server_fd = -1;
 
 #define JWEB_REGISTER(env, name, func)                                           \
@@ -21,7 +21,6 @@ int global_server_fd = -1;
         }                                                                        \
     } while (0)
 
-// Helper untuk parsing query string: ?id=123&name=jackal
 static void parse_query_params(HashMap* map, char* query_string) {
     if (!query_string) return;
     char* saveptr;
@@ -79,24 +78,22 @@ Value native_web_poll(int arity, Value* args) {
     char method[16], full_path[1024];
     sscanf(buffer, "%15s %1023s", method, full_path);
 
-    // --- PERUBAHAN DISINI: Parsing Query String ---
     HashMap* query_map = map_new();
     char *query_part = strchr(full_path, '?');
     if (query_part) {
-        *query_part = '\0'; // Memisahkan path murni dengan query string
+        *query_part = '\0';
         char* query_copy = strdup(query_part + 1);
         parse_query_params(query_map, query_copy);
         free(query_copy);
     }
-    // ----------------------------------------------
 
     HashMap* req_map = map_new();
     map_set(req_map, "method", (Value){VAL_STRING, {.string = strdup(method)}});
     map_set(req_map, "path", (Value){VAL_STRING, {.string = strdup(full_path)}});
-    map_set(req_map, "query", (Value){VAL_MAP, {.map = query_map}}); // Masukkan query map
+    map_set(req_map, "query", (Value){VAL_MAP, {.map = query_map}});
     map_set(req_map, "socket_fd", (Value){VAL_NUMBER, {.number = (double)client_socket}});
     map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(ip_address)}});
-    map_set(req_map, "params", (Value){VAL_MAP, {.map = map_new()}}); // Untuk path params {id}
+    map_set(req_map, "params", (Value){VAL_MAP, {.map = map_new()}});
 
     char *body_start = strstr(buffer, "\r\n\r\n");
     if (body_start) {
@@ -231,10 +228,8 @@ Value native_render_file(int arity, Value *args) {
                 char *val_str = value_to_string(entry->value);
                 char *ins, *tmp, *result;
                 int len_rep = strlen(placeholder), len_with = strlen(val_str), count = 0;
-
                 ins = content;
                 while ((tmp = strstr(ins, placeholder))) { count++; ins = tmp + len_rep; }
-                
                 result = malloc(strlen(content) + (len_with - len_rep) * count + 1);
                 tmp = result;
                 char* src = content;
