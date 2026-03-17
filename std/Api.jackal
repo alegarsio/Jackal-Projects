@@ -26,7 +26,7 @@ class Auth : Guard {
 func render(req, file, data) = 
     req["view"].render(file, data)
 
-func param(req, key) {
+func param(req, key)  {
     let p_data = req["params"]
     if (p_data != nil && p_data[key] != nil) {
         return p_data[key]
