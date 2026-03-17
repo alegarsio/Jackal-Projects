@@ -81,6 +81,11 @@ Value native_web_poll(int arity, Value* args) {
     char method[16], full_path[1024];
     sscanf(buffer, "%15s %1023s", method, full_path);
 
+    char *fragment = strchr(full_path, '#');
+    if (fragment) {
+        *fragment = '\0';
+    }
+
     HashMap* query_map = map_new();
     char *query_part = strchr(full_path, '?');
     if (query_part) {
