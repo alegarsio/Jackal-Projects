@@ -9,7 +9,7 @@
 #include <arpa/inet.h>   
 #include <fcntl.h>       
 #include "eval.h"
-
+#include "value.h"
 int global_server_fd = -1;
 
 #define JWEB_REGISTER(env, name, func)                                           \
@@ -20,6 +20,23 @@ int global_server_fd = -1;
             set_var(env, name, (Value){VAL_NATIVE, {.native = func}}, true, ""); \
         }                                                                        \
     } while (0)
+
+// Helper untuk parsing query string: ?id=123&name=jackal
+static void parse_query_params(HashMap* map, char* query_string) {
+    if (!query_string) return;
+    char* saveptr;
+    char* token = strtok_r(query_string, "&", &saveptr);
+    while (token != NULL) {
+        char* eq = strchr(token, '=');
+        if (eq) {
+            *eq = '\0';
+            char* key = token;
+            char* val = eq + 1;
+            map_set(map, strdup(key), (Value){VAL_STRING, {.string = strdup(val)}});
+        }
+        token = strtok_r(NULL, "&", &saveptr);
+    }
+}
 
 Value native_web_listen(int arity, Value* args) {
     if (arity < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NIL};
@@ -62,22 +79,30 @@ Value native_web_poll(int arity, Value* args) {
     char method[16], full_path[1024];
     sscanf(buffer, "%15s %1023s", method, full_path);
 
-    char *query = strchr(full_path, '?');
-    if (query) { *query = '\0'; }
+    // --- PERUBAHAN DISINI: Parsing Query String ---
+    HashMap* query_map = map_new();
+    char *query_part = strchr(full_path, '?');
+    if (query_part) {
+        *query_part = '\0'; // Memisahkan path murni dengan query string
+        char* query_copy = strdup(query_part + 1);
+        parse_query_params(query_map, query_copy);
+        free(query_copy);
+    }
+    // ----------------------------------------------
 
     HashMap* req_map = map_new();
     map_set(req_map, "method", (Value){VAL_STRING, {.string = strdup(method)}});
     map_set(req_map, "path", (Value){VAL_STRING, {.string = strdup(full_path)}});
+    map_set(req_map, "query", (Value){VAL_MAP, {.map = query_map}}); // Masukkan query map
     map_set(req_map, "socket_fd", (Value){VAL_NUMBER, {.number = (double)client_socket}});
     map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(ip_address)}});
+    map_set(req_map, "params", (Value){VAL_MAP, {.map = map_new()}}); // Untuk path params {id}
 
     char *body_start = strstr(buffer, "\r\n\r\n");
     if (body_start) {
         body_start += 4;
-        
         Value json_arg = (Value){VAL_STRING, {.string = body_start}};
         Value body_map = native_json_parse(1, &json_arg); 
-        
         map_set(req_map, "body", body_map);
     } else {
         map_set(req_map, "body", (Value){VAL_NIL});
@@ -85,6 +110,7 @@ Value native_web_poll(int arity, Value* args) {
     
     return (Value){VAL_MAP, {.map = req_map}};
 }
+
 Value native_web_send_response(int arity, Value* args) {
     if (arity < 2) return (Value){VAL_NIL};
 
@@ -127,8 +153,8 @@ Value native_web_send_response(int arity, Value* args) {
     close(client_socket);
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+
 Value native_match_route(int arity, Value *args) {
-  
     if (arity < 2) return (Value){VAL_BOOL, {.boolean = 0}};
 
     const char* path = (arity == 3) ? args[1].as.string : args[0].as.string;
@@ -140,7 +166,15 @@ Value native_match_route(int arity, Value *args) {
     const char* pt = pattern;
     HashMap* params = NULL;
 
-    if (arity == 3) params = map_new(); 
+    if (arity == 3) {
+        Value existing_params;
+        if (map_get(args[0].as.map, "params", &existing_params) && existing_params.type == VAL_MAP) {
+            params = existing_params.as.map;
+        } else {
+            params = map_new();
+            map_set(args[0].as.map, "params", (Value){VAL_MAP, {.map = params}});
+        }
+    }
 
     while (*p != '\0' && *pt != '\0') {
         if (*pt == '{') {
@@ -166,118 +200,79 @@ Value native_match_route(int arity, Value *args) {
         }
     }
 
-    bool matched = (*p == '\0' && *pt == '\0');
-
-    if (matched && arity == 3) {
-        map_set(args[0].as.map, "params", (Value){VAL_MAP, {.map = params}});
-    }
-
-    return (Value){VAL_BOOL, {.boolean = matched}};
+    return (Value){VAL_BOOL, {.boolean = (*p == '\0' && *pt == '\0')}};
 }
-
-
 
 char* read_file_to_string(const char* filename) {
     FILE* f = fopen(filename, "rb");
     if (f == NULL) return NULL;
-
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
-
     char* string = malloc(fsize + 1);
     fread(string, fsize, 1, f);
     fclose(f);
-
     string[fsize] = 0;
     return string;
 }
+
 Value native_render_file(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
-
     char *content = read_file_to_string(args[0].as.string);
     if (!content) return (Value){VAL_NIL};
 
     if (arity == 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
-        
         for (int i = 0; i < data->capacity; i++) {
             Entry *entry = &data->entries[i];
             if (entry->key != NULL) {
                 char placeholder[128];
                 sprintf(placeholder, "{{%s}}", entry->key);
-                
                 char *val_str = value_to_string(entry->value);
-                
-                char *result;
-                char *ins;    
-                char *tmp;    
-                int len_rep;  
-                int len_with; 
-                int len_front;
-                int count;    
-
-                len_rep = strlen(placeholder);
-                len_with = strlen(val_str);
+                char *ins, *tmp, *result;
+                int len_rep = strlen(placeholder), len_with = strlen(val_str), count = 0;
 
                 ins = content;
-                for (count = 0; (tmp = strstr(ins, placeholder)); ++count) {
-                    ins = tmp + len_rep;
-                }
-
-                tmp = result = malloc(strlen(content) + (len_with - len_rep) * count + 1);
-
-                if (!result) {
-                    free(val_str);
-                    continue;
-                }
-
-                while (count--) {
-                    ins = strstr(content, placeholder);
-                    len_front = ins - content;
-                    tmp = strncpy(tmp, content, len_front) + len_front;
-                    tmp = strcpy(tmp, val_str) + len_with;
-                    content += len_front + len_rep;
-                }
-                strcpy(tmp, content);
+                while ((tmp = strstr(ins, placeholder))) { count++; ins = tmp + len_rep; }
                 
-                content = result; 
+                result = malloc(strlen(content) + (len_with - len_rep) * count + 1);
+                tmp = result;
+                char* src = content;
+                while (count--) {
+                    ins = strstr(src, placeholder);
+                    int len_front = ins - src;
+                    memcpy(tmp, src, len_front);
+                    tmp += len_front;
+                    memcpy(tmp, val_str, len_with);
+                    tmp += len_with;
+                    src = ins + len_rep;
+                }
+                strcpy(tmp, src);
+                free(content);
+                content = result;
                 free(val_str);
             }
         }
     }
-
-    Value result = (Value){VAL_STRING, {.string = content}};
-    return result;
+    return (Value){VAL_STRING, {.string = content}};
 }
-Value native_send_html(int arity, Value *args) {
-    if (arity != 2 || args[1].type != VAL_STRING) {
-        print_error("send_html expects (int socket, string content)");
-        return (Value){VAL_NIL, {0}};
-    }
 
+Value native_send_html(int arity, Value *args) {
+    if (arity != 2 || args[1].type != VAL_STRING) return (Value){VAL_NIL};
     int client_socket = (int)args[0].as.number;
     const char *html_content = args[1].as.string;
-
     char header[512];
-    int header_len = sprintf(header,
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: %zu\r\n"
-        "Connection: close\r\n"
-        "\r\n",
-        strlen(html_content));
-
+    int header_len = sprintf(header, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %zu\r\nConnection: close\r\n\r\n", strlen(html_content));
     send(client_socket, header, header_len, 0);
     send(client_socket, html_content, strlen(html_content), 0);
-
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
     JWEB_REGISTER(env, "__accept__", native_web_poll);
     JWEB_REGISTER(env, "__send_json__", native_web_send_response);
     JWEB_REGISTER(env, "__match_route__", native_match_route);
-    JWEB_REGISTER(env,"__render_file__",native_render_file);
-    JWEB_REGISTER(env,"__send_html__",native_send_html);
+    JWEB_REGISTER(env, "__render_file__", native_render_file);
+    JWEB_REGISTER(env, "__send_html__", native_send_html);
 }
