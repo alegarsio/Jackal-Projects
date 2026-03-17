@@ -41,6 +41,9 @@ func query(req, key) {
     }
     return nil
 }
+
+func redirect(req,url) = __redirect__(req,url) 
+
 class Api : StaticRouter, RouterAbstractMethod {
 
     func group(prefix) {
