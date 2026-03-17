@@ -86,6 +86,10 @@ class Api : StaticRouter, RouterAbstractMethod {
     func put(path, handler) {
         this.route(path,"PUT",handler)
     }
+    
+    func delete(path,handler){
+        this.route(path,"DELETE",handler)
+    }
 
     func run(port) {
         if (__listen__(port)) {
