@@ -22,18 +22,21 @@ int global_server_fd = -1;
     } while (0)
 
 static void parse_query_params(HashMap* map, char* query_string) {
-    if (!query_string) return;
-    char* saveptr;
-    char* token = strtok_r(query_string, "&", &saveptr);
-    while (token != NULL) {
-        char* eq = strchr(token, '=');
-        if (eq) {
-            *eq = '\0';
-            char* key = token;
-            char* val = eq + 1;
-            map_set(map, strdup(key), (Value){VAL_STRING, {.string = strdup(val)}});
+    if (!query_string || strlen(query_string) == 0) return;
+
+    char* saveptr1;
+    char* pair = strtok_r(query_string, "&", &saveptr1);
+    
+    while (pair != NULL) {
+        char* saveptr2;
+        char* key = strtok_r(pair, "=", &saveptr2);
+        char* val = strtok_r(NULL, "=", &saveptr2);
+        
+        if (key != NULL) {
+            char* final_val = (val != NULL) ? strdup(val) : strdup("");
+            map_set(map, strdup(key), (Value){VAL_STRING, {.string = final_val}});
         }
-        token = strtok_r(NULL, "&", &saveptr);
+        pair = strtok_r(NULL, "&", &saveptr1);
     }
 }
 
