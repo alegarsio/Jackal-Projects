@@ -31,9 +31,14 @@ func param(req, key) {
     if (p_data != nil && p_data[key] != nil) {
         return p_data[key]
     }
+    
+    let q_data = req["query"]
+    if (q_data != nil && q_data[key] != nil) {
+        return q_data[key]
+    }
+    
     return nil
 }
-
 class Api : StaticRouter, RouterAbstractMethod {
 
     func group(prefix) {
