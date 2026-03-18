@@ -20,20 +20,22 @@ class Auth : Guard {
     
     return nil
     }
-    
 }
 
+object Request(){
+    func param(req, key)  {
+        let p_data = req["params"]
+        if (p_data != nil && p_data[key] != nil) {
+            return p_data[key]
+        }
+        return nil
+    }
+}
 
 func render(req, file, data) = 
     req["view"].render(file, data)
 
-func param(req, key)  {
-    let p_data = req["params"]
-    if (p_data != nil && p_data[key] != nil) {
-        return p_data[key]
-    }
-    return nil
-}
+
 func query(req, key) {
     let q_data = req["query"]
     if (q_data != nil && q_data[key] != nil) {
