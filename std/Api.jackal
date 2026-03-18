@@ -42,6 +42,14 @@ func query(req, key) {
     return nil
 }
 
+func body(req, key) -> Map {
+    let q_data = req["body"]
+    if (q_data != nil && q_data[key] != nil){
+        return q_data[key]
+    }
+    return nil
+}
+
 func redirect(req,url) = __redirect__(req,url) 
 
 class Api : StaticRouter, RouterAbstractMethod {
