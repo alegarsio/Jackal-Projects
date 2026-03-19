@@ -1,0 +1,22 @@
+import std.SnapEngine.http.Request
+
+object Session {
+    let _storage = {}
+
+    func get(key) {
+        let session = _storage[Request._raw["address"]]
+        return session[key]
+    }
+
+    func set(key, value) {
+        let addr = Request._raw["address"]
+        
+       
+        _storage[addr] = _storage[addr] ?? {}
+        _storage[addr][key] = value
+    }
+
+    func destroy() {
+        _storage[Request._raw["address"]] = nil
+    }
+}
