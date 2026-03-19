@@ -62,13 +62,45 @@ Value native_web_poll(int arity, Value* args) {
     socklen_t addrlen = sizeof(client_addr);
     int client_socket = accept(global_server_fd, (struct sockaddr *)&client_addr, &addrlen);
     if (client_socket < 0) return (Value){VAL_NIL};
-    char* ip_address = inet_ntoa(client_addr.sin_addr);
+
     char buffer[8192] = {0};
     read(client_socket, buffer, sizeof(buffer) - 1);
+
     char method[16], full_path[1024];
     sscanf(buffer, "%15s %1023s", method, full_path);
-    char *fragment = strchr(full_path, '#');
-    if (fragment) *fragment = '\0';
+
+    HashMap* headers_map = map_new();
+    char* line = strchr(buffer, '\n');
+    if (line) {
+        line++; 
+        while (line && *line != '\r' && *line != '\n') {
+            char* end_line = strchr(line, '\n');
+            if (!end_line) break;
+            
+            char* colon = strchr(line, ':');
+            if (colon && colon < end_line) {
+                int key_len = colon - line;
+                char* key = malloc(key_len + 1);
+                strncpy(key, line, key_len);
+                key[key_len] = '\0';
+
+                char* val_start = colon + 1;
+                while (*val_start == ' ') val_start++; 
+                
+                int val_len = end_line - val_start;
+                if (val_len > 0 && *(end_line-1) == '\r') val_len--; 
+                
+                char* val = malloc(val_len + 1);
+                strncpy(val, val_start, val_len);
+                val[val_len] = '\0';
+
+                map_set(headers_map, key, (Value){VAL_STRING, {.string = val}});
+            }
+            line = end_line + 1;
+        }
+    }
+    
+
     HashMap* query_map = map_new();
     char *query_part = strchr(full_path, '?');
     if (query_part) {
@@ -77,13 +109,16 @@ Value native_web_poll(int arity, Value* args) {
         parse_query_params(query_map, query_copy);
         free(query_copy);
     }
+
     HashMap* req_map = map_new();
     map_set(req_map, "method", (Value){VAL_STRING, {.string = strdup(method)}});
     map_set(req_map, "path", (Value){VAL_STRING, {.string = strdup(full_path)}});
     map_set(req_map, "query", (Value){VAL_MAP, {.map = query_map}});
+    map_set(req_map, "headers", (Value){VAL_MAP, {.map = headers_map}}); // MASUKKAN HEADERS KE REQ
     map_set(req_map, "socket_fd", (Value){VAL_NUMBER, {.number = (double)client_socket}});
-    map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(ip_address)}});
+    map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(inet_ntoa(client_addr.sin_addr))}});
     map_set(req_map, "params", (Value){VAL_MAP, {.map = map_new()}});
+
     char *body_start = strstr(buffer, "\r\n\r\n");
     if (body_start) {
         body_start += 4;
@@ -93,6 +128,7 @@ Value native_web_poll(int arity, Value* args) {
     } else {
         map_set(req_map, "body", (Value){VAL_NIL});
     }
+
     return (Value){VAL_MAP, {.map = req_map}};
 }
 
