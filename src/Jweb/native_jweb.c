@@ -280,4 +280,5 @@ void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__render_file__", native_render_file);
     JWEB_REGISTER(env, "__send_html__", native_send_html);
     JWEB_REGISTER(env, "__redirect__", native_web_redirect);
+    JWEB_REGISTER(env, "__native_auth__", native_middleware_auth);
 }
