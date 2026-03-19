@@ -1,8 +1,13 @@
-object Request {
+object Request(){
+
     let _raw = nil
 
     func _setRaw(data) {
         _raw = data
+    }
+
+    func header(key) {
+        return _raw["headers"][key]
     }
 
     func param(key) {
