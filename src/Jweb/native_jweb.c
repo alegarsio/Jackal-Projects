@@ -98,6 +98,7 @@ Value native_web_poll(int arity, Value* args) {
 
 Value native_web_send_response(int arity, Value* args) {
     if (arity < 2) return (Value){VAL_NIL};
+
     Value socket_val;
     if (args[0].type == VAL_MAP) {
         if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
@@ -105,23 +106,63 @@ Value native_web_send_response(int arity, Value* args) {
         socket_val = args[0];
     }
     int client_socket = (int)socket_val.as.number;
+
     Value data_to_encode = args[1];
     Value result_from_func = {VAL_NIL};
+
     if (data_to_encode.type == VAL_FUNCTION || data_to_encode.type == VAL_NATIVE) {
         Value callback_args[1] = { args[0] }; 
         result_from_func = call_jackal_function(NULL, data_to_encode, 1, callback_args);
         data_to_encode = result_from_func;
     }
+
     Value json_str_val = builtin_json_encode(1, &data_to_encode);
+
     if (json_str_val.type == VAL_STRING) {
         char* json_body = json_str_val.as.string;
-        char response[8192];
-        int response_len = sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nConnection: close\r\n\r\n%s", strlen(json_body), json_body);
-        send(client_socket, response, response_len, 0);
+        size_t body_len = strlen(json_body);
+        
+        char header[512];
+        int header_len = snprintf(header, sizeof(header), 
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Content-Length: %zu\r\n"
+            "Connection: close\r\n\r\n", body_len);
+
+        if (header_len > 0) {
+            send(client_socket, header, header_len, 0);
+            send(client_socket, json_body, body_len, 0);
+        }
     }
-    if (result_from_func.type != VAL_NIL) free_value(result_from_func);
+
+    if (result_from_func.type != VAL_NIL) {
+        free_value(result_from_func);
+    }
+    
     close(client_socket);
     return (Value){VAL_BOOL, {.boolean = true}};
+}
+
+Value native_middleware_auth(int arity, Value* args) {
+    if (arity < 1 || args[0].type != VAL_MAP) return (Value){VAL_NIL};
+
+    HashMap* req = args[0].as.map;
+    Value headers_val;
+    
+    if (map_get(req, "headers", &headers_val) && headers_val.type == VAL_MAP) {
+        Value auth_token;
+        if (map_get(headers_val.as.map, "Authorization", &auth_token)) {
+            if (auth_token.type == VAL_STRING && strcmp(auth_token.as.string, "Secret-Jackal-Key") == 0) {
+                return (Value){VAL_NIL};
+            }
+        }
+    }
+
+    HashMap* error_res = map_new();
+    map_set(error_res, "error", (Value){VAL_STRING, {.string = strdup("Unauthorized")}});
+    map_set(error_res, "status", (Value){VAL_NUMBER, {.number = 401}});
+    
+    return (Value){VAL_MAP, {.map = error_res}};
 }
 
 Value native_web_redirect(int arity, Value* args) {
