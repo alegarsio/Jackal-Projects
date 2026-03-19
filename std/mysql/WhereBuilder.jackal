@@ -1,23 +1,38 @@
 import std.orm.Query.QueryComponent
+
 class WhereBuilder : QueryComponent {
 
-    func gt(value) {
-        this.parent.whereClause = " WHERE " + this.column + " > " + value.toString()
-        return this.parent 
-    }
-
-    func lt(value) {
-        this.parent.whereClause = " WHERE " + this.column + " < " + value.toString()
-        return this.parent
-    }
-
-    func eq(value) {
+    func _buildCondition(operator, value) {
         let valStr = value.toString()
         if (typeof(value) == "string") {
             valStr = "'" + valStr + "'"
         }
+
+        let clause = this.parent.whereClause
         
-        this.parent.whereClause = " WHERE " + this.column + " = " + valStr
+        if (clause == "" || clause == nil) {
+            this.parent.whereClause = " WHERE " + this.column + " " + operator + " " + valStr
+        } else {
+            this.parent.whereClause = clause + " AND " + this.column + " " + operator + " " + valStr
+        }
+        
         return this.parent
+    }
+
+    func gt(value) {
+        return this._buildCondition(">", value)
+    }
+
+    func lt(value) {
+        return this._buildCondition("<", value)
+    }
+
+    func eq(value) {
+        return this._buildCondition("=", value)
+    }
+
+    func and(col) {
+        this.column = col
+        return this
     }
 }
