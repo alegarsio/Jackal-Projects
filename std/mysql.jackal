@@ -41,6 +41,10 @@ class Table : Entity , TableEntityAbstractMethod {
         return result
     }
 
+    func and(col) {
+        return WhereBuilder(this, col)
+    }
+
     func limit(n : Int) {
         this.limitClause = " LIMIT " + n.toString()
         return this
