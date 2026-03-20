@@ -81,6 +81,7 @@ void register_all_natives(Env* env) {
     SAFE_REGISTER(env, "__logistic_fit", native_logistic_fit);
     SAFE_REGISTER(env, "__nb_fit", native_nb_fit);
     SAFE_REGISTER(env, "__nb_predict", native_nb_predict);
+    
     SAFE_REGISTER(env, "__kmeans_fit", native_kmeans_fit);
     SAFE_REGISTER(env, "__kmeans_predict", native_kmeans_predict);
     SAFE_REGISTER(env, "__kmeans_loss", native_kmeans_loss);
