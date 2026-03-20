@@ -59,5 +59,5 @@ Value native_env_load(int arity, Value *args) {
 
 
 void register_env_natives(Env *env){
-
+    ENV_REGISTER(env,"__env_load__",native_env_load);
 }
