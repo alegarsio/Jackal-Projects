@@ -13,6 +13,7 @@
 #include"map/native_map.h"
 #include "mysql/native_mysql.h"
 #include "array/native_array.h"
+#include "Env/native_env.h"
 
 
 /**
@@ -146,4 +147,5 @@ void register_all_natives(Env* env) {
     register_map_natives(env);
     register_mysql_natives(env);
     register_array_natives(env);
+    register_env_natives(env);
 }
