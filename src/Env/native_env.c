@@ -1,5 +1,4 @@
 #include "Env/native_env.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -20,7 +19,6 @@
         }                                                                        \
     } while (0)
 
-
 Value native_env_load(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_STRING)
         return (Value){VAL_NIL};
@@ -36,6 +34,7 @@ Value native_env_load(int arity, Value *args) {
 
         char* trimmed = line;
         while(*trimmed == ' ') trimmed++;
+        
         if (*trimmed == '\0' || *trimmed == '#') continue;
 
         char* delimiter = strchr(trimmed, '=');
@@ -44,9 +43,21 @@ Value native_env_load(int arity, Value *args) {
             char* key = trimmed;
             char* value = delimiter + 1;
 
-            char* end = key + strlen(key) - 1;
-            while(end > key && *end == ' ') { *end = '\0'; end--; }
+            char* key_end = key + strlen(key) - 1;
+            while(key_end > key && *key_end == ' ') { *key_end = '\0'; key_end--; }
+            
             while(*value == ' ') value++;
+            
+            if (value[0] == '"' || value[0] == '\'') {
+                value++;
+                size_t len = strlen(value);
+                if (len > 0 && (value[len-1] == '"' || value[len-1] == '\'')) {
+                    value[len-1] = '\0';
+                }
+            }
+
+            char* val_end = value + strlen(value) - 1;
+            while(val_end > value && *val_end == ' ') { *val_end = '\0'; val_end--; }
 
             map_set(env_map, strdup(key), (Value){VAL_STRING, {.string = strdup(value)}});
         }
@@ -56,8 +67,6 @@ Value native_env_load(int arity, Value *args) {
     return (Value){VAL_MAP, {.map = env_map}};
 }
 
-
-
 void register_env_natives(Env *env){
-    ENV_REGISTER(env,"__env_load__",native_env_load);
+    ENV_REGISTER(env, "__env_load__", native_env_load);
 }
