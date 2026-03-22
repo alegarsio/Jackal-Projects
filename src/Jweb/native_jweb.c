@@ -296,7 +296,35 @@ Value native_render_file(int arity, Value *args) {
     }
     return (Value){VAL_STRING, {.string = content}};
 }
+Value native_web_send_docs(int arity, Value* args) {
+    if (arity < 1) return (Value){VAL_NIL};
+    
+    int client_socket;
+    if (args[0].type == VAL_MAP) {
+        Value socket_val;
+        if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
+        client_socket = (int)socket_val.as.number;
+    } else {
+        client_socket = (int)args[0].as.number;
+    }
 
+    const char* html = 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Connection: close\r\n\r\n"
+        "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8' />"
+        "<title>Jackal API Docs</title>"
+        "<link rel='stylesheet' href='https://unpkg.com/swagger-ui-dist@5/swagger-ui.css' />"
+        "</head><body><div id='swagger-ui'></div>"
+        "<script src='https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js'></script>"
+        "<script>window.onload=()=>{window.ui=SwaggerUIBundle({url:'/swagger.json',dom_id:'#swagger-ui'});};</script>"
+        "</body></html>";
+
+    send(client_socket, html, strlen(html), 0);
+    close(client_socket);
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
+\
 Value native_send_html(int arity, Value *args) {
     if (arity != 2 || args[1].type != VAL_STRING) return (Value){VAL_NIL};
     int client_socket = (int)args[0].as.number;
