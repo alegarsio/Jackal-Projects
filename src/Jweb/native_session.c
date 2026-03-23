@@ -109,4 +109,5 @@ void register_session_native(Env* env){
     JWEB_SESSION_REGISTER(env,"__session_start__",native_session_start);
     JWEB_SESSION_REGISTER(env,"__session_set__",native_session_set);
     JWEB_SESSION_REGISTER(env,"__session_get__",native_session_get);
+    JWEB_SESSION_REGISTER(env,"__session_destroy__",native_session_destroy);
 }
