@@ -86,6 +86,25 @@ Value native_session_get(int arity, Value* args) {
     return (Value){VAL_NIL};
 }
 
+Value native_session_destroy(int arity, Value* args) {
+    if (arity < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    if (sessions_storage == NULL) return (Value){VAL_BOOL, {.boolean = true}};
+
+    char* sid = args[0].as.string;
+
+    Value s_map_val;
+    if (map_get(sessions_storage, sid, &s_map_val) && s_map_val.type == VAL_MAP) {
+        map_free(s_map_val.as.map);
+    }
+
+    bool success = map_delete(sessions_storage, sid);
+
+    return (Value){VAL_BOOL, {.boolean = success}};
+}
+
 void register_session_native(Env* env){
     JWEB_SESSION_REGISTER(env,"__session_start__",native_session_start);
     JWEB_SESSION_REGISTER(env,"__session_set__",native_session_set);
