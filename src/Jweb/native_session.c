@@ -13,7 +13,7 @@
 #include <fcntl.h>       
 #include <pthread.h>
 
-
+static HashMap* sessions_storage = NULL;
 
 #define JWEB_SESSION_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -23,6 +23,12 @@
             set_var(env, name, (Value){VAL_NATIVE, {.native = func}}, true, ""); \
         }                                                                        \
     } while (0)
+
+static void ensure_session_storage() {
+    if (sessions_storage == NULL) {
+        sessions_storage = map_new();
+    }
+}
 
 void register_session_native(Env* env){
     
