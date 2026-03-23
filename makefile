@@ -57,6 +57,7 @@ SRC = src/common.c \
       src/mysql/native_mysql.c \
       src/map/native_map.c \
       src/Io/io_native.c \
+      src/Env/native_env.c \
       src/json/native_json.c \
       src/File/native_file.c \
       src/Jweb/native_jweb.c \
