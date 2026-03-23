@@ -9,11 +9,17 @@
 #include"json/native_json.h"
 #include"csv/native_csv.h"
 #include"sqlite/native_sqlite.h"
-#include"Jweb/native_jweb.h"
 #include"map/native_map.h"
 #include "mysql/native_mysql.h"
 #include "array/native_array.h"
 #include "Env/native_env.h"
+
+
+/**
+ * add new session in Jweb native library
+ */
+#include"Jweb/native_jweb.h"
+#include "Jweb/native_session.h"
 
 
 /**
@@ -143,9 +149,14 @@ void register_all_natives(Env* env) {
     register_json_natives(env);
     register_csv_natives(env);
     register_sqlite_native(env);
-    register_jweb_natives(env);
     register_map_natives(env);
     register_mysql_natives(env);
     register_array_natives(env);
     register_env_natives(env);
+
+    /**
+     * Jweb library
+     */
+    register_jweb_natives(env);
+    register_session_native(env);
 }
