@@ -21,4 +21,8 @@ object Request(){
     func query(key) {
         return _raw["query"][key]
     }
+
+    func forward(host, port){
+        return __native_forward__(_raw, host, port)
+    }
 }
