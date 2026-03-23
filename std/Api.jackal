@@ -10,6 +10,7 @@ import std.SnapEngine.http.Request
  * Use Request object on 
  * std.SnapEngine.http.Request 
 **/
+
 // class Auth : Guard {
 //     func auth(req) {
 //         let body = req["body"]
@@ -24,6 +25,7 @@ import std.SnapEngine.http.Request
 //     }
 // }
 
+@deprecated
 func render(req, file, data) = req["view"].render(file, data)
 func redirect(req, url) = __redirect__(req, url) 
 
