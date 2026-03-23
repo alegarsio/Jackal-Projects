@@ -5,19 +5,24 @@ import std.SnapEngine.middleware.Guard
 import std.SnapEngine.ViewEngine.core
 import std.SnapEngine.http.Request
 
-class Auth : Guard {
-    func auth(req) {
-        let body = req["body"]
-        let token = body["token"]
-        if (token != this.secret) {
-            return {
-                "status": 401,
-                "error": "Akses Ditolak: Token Salah!"
-            }
-        }
-        return nil
-    }
-}
+/**
+ * Auth is now deprecated 
+ * Use Request object on 
+ * std.SnapEngine.http.Request 
+**/
+// class Auth : Guard {
+//     func auth(req) {
+//         let body = req["body"]
+//         let token = body["token"]
+//         if (token != this.secret) {
+//             return {
+//                 "status": 401,
+//                 "error": "Akses Ditolak: Token Salah!"
+//             }
+//         }
+//         return nil
+//     }
+// }
 
 func render(req, file, data) = req["view"].render(file, data)
 func redirect(req, url) = __redirect__(req, url) 
@@ -77,13 +82,12 @@ class Api : StaticRouter, RouterAbstractMethod {
         
         let methodFix = { "GET": "get", "POST": "post", "PUT": "put", "DELETE": "delete" }
 
-        // Gunakan __map_keys__ langsung ke routes agar lebih konsisten dengan memori C
+       
         let all_paths = __map_keys__(this.routes)
         
         for pat in all_paths {
             let methods_map = this.routes[pat]
             
-            // PROTEKSI: Cek apakah methods_map benar-benar Map sebelum lanjut
             if (type(methods_map) == "map") {
                 let pathItem = {}
                 let method_names = __map_keys__(methods_map)
