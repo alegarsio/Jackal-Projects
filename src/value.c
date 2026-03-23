@@ -593,6 +593,7 @@ HashMap *map_new(void)
     return map;
 }
 
+
 /**
  * Frees the memory associated with a HashMap.
  * @param map The HashMap to be freed.
@@ -610,6 +611,21 @@ void map_free(HashMap *map)
     }
     free(map->entries);
     free(map);
+}
+
+bool map_delete(HashMap *map, const char *key) {
+    if (map->count == 0) return false;
+
+    Entry *entry = find_entry(map->entries, map->capacity, key);
+    if (entry->key == NULL) return false;
+
+    free(entry->key);
+    entry->key = NULL;
+    
+    entry->value = (Value){VAL_BOOL, {.boolean = true}};
+
+    map->count--;
+    return true;
 }
 
 /**
