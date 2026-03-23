@@ -30,6 +30,15 @@ static void ensure_session_storage() {
     }
 }
 
+static char* generate_sid() {
+    char *sid = malloc(17);
+    const char *charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for (int n = 0; n < 16; n++) {
+        sid[n] = charset[rand() % 62];
+    }
+    sid[16] = '\0';
+    return sid;
+}
 void register_session_native(Env* env){
     
 }
