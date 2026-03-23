@@ -40,6 +40,7 @@ Value native_map_set_manual(int arity, Value* args) {
     return val; 
 }
 
+
 Value native_map_keys(int arity, Value* args) {
     if (arity < 1 || args[0].type != VAL_MAP) {
         ValueArray* empty_va = array_new();
@@ -49,7 +50,7 @@ Value native_map_keys(int arity, Value* args) {
     HashMap* map = args[0].as.map;
     ValueArray* keys_va = array_new();
 
-    if (map->entries == NULL) {
+    if (map == NULL || map->entries == NULL || map->capacity <= 0) {
         return (Value){VAL_ARRAY, {.array = keys_va}};
     }
 
@@ -68,8 +69,9 @@ Value native_map_keys(int arity, Value* args) {
     return (Value){VAL_ARRAY, {.array = keys_va}};
 }
 
+
 void register_map_natives(Env *env){
         MAP_REGISTER(env, "__map_set_manual__", native_map_set_manual);
         MAP_REGISTER(env, "__map_init_manual__", native_map_init_manual);
-        MAP_REGISTER(env, "__map_key_manual__", native_map_init_manual);
+        MAP_REGISTER(env, "__map_keys__", native_map_keys);
 }
