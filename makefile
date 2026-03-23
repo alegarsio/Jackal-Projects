@@ -61,6 +61,7 @@ SRC = src/common.c \
       src/json/native_json.c \
       src/File/native_file.c \
       src/Jweb/native_jweb.c \
+      src/Jweb/native_session.c \
       src/native/native_registry.c \
       src/socket/socket_native.c \
       src/main.c
