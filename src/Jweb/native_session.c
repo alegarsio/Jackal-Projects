@@ -39,6 +39,17 @@ static char* generate_sid() {
     sid[16] = '\0';
     return sid;
 }
+
+Value native_session_start(int arity, Value* args) {
+    ensure_session_storage();
+    
+    char* sid = generate_sid();
+    HashMap* session_data = map_new();
+    
+    map_set(sessions_storage, strdup(sid), (Value){VAL_MAP, {.map = session_data}});
+    
+    return (Value){VAL_STRING, {.string = sid}};
+}
 void register_session_native(Env* env){
     
 }
