@@ -68,6 +68,24 @@ Value native_session_set(int arity, Value* args) {
     return (Value){VAL_BOOL, {.boolean = false}};
 }
 
+Value native_session_get(int arity, Value* args) {
+    if (arity < 2 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
+    ensure_session_storage();
+
+    char* sid = args[0].as.string;
+    char* key = args[1].as.string;
+
+    Value s_map_val;
+    if (map_get(sessions_storage, sid, &s_map_val) && s_map_val.type == VAL_MAP) {
+        Value result;
+        if (map_get(s_map_val.as.map, key, &result)) {
+            return result;
+        }
+    }
+    
+    return (Value){VAL_NIL};
+}
+
 void register_session_native(Env* env){
     JWEB_SESSION_REGISTER(env,"__session_start__",native_session_start);
     JWEB_SESSION_REGISTER(env,"__session_set__",native_session_set);
