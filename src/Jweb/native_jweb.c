@@ -8,9 +8,16 @@
 #include <netinet/in.h>  
 #include <arpa/inet.h>   
 #include <fcntl.h>       
+#include <pthread.h>
 #include "eval.h"
 
 int global_server_fd = -1;
+
+typedef struct {
+    int client_socket;
+    Value data;
+    Value req_copy;
+} AsyncResponseData;
 
 #define JWEB_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -35,6 +42,35 @@ static void parse_query_params(HashMap* map, char* query_string) {
         }
         pair = strtok_r(NULL, "&", &saveptr1);
     }
+}
+
+void* async_send_thread(void* arg) {
+    AsyncResponseData* async_data = (AsyncResponseData*)arg;
+    Value data_to_encode = async_data->data;
+    int client_socket = async_data->client_socket;
+
+    Value json_str_val = builtin_json_encode(1, &data_to_encode);
+
+    if (json_str_val.type == VAL_STRING) {
+        char* json_body = json_str_val.as.string;
+        size_t body_len = strlen(json_body);
+        
+        char header[512];
+        int header_len = snprintf(header, sizeof(header), 
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Content-Length: %zu\r\n"
+            "Connection: close\r\n\r\n", body_len);
+
+        if (header_len > 0) {
+            send(client_socket, header, header_len, 0);
+            send(client_socket, json_body, body_len, 0);
+        }
+    }
+
+    close(client_socket);
+    free(async_data);
+    return NULL;
 }
 
 Value native_web_listen(int arity, Value* args) {
@@ -100,7 +136,6 @@ Value native_web_poll(int arity, Value* args) {
         }
     }
     
-
     HashMap* query_map = map_new();
     char *query_part = strchr(full_path, '?');
     if (query_part) {
@@ -114,7 +149,7 @@ Value native_web_poll(int arity, Value* args) {
     map_set(req_map, "method", (Value){VAL_STRING, {.string = strdup(method)}});
     map_set(req_map, "path", (Value){VAL_STRING, {.string = strdup(full_path)}});
     map_set(req_map, "query", (Value){VAL_MAP, {.map = query_map}});
-    map_set(req_map, "headers", (Value){VAL_MAP, {.map = headers_map}}); // MASUKKAN HEADERS KE REQ
+    map_set(req_map, "headers", (Value){VAL_MAP, {.map = headers_map}}); 
     map_set(req_map, "socket_fd", (Value){VAL_NUMBER, {.number = (double)client_socket}});
     map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(inet_ntoa(client_addr.sin_addr))}});
     map_set(req_map, "params", (Value){VAL_MAP, {.map = map_new()}});
@@ -143,39 +178,14 @@ Value native_web_send_response(int arity, Value* args) {
     }
     int client_socket = (int)socket_val.as.number;
 
-    Value data_to_encode = args[1];
-    Value result_from_func = {VAL_NIL};
+    AsyncResponseData* async_data = malloc(sizeof(AsyncResponseData));
+    async_data->client_socket = client_socket;
+    async_data->data = args[1];
 
-    if (data_to_encode.type == VAL_FUNCTION || data_to_encode.type == VAL_NATIVE) {
-        Value callback_args[1] = { args[0] }; 
-        result_from_func = call_jackal_function(NULL, data_to_encode, 1, callback_args);
-        data_to_encode = result_from_func;
-    }
+    pthread_t thread;
+    pthread_create(&thread, NULL, async_send_thread, async_data);
+    pthread_detach(thread);
 
-    Value json_str_val = builtin_json_encode(1, &data_to_encode);
-
-    if (json_str_val.type == VAL_STRING) {
-        char* json_body = json_str_val.as.string;
-        size_t body_len = strlen(json_body);
-        
-        char header[512];
-        int header_len = snprintf(header, sizeof(header), 
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: application/json\r\n"
-            "Content-Length: %zu\r\n"
-            "Connection: close\r\n\r\n", body_len);
-
-        if (header_len > 0) {
-            send(client_socket, header, header_len, 0);
-            send(client_socket, json_body, body_len, 0);
-        }
-    }
-
-    if (result_from_func.type != VAL_NIL) {
-        free_value(result_from_func);
-    }
-    
-    close(client_socket);
     return (Value){VAL_BOOL, {.boolean = true}};
 }
 
@@ -296,6 +306,7 @@ Value native_render_file(int arity, Value *args) {
     }
     return (Value){VAL_STRING, {.string = content}};
 }
+
 Value native_web_send_docs(int arity, Value* args) {
     if (arity < 1) return (Value){VAL_NIL};
     
@@ -313,7 +324,7 @@ Value native_web_send_docs(int arity, Value* args) {
         "Content-Type: text/html\r\n"
         "Connection: close\r\n\r\n"
         "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8' />"
-        "<title>Jackal API Docs</title>"
+        "<title>API Docs</title>"
         "<link rel='stylesheet' href='https://unpkg.com/swagger-ui-dist@5/swagger-ui.css' />"
         "</head><body><div id='swagger-ui'></div>"
         "<script src='https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js'></script>"
@@ -324,7 +335,7 @@ Value native_web_send_docs(int arity, Value* args) {
     close(client_socket);
     return (Value){VAL_BOOL, {.boolean = true}};
 }
-\
+
 Value native_send_html(int arity, Value *args) {
     if (arity != 2 || args[1].type != VAL_STRING) return (Value){VAL_NIL};
     int client_socket = (int)args[0].as.number;
