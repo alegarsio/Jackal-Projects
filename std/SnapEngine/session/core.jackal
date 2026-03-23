@@ -1,22 +1,37 @@
-import std.SnapEngine.http.Request
-
 object Session {
-    let _storage = {}
+    let _id = nil
 
-    func get(key) {
-        let session = _storage[Request._raw["address"]]
-        return session[key]
+    func start() {
+        if (_id == nil) {
+            _id = __session_start__()
+        }
+        return _id
     }
 
     func set(key, value) {
-        let addr = Request._raw["address"]
-        
-       
-        _storage[addr] = _storage[addr] ?? {}
-        _storage[addr][key] = value
+        if (_id == nil) {
+            start()
+        }
+        return __session_set__(_id, key, value)
+    }
+
+    func get(key) {
+        if (_id == nil) {
+            return nil
+        }
+        return __session_get__(_id, key)
     }
 
     func destroy() {
-        _storage[Request._raw["address"]] = nil
+        if (_id != nil) {
+            let success = __session_destroy__(_id)
+            _id = nil
+            return success
+        }
+        return false
+    }
+
+    func id() {
+        return _id
     }
 }
