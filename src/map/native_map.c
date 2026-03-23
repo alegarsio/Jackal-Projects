@@ -70,7 +70,7 @@ Value native_map_keys(int arity, Value* args) {
 }
 
 Value native_map_remove_manual(int arity, Value* args) {
-    // Validasi: Pastikan ada 2 argumen (Map dan Key)
+
     if (arity < 2 || args[0].type != VAL_MAP || args[1].type != VAL_STRING) {
         return (Value){VAL_BOOL, {.boolean = false}}; 
     }
@@ -87,4 +87,5 @@ void register_map_natives(Env *env){
         MAP_REGISTER(env, "__map_set_manual__", native_map_set_manual);
         MAP_REGISTER(env, "__map_init_manual__", native_map_init_manual);
         MAP_REGISTER(env, "__map_keys__", native_map_keys);
+        MAP_REGISTER(env,"__map_remove__",native_map_remove_manual);
 }
