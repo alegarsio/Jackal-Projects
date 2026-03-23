@@ -51,5 +51,5 @@ Value native_session_start(int arity, Value* args) {
     return (Value){VAL_STRING, {.string = sid}};
 }
 void register_session_native(Env* env){
-    
+    JWEB_SESSION_REGISTER(env,"__session_start__",native_session_start);
 }
