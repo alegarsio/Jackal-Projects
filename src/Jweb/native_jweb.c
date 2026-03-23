@@ -91,19 +91,29 @@ Value native_web_listen(int arity, Value* args) {
     listen(global_server_fd, 10);
     return (Value){VAL_BOOL, {.boolean = true}};
 }
-
 Value native_web_poll(int arity, Value* args) {
     if (global_server_fd == -1) return (Value){VAL_NIL};
+
     struct sockaddr_in client_addr;
     socklen_t addrlen = sizeof(client_addr);
     int client_socket = accept(global_server_fd, (struct sockaddr *)&client_addr, &addrlen);
     if (client_socket < 0) return (Value){VAL_NIL};
 
     char buffer[8192] = {0};
-    read(client_socket, buffer, sizeof(buffer) - 1);
+    ssize_t bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
 
-    char method[16], full_path[1024];
-    sscanf(buffer, "%15s %1023s", method, full_path);
+    if (bytes_read <= 0) {
+        close(client_socket);
+        return (Value){VAL_NIL};
+    }
+
+    char method[16] = {0};
+    char full_path[1024] = {0};
+    
+    if (sscanf(buffer, "%15s %1023s", method, full_path) < 2) {
+        close(client_socket);
+        return (Value){VAL_NIL};
+    }
 
     HashMap* headers_map = map_new();
     char* line = strchr(buffer, '\n');
@@ -112,24 +122,19 @@ Value native_web_poll(int arity, Value* args) {
         while (line && *line != '\r' && *line != '\n') {
             char* end_line = strchr(line, '\n');
             if (!end_line) break;
-            
             char* colon = strchr(line, ':');
             if (colon && colon < end_line) {
                 int key_len = colon - line;
                 char* key = malloc(key_len + 1);
                 strncpy(key, line, key_len);
                 key[key_len] = '\0';
-
                 char* val_start = colon + 1;
                 while (*val_start == ' ') val_start++; 
-                
                 int val_len = end_line - val_start;
                 if (val_len > 0 && *(end_line-1) == '\r') val_len--; 
-                
                 char* val = malloc(val_len + 1);
                 strncpy(val, val_start, val_len);
                 val[val_len] = '\0';
-
                 map_set(headers_map, key, (Value){VAL_STRING, {.string = val}});
             }
             line = end_line + 1;
@@ -346,6 +351,52 @@ Value native_send_html(int arity, Value *args) {
     send(client_socket, html_content, strlen(html_content), 0);
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+Value native_gateway_forward(int arity, Value* args) {
+    if (arity < 3 || args[0].type != VAL_MAP || args[1].type != VAL_STRING || args[2].type != VAL_NUMBER) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    Value socket_val;
+    if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_BOOL, {.boolean = false}};
+    int client_socket = (int)socket_val.as.number;
+
+    char* target_host = args[1].as.string;
+    int target_port = (int)args[2].as.number;
+
+    int service_socket = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in service_addr;
+    service_addr.sin_family = AF_INET;
+    service_addr.sin_port = htons(target_port);
+    service_addr.sin_addr.s_addr = inet_addr(target_host);
+
+    if (connect(service_socket, (struct sockaddr *)&service_addr, sizeof(service_addr)) < 0) {
+        close(service_socket);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    Value v_method, v_path;
+    map_get(args[0].as.map, "method", &v_method);
+    map_get(args[0].as.map, "path", &v_path);
+
+    char req_line[2048];
+    int req_len = sprintf(req_line, "%s %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", 
+        v_method.as.string, 
+        v_path.as.string, 
+        target_host);
+    
+    send(service_socket, req_line, req_len, 0);
+
+    char buffer[8192];
+    ssize_t n;
+    while ((n = recv(service_socket, buffer, sizeof(buffer), 0)) > 0) {
+        send(client_socket, buffer, n, 0);
+    }
+
+    close(service_socket);
+    close(client_socket);
+
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
 
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
@@ -357,4 +408,5 @@ void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__redirect__", native_web_redirect);
     JWEB_REGISTER(env, "__native_auth__", native_middleware_auth);
     JWEB_REGISTER(env,"__send_docs__",native_web_send_docs);
+    JWEB_REGISTER(env,"__native_forward__",native_gateway_forward);
 }
