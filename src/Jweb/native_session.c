@@ -70,4 +70,5 @@ Value native_session_set(int arity, Value* args) {
 
 void register_session_native(Env* env){
     JWEB_SESSION_REGISTER(env,"__session_start__",native_session_start);
+    JWEB_SESSION_REGISTER(env,"__session_set__",native_session_set);
 }
