@@ -50,6 +50,16 @@ Value native_file_getcwd(int arity, Value *args) {
     return (Value){VAL_NIL};
 }
 
+Value native_file_realpath(int arity, Value *args) {
+    if (arity < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
+    
+    char resolved_path[1024];
+    if (realpath(args[0].as.string, resolved_path)) {
+        return (Value){VAL_STRING, {.string = strdup(resolved_path)}};
+    }
+    return (Value){VAL_NIL};
+}
+
 Value native_file_exists(int arity, Value *args)
 {
     if (arity < 1 || args[0].type != VAL_STRING)
