@@ -8,6 +8,8 @@
 #include <unistd.h>
 
 
+extern char* current_executing_file;
+
 #define FILE_REGISTER(env, name, func)                                           \
     do                                                                           \
     {                                                                            \
@@ -56,6 +58,13 @@ Value native_file_realpath(int arity, Value *args) {
     char resolved_path[1024];
     if (realpath(args[0].as.string, resolved_path)) {
         return (Value){VAL_STRING, {.string = strdup(resolved_path)}};
+    }
+    return (Value){VAL_NIL};
+}
+
+Value native_file_current_script(int arity, Value *args) {
+    if (current_executing_file != NULL) {
+        return (Value){VAL_STRING, {.string = strdup(current_executing_file)}};
     }
     return (Value){VAL_NIL};
 }
