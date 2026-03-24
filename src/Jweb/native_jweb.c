@@ -438,6 +438,52 @@ Value native_check_file_change(int arity, Value* args) {
     return (Value){VAL_BOOL, {.boolean = false}};
 }
 
+Value native_web_send_file(int arity, Value* args) {
+    if (arity < 2 || args[1].type != VAL_STRING) return (Value){VAL_NIL, {0}};
+
+    int client_socket;
+    if (args[0].type == VAL_MAP) {
+        Value socket_val;
+        if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL, {0}};
+        client_socket = (int)socket_val.as.number;
+    } else {
+        client_socket = (int)args[0].as.number;
+    }
+
+    const char* file_path = args[1].as.string;
+    FILE* f = fopen(file_path, "rb");
+    if (!f) {
+        char* error404 = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+        send(client_socket, error404, strlen(error404), 0);
+        close(client_socket);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    fseek(f, 0, SEEK_END);
+    long file_size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char header[512];
+    int header_len = snprintf(header, sizeof(header),
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: %s\r\n"
+        "Content-Length: %ld\r\n"
+        "Connection: close\r\n\r\n", 
+        get_mime_type(file_path), file_size);
+    
+    send(client_socket, header, header_len, 0);
+
+    char buffer[8192];
+    size_t bytes_read;
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+        send(client_socket, buffer, bytes_read, 0);
+    }
+
+    fclose(f);
+    close(client_socket);
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
+
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
     JWEB_REGISTER(env, "__accept__", native_web_poll);
