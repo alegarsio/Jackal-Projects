@@ -6,6 +6,7 @@ class StaticRouter{
         this.current_prefix = ""
         this.lastPath = ""
         this.hotReload = false
+
     }
 }
 

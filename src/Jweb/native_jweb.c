@@ -31,6 +31,20 @@ typedef struct {
         }                                                                        \
     } while (0)
 
+const char* get_mime_type(const char* filename) {
+    const char* dot = strrchr(filename, '.');
+    if (!dot) return "application/octet-stream";
+    if (strcmp(dot, ".html") == 0) return "text/html";
+    if (strcmp(dot, ".css") == 0) return "text/css";
+    if (strcmp(dot, ".js") == 0) return "application/javascript";
+    if (strcmp(dot, ".json") == 0) return "application/json";
+    if (strcmp(dot, ".png") == 0) return "image/png";
+    if (strcmp(dot, ".jpg") == 0 || strcmp(dot, ".jpeg") == 0) return "image/jpeg";
+    if (strcmp(dot, ".gif") == 0) return "image/gif";
+    if (strcmp(dot, ".svg") == 0) return "image/svg+xml";
+    return "text/plain";
+}
+
 static void parse_query_params(HashMap* map, char* query_string) {
     if (!query_string || strlen(query_string) == 0) return;
     char* saveptr1;
