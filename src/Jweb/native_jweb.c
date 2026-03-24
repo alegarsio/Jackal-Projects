@@ -485,7 +485,50 @@ Value native_web_send_file(int arity, Value* args) {
     return (Value){VAL_BOOL, {.boolean = true}};
 }
 
+Value native_web_send_auto(int arity, Value* args) {
+    if (arity < 2) return (Value){VAL_NIL, {0}};
 
+    int client_socket;
+    if (args[0].type == VAL_MAP) {
+        Value socket_val;
+        if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL, {0}};
+        client_socket = (int)socket_val.as.number;
+    } else {
+        client_socket = (int)args[0].as.number;
+    }
+
+    Value data = args[1];
+
+    if (data.type == VAL_MAP || data.type == VAL_ARRAY) {
+        AsyncResponseData* async_data = malloc(sizeof(AsyncResponseData));
+        async_data->client_socket = client_socket;
+        async_data->data = data;
+
+        pthread_t thread;
+        pthread_create(&thread, NULL, async_send_thread, async_data);
+        pthread_detach(thread);
+    } 
+    else {
+        char* raw_content = value_to_string(data);
+        char html_body[2048];
+        snprintf(html_body, sizeof(html_body), "<h1>%s</h1>", raw_content);
+
+        char header[512];
+        int header_len = snprintf(header, sizeof(header),
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: %zu\r\n"
+            "Connection: close\r\n\r\n", strlen(html_body));
+
+        send(client_socket, header, header_len, 0);
+        send(client_socket, html_body, strlen(html_body), 0);
+        
+        close(client_socket);
+        free(raw_content);
+    }
+
+    return (Value){VAL_BOOL, {.boolean = true}};
+}
 
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
