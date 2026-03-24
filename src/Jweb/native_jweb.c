@@ -543,4 +543,5 @@ void register_jweb_natives(Env *env){
     JWEB_REGISTER(env,"__native_forward__",native_gateway_forward);
     JWEB_REGISTER(env,"__check_file_change__",native_check_file_change);
     JWEB_REGISTER(env,"__send_file__",native_web_send_file);
+    JWEB_REGISTER(env,"__send__",native_web_send_auto);
 }
