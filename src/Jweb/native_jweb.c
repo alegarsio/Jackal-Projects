@@ -42,6 +42,7 @@ const char* get_mime_type(const char* filename) {
     if (strcmp(dot, ".jpg") == 0 || strcmp(dot, ".jpeg") == 0) return "image/jpeg";
     if (strcmp(dot, ".gif") == 0) return "image/gif";
     if (strcmp(dot, ".svg") == 0) return "image/svg+xml";
+    if (strcmp(dot, ".csv") == 0) return "text/csv";
     return "text/plain";
 }
 
@@ -483,6 +484,8 @@ Value native_web_send_file(int arity, Value* args) {
     close(client_socket);
     return (Value){VAL_BOOL, {.boolean = true}};
 }
+
+
 
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
