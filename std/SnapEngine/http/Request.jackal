@@ -25,4 +25,8 @@ object Request(){
     func forward(host, port){
         return __native_forward__(_raw, host, port)
     }
+
+    func file(path : String){
+        return __send_file__(_raw, path)
+    }
 }
