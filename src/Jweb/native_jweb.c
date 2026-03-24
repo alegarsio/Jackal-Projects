@@ -10,8 +10,11 @@
 #include <fcntl.h>       
 #include <pthread.h>
 #include "eval.h"
+#include <openssl/ssl.h>
+#include <sys/stat.h>
 
 int global_server_fd = -1;
+long last_mtime = 0;
 
 typedef struct {
     int client_socket;
@@ -396,6 +399,29 @@ Value native_gateway_forward(int arity, Value* args) {
     close(client_socket);
 
     return (Value){VAL_BOOL, {.boolean = true}};
+}
+
+Value native_check_file_change(int arity, Value* args) {
+    if (arity < 1 || args[0].type != VAL_STRING) {
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
+    char* file_path = args[0].as.string;
+    struct stat attr;
+
+    if (stat(file_path, &attr) == 0) {
+        if (last_mtime == 0) {
+            last_mtime = attr.st_mtime;
+            return (Value){VAL_BOOL, {.boolean = false}};
+        }
+
+        if (attr.st_mtime > last_mtime) {
+            last_mtime = attr.st_mtime;
+            return (Value){VAL_BOOL, {.boolean = true}};
+        }
+    }
+
+    return (Value){VAL_BOOL, {.boolean = false}};
 }
 
 void register_jweb_natives(Env *env){
