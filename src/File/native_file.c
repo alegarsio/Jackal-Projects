@@ -163,5 +163,6 @@ void register_file_natives(Env *env)
     FILE_REGISTER(env,"__ioFile_create",native_file_create);
     FILE_REGISTER(env,"__ioFile_remove",native_file_remove);
     FILE_REGISTER(env,"__ioFile_rename",native_file_rename);
+    FILE_REGISTER(env,"__ioFile_getcwd__",native_file_getcwd);
 
 }
