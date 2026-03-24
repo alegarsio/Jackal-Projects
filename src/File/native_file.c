@@ -5,6 +5,7 @@
 #include <math.h>
 #include<sys/stat.h>
 #include<curl/curl.h>
+#include <unistd.h>
 
 
 #define FILE_REGISTER(env, name, func)                                           \
@@ -39,6 +40,14 @@ Value native_file_read(int arity, Value *args)
 
     string[fsize] = 0;
     return (Value){VAL_STRING, {.string = string}};
+}
+
+Value native_file_getcwd(int arity, Value *args) {
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        return (Value){VAL_STRING, {.string = strdup(cwd)}};
+    }
+    return (Value){VAL_NIL};
 }
 
 Value native_file_exists(int arity, Value *args)
