@@ -693,4 +693,5 @@ void register_jweb_natives(Env *env){
     JWEB_REGISTER(env,"__send_file__",native_web_send_file);
     JWEB_REGISTER(env,"__send__",native_web_send_auto);
     JWEB_REGISTER(env,"__remote__",native_jk_remote_call);
+    JWEB_REGISTER(env,"__node_listen__",native_node_listen);
 }
