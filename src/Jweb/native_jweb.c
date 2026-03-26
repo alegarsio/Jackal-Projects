@@ -68,32 +68,18 @@ static void parse_query_params(HashMap* map, char* query_string) {
 Value deserialize_to_jackal(char* buffer, int length) {
     if (length <= 0) return (Value){VAL_NIL};
 
-    if (buffer[0] == '[') {
-        ValueArray* array = array_new();
+    if (buffer[0] == '{' || buffer[0] == '[') {
+        Value json_arg = (Value){VAL_STRING, {.string = buffer}};
         
-        char* token = strtok(buffer + 1, ",]");
-        while (token != NULL) {
-            double num = strtod(token, NULL);
-            Value val;
-            val.type = VAL_NUMBER;
-            val.as.number = num;
-            val.gc_info = NULL; 
-            
-            array_append(array, val);
-            token = strtok(NULL, ",]");
-        }
-        
-        Value result;
-        result.type = VAL_ARRAY;
-        result.as.array = array;
-        result.gc_info = NULL;
-        return result;
+        return native_json_parse(1, &json_arg);
     } 
 
-    if (buffer[0] >= '0' && buffer[0] <= '9') {
+    char* endptr;
+    double num = strtod(buffer, &endptr);
+    if (endptr != buffer) {
         Value result;
         result.type = VAL_NUMBER;
-        result.as.number = strtod(buffer, NULL);
+        result.as.number = num;
         result.gc_info = NULL;
         return result;
     }
@@ -633,49 +619,68 @@ Value native_node_listen(int arity, Value* args) {
     address.sin_port = htons(port);
 
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("[NODE] BIND Failed");
         close(server_fd);
         return (Value){VAL_BOOL, {.boolean = false}};
     }
     
     listen(server_fd, 5);
+    printf("\n[NODE] Listener started on port %d...\n", port);
+    fflush(stdout);
 
     while (1) {
         int new_socket = accept(server_fd, NULL, NULL);
         if (new_socket < 0) continue;
 
         char buffer[1024] = {0};
-        int valread = read(new_socket, buffer, 1024);
+        int valread = read(new_socket, buffer, 1023);
+        
         if (valread <= 0) {
             close(new_socket);
             continue;
         }
 
-        strtok(buffer, "\r\n ");
+        buffer[valread] = '\0';
+        for(int i = 0; i < valread; i++) {
+            if(buffer[i] == '\r' || buffer[i] == '\n' || buffer[i] == ' ') {
+                buffer[i] = '\0';
+                break;
+            }
+        }
+
+        printf("[NODE] Request: '%s'\n", buffer);
+        fflush(stdout);
 
         Var* func_var = find_var(global_env, buffer); 
         
         if (func_var && func_var->value.type == VAL_FUNCTION) {
-           
             Env* context_env = func_var->value.as.function->env;
             if (context_env == NULL) context_env = global_env;
 
             Value res = call_jackal_function(context_env, func_var->value, 0, NULL);
             
-            char* response_str = value_to_string(res); 
-            send(new_socket, response_str, strlen(response_str), 0);
+            Value json_str_val = builtin_json_encode(1, &res);
             
-            free(response_str);
+            if (json_str_val.type == VAL_STRING) {
+                char* response_json = json_str_val.as.string;
+                send(new_socket, response_json, strlen(response_json), 0);
+                printf("[NODE] Sent JSON: %s\n", response_json);
+            } else {
+                char* raw_res = value_to_string(res);
+                send(new_socket, raw_res, strlen(raw_res), 0);
+                free(raw_res);
+            }
         } else {
-            char* error_msg = "null";
-            send(new_socket, error_msg, strlen(error_msg), 0);
+            printf("[NODE] Error: Function '%s' not found\n", buffer);
+            send(new_socket, "null", 4, 0);
         }
-
+        
+        fflush(stdout);
         close(new_socket);
     }
 
     return (Value){VAL_NIL};
 }
-
 
 
 void register_jweb_natives(Env *env){
