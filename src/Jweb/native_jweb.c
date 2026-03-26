@@ -10,6 +10,8 @@
 #include <fcntl.h>       
 #include <pthread.h>
 #include "eval.h"
+#include "value.h"
+#include "common.h"
 #include <openssl/ssl.h>
 #include <sys/stat.h>
 
@@ -60,6 +62,41 @@ static void parse_query_params(HashMap* map, char* query_string) {
         }
         pair = strtok_r(NULL, "&", &saveptr1);
     }
+}
+Value deserialize_to_jackal(char* buffer, int length) {
+    if (length <= 0) return (Value){VAL_NIL};
+
+    if (buffer[0] == '[') {
+        ValueArray* array = array_new();
+        
+        char* token = strtok(buffer + 1, ",]");
+        while (token != NULL) {
+            double num = strtod(token, NULL);
+            Value val;
+            val.type = VAL_NUMBER;
+            val.as.number = num;
+            val.gc_info = NULL; 
+            
+            array_append(array, val);
+            token = strtok(NULL, ",]");
+        }
+        
+        Value result;
+        result.type = VAL_ARRAY;
+        result.as.array = array;
+        result.gc_info = NULL;
+        return result;
+    } 
+
+    if (buffer[0] >= '0' && buffer[0] <= '9') {
+        Value result;
+        result.type = VAL_NUMBER;
+        result.as.number = strtod(buffer, NULL);
+        result.gc_info = NULL;
+        return result;
+    }
+
+    return (Value){VAL_NIL};
 }
 
 void* async_send_thread(void* arg) {
@@ -510,24 +547,25 @@ Value native_web_send_auto(int arity, Value* args) {
     } 
     else {
         char* raw_content = value_to_string(data);
-        char html_body[2048];
-        snprintf(html_body, sizeof(html_body), "<h1>%s</h1>", raw_content);
+        size_t content_len = strlen(raw_content);
+
+        const char* content_type = strchr(raw_content, '<') ? "text/html" : "text/plain";
 
         char header[512];
         int header_len = snprintf(header, sizeof(header),
             "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html\r\n"
+            "Content-Type: %s\r\n"
             "Content-Length: %zu\r\n"
-            "Connection: close\r\n\r\n", strlen(html_body));
+            "Connection: close\r\n\r\n", content_type, content_len);
 
         send(client_socket, header, header_len, 0);
-        send(client_socket, html_body, strlen(html_body), 0);
+        send(client_socket, raw_content, content_len, 0);
         
         close(client_socket);
         free(raw_content);
     }
 
-    return (Value){VAL_BOOL, {.boolean = true}};
+    return (Value){VAL_BOOL, {.boolean = true}}; 
 }
 
 void register_jweb_natives(Env *env){
