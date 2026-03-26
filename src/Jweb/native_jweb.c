@@ -99,6 +99,50 @@ Value deserialize_to_jackal(char* buffer, int length) {
     return (Value){VAL_NIL};
 }
 
+Value native_jk_remote_call(int arity, Value* args) {
+    if (arity < 3) return (Value){VAL_NIL};
+
+    char* ip = AS_CSTRING(args[0]);
+    int port = (int)args[1].as.number;
+    char* func_name = AS_CSTRING(args[2]);
+
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) return (Value){VAL_NIL};
+
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    
+    if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
+        close(sock);
+        return (Value){VAL_NIL};
+    }
+
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        close(sock);
+        return (Value){VAL_NIL};
+    }
+
+    send(sock, func_name, strlen(func_name), 0);
+
+    char* buffer = malloc(65536);
+    int bytes_received = recv(sock, buffer, 65535, 0);
+    
+    close(sock);
+
+    if (bytes_received <= 0) {
+        free(buffer);
+        return (Value){VAL_NIL};
+    }
+
+    buffer[bytes_received] = '\0';
+    Value result = deserialize_to_jackal(buffer, bytes_received);
+    
+    free(buffer);
+    return result;
+}
+
 void* async_send_thread(void* arg) {
     AsyncResponseData* async_data = (AsyncResponseData*)arg;
     Value data_to_encode = async_data->data;
