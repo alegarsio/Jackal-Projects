@@ -29,4 +29,8 @@ object Request(){
     func file(path : String){
         return __send_file__(_raw, path)
     }
+
+    func send(content) {
+        return __send__(_raw,content)
+    }
 }
