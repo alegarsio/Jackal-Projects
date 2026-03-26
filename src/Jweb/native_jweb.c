@@ -24,6 +24,8 @@ typedef struct {
     Value req_copy;
 } AsyncResponseData;
 
+extern Env* global_env;
+
 #define JWEB_REGISTER(env, name, func)                                           \
     do                                                                           \
     {                                                                            \
@@ -171,6 +173,9 @@ void* async_send_thread(void* arg) {
     free(async_data);
     return NULL;
 }
+
+
+
 
 Value native_web_listen(int arity, Value* args) {
     if (arity < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NIL};
@@ -612,6 +617,67 @@ Value native_web_send_auto(int arity, Value* args) {
     return (Value){VAL_BOOL, {.boolean = true}}; 
 }
 
+
+Value native_node_listen(int arity, Value* args) {
+    if (arity < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NIL};
+    
+    int port = (int)args[0].as.number;
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    int opt = 1;
+    
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    
+    struct sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        close(server_fd);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+    
+    listen(server_fd, 5);
+
+    while (1) {
+        int new_socket = accept(server_fd, NULL, NULL);
+        if (new_socket < 0) continue;
+
+        char buffer[1024] = {0};
+        int valread = read(new_socket, buffer, 1024);
+        if (valread <= 0) {
+            close(new_socket);
+            continue;
+        }
+
+        strtok(buffer, "\r\n ");
+
+        Var* func_var = find_var(global_env, buffer); 
+        
+        if (func_var && func_var->value.type == VAL_FUNCTION) {
+           
+            Env* context_env = func_var->value.as.function->env;
+            if (context_env == NULL) context_env = global_env;
+
+            Value res = call_jackal_function(context_env, func_var->value, 0, NULL);
+            
+            char* response_str = value_to_string(res); 
+            send(new_socket, response_str, strlen(response_str), 0);
+            
+            free(response_str);
+        } else {
+            char* error_msg = "null";
+            send(new_socket, error_msg, strlen(error_msg), 0);
+        }
+
+        close(new_socket);
+    }
+
+    return (Value){VAL_NIL};
+}
+
+
+
 void register_jweb_natives(Env *env){
     JWEB_REGISTER(env, "__listen__", native_web_listen);
     JWEB_REGISTER(env, "__accept__", native_web_poll);
@@ -626,4 +692,5 @@ void register_jweb_natives(Env *env){
     JWEB_REGISTER(env,"__check_file_change__",native_check_file_change);
     JWEB_REGISTER(env,"__send_file__",native_web_send_file);
     JWEB_REGISTER(env,"__send__",native_web_send_auto);
+    JWEB_REGISTER(env,"__remote__",native_jk_remote_call);
 }
