@@ -1,0 +1,12 @@
+object Node(){
+    func call(host : String , port : Number , func_name){
+        return __remote__(host,port,func_name)
+    }
+    func spawn(host : String , port : Number, code){
+        return __remote__(host,port, ("SPAWN:" + code))
+    }
+    func listen(port : Number){
+        return __node_listen__(port)
+    }
+    
+}
