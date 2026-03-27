@@ -60,6 +60,75 @@ Create a file with a `.jackal` extension and run it:
 
 ---
 
+## Control Flow 
+Jackal Control Flow : `if`,`else if`,`else`, `while` , `for`, `match` , `break` , `continue` 
+## Error Handling
+Jackal Error Handling : `try`,`catch`,`throw`
+## Reactive 
+Jackal Reactive : `every`, `until`, `observe`
+## Keyword 
+Jackal Keyword :
+### Object 
+- `class` : use `:` to extends and  `,` to implements
+- `object`
+### Record
+- `struct`
+- `enum`
+### Contract
+- `trait` 
+
+## Data Type
+Jackal data types : 
+- `Number` : `Int`, `Float` 
+- `Boolean` : `true`, `false`
+- `String` 
+- `Byte` 
+
+### Array Data Type
+
+#### Basic Data Type
+
+- `Array<String>`
+- `Array<Int>`
+- `Array<Float>`
+- `Array<Byte>`
+
+#### Object Data Type
+
+- `Array<Pair>`
+- `Array<Instance>` : Example you have a class with name Node you can use your class name as array data type in jackal .
+
+## Available Library
+Jackal std library :
+### Std Library (File)
+- `std.File`
+- `std.Csv`
+### Std Library (Numeric)
+- `std.Math`
+- `std.Vector`
+### Std Library (Network)
+To ensure the jackal std network library work we recomend you to use WSL if your operating system is Windows.
+- `std.http`
+- `std.socket`
+### Std Library (Collection)
+- `std.collections.ArrayList`
+- `std.collections.Queue`
+- `std.collections.Stack`
+### Std Library (Database)
+-  `std.Mysql`
+-  `std.Sqlite`
+
+## Native Function
+Jackal Native Function :
+
+### Array
+- `push`
+- `set`
+- `remove`
+- `length`
+
+
+
 ## Language Guide
 
 ### Print 
