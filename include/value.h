@@ -2,7 +2,6 @@
 #include "parser.h"
 #include "common.h"
 #include <stdbool.h>
-#include <cjson/cJSON.h>
 
 typedef struct {
     double* data;      
@@ -154,8 +153,8 @@ bool map_delete(HashMap *map, const char *key);
  * Jackal_value_to_cjson
  * @brief parse jackal std value to json format
  * @param jackal_val
- */
-cJSON *jackal_value_to_cjson(Value jackal_val);
+//  */
+// cJSON *jackal_value_to_cjson(Value jackal_val);
 
 /**
  * builin_read_line
@@ -197,7 +196,7 @@ Value builtin_array_mean(int argCount, Value *args);
 
 Value builtin_array_max(int argCount, Value *args);
 
-Value builtin_json_parse(int argCount, Value *args);
+// Value builtin_json_parse(int argCount, Value *args);
 
 Value builtin_json_stringify(int argCount, Value *args);
 
@@ -357,7 +356,7 @@ Value builtin_http_request(int argCount, Value *args);
 
 Value builtin_json_encode(int argCount, Value *args);
 
-cJSON *jackal_value_to_cjson(Value jackal_val);
+// cJSON *jackal_value_to_cjson(Value jackal_val);
 
 char* value_to_json_string(Value val);
 
