@@ -16,8 +16,15 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <curl/curl.h>
 #include <float.h>
+
+#if __has_include(<curl/curl.h>)
+    #include <curl/curl.h>
+    #define HAS_Curl 1
+#else
+    #define HAS_Curl 0
+#endif
+
 
 #if defined(__linux__) || (__APPLE__)
 #include <sys/socket.h>
