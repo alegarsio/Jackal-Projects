@@ -30,7 +30,6 @@ else ifeq ($(UNAME_S),Linux)
     CXX = g++
     CURL_CFLAGS = $(shell curl-config --cflags)
     CURL_LDFLAGS = $(shell curl-config --libs)
-
     MYSQL_CFLAGS = $(shell mysql_config --cflags) -DUSE_MYSQL
     MYSQL_LDFLAGS = $(shell mysql_config --libs)
 
@@ -42,7 +41,8 @@ else
     MYSQL_LDFLAGS = -lmysqlclient
 endif
 
-CFLAGS = -Wall -Wextra -std=c11 -Iinclude -g $(CURL_CFLAGS) $(CJSON_INCLUDE) $(MYSQL_CFLAGS)
+# PERUBAHAN DI SINI: Ditambahkan -D_GNU_SOURCE dan -D_DEFAULT_SOURCE
+CFLAGS = -Wall -Wextra -std=c11 -D_GNU_SOURCE -D_DEFAULT_SOURCE -Iinclude -g $(CURL_CFLAGS) $(CJSON_INCLUDE) $(MYSQL_CFLAGS)
 LDFLAGS = $(CJSON_LIBPATH) $(CURL_LDFLAGS) $(SQLITE_LDFLAGS) $(MYSQL_LDFLAGS) -lcjson -lm
 
 OBJDIR = obj
