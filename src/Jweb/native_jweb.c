@@ -50,6 +50,8 @@ const char* get_mime_type(const char* filename) {
     return "text/plain";
 }
 
+
+
 static void parse_query_params(HashMap* map, char* query_string) {
     if (!query_string || strlen(query_string) == 0) return;
     char* saveptr1;
@@ -372,6 +374,99 @@ char* read_file_to_string(const char* filename) {
     return string;
 }
 
+char* render_sub_block(const char* template, const char* alias, Value item) {
+    char *result = strdup(template);
+    if (item.type != VAL_MAP) return result;
+
+    HashMap *item_map = item.as.map;
+    for (int i = 0; i < item_map->capacity; i++) {
+        Entry *entry = &item_map->entries[i];
+        if (entry->key == NULL) continue;
+
+        char placeholder[128];
+        snprintf(placeholder, sizeof(placeholder), "{{%s.%s}}", alias, entry->key);
+
+        char *val_str = value_to_string(entry->value);
+        char *pos;
+        while ((pos = strstr(result, placeholder))) {
+            int prefix_len = pos - result;
+            int replace_len = strlen(placeholder);
+            int val_len = strlen(val_str);
+            
+            char *new_res = malloc(strlen(result) - replace_len + val_len + 1);
+            memcpy(new_res, result, prefix_len);
+            memcpy(new_res + prefix_len, val_str, val_len);
+            strcpy(new_res + prefix_len + val_len, pos + replace_len);
+            
+            free(result);
+            result = new_res;
+        }
+        free(val_str);
+    }
+    return result;
+}
+
+char *evaluate_template_loop(char *content, HashMap *data) {
+    char *start;
+    while ((start = strstr(content, "@foreach"))) {
+        char *end = strstr(start, "@endforeach");
+        if (!end) break;
+
+        char list_name[64], item_alias[64];
+        if (sscanf(start, "@foreach(%s as %[^)])", list_name, item_alias) != 2) {
+            if (sscanf(start, "@foreach (%s as %[^)])", list_name, item_alias) != 2) break;
+        }
+
+        Value list_val;
+        if (!map_get(data, list_name, &list_val) || list_val.type != VAL_ARRAY) {
+            int prefix_len = start - content;
+            int suffix_len = strlen(end + 11);
+            char *new_content = malloc(prefix_len + suffix_len + 1);
+            memcpy(new_content, content, prefix_len);
+            strcpy(new_content + prefix_len, end + 11);
+            free(content); content = new_content;
+            continue;
+        }
+
+        char *block_start = strstr(start, ")") + 1;
+        int block_len = end - block_start;
+        char *template_block = strndup(block_start, block_len);
+
+        char *repeated_html = strdup("");
+        
+        ValueArray *items = list_val.as.array; 
+
+        for (int i = 0; i < items->count; i++) {
+            Value current_item = items->values[i]; 
+            
+            char *rendered_item = render_sub_block(template_block, item_alias, current_item);
+            
+            char *temp = malloc(strlen(repeated_html) + strlen(rendered_item) + 1);
+            strcpy(temp, repeated_html);
+            strcat(temp, rendered_item);
+            
+            free(repeated_html);
+            free(rendered_item);
+            repeated_html = temp;
+        }
+
+        int prefix_len = start - content;
+        int suffix_len = strlen(end + 11);
+        char *final_res = malloc(prefix_len + strlen(repeated_html) + suffix_len + 1);
+        
+        memcpy(final_res, content, prefix_len);
+        memcpy(final_res + prefix_len, repeated_html, strlen(repeated_html));
+        strcpy(final_res + prefix_len + strlen(repeated_html), end + 11);
+
+        free(repeated_html);
+        free(template_block);
+        free(content);
+        content = final_res;
+    }
+    return content;
+}
+
+
 char* evaluate_template_logic(char* content, HashMap* data) {
     char *start;
     while ((start = strstr(content, "@if"))) {
@@ -439,6 +534,7 @@ Value native_render_file(int arity, Value *args) {
     if (arity == 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
 
+        content = evaluate_template_loop(content, data);
         content = evaluate_template_logic(content, data);
 
         for (int i = 0; i < data->capacity; i++) {
@@ -454,8 +550,8 @@ Value native_render_file(int arity, Value *args) {
             if (tmp) {
                 int count = 0;
                 char *ins = content;
-                int len_rep = strlen(placeholder);
-                int len_with = strlen(val_str);
+                int len_rep = (int)strlen(placeholder);
+                int len_with = (int)strlen(val_str);
 
                 while ((tmp = strstr(ins, placeholder))) {
                     count++;
@@ -472,7 +568,7 @@ Value native_render_file(int arity, Value *args) {
                 char *src = content;
                 while (count--) {
                     ins = strstr(src, placeholder);
-                    int len_front = ins - src;
+                    int len_front = (int)(ins - src);
                     memcpy(dest, src, len_front);
                     dest += len_front;
                     memcpy(dest, val_str, len_with);
