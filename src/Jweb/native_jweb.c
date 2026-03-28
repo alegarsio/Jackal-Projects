@@ -374,29 +374,53 @@ char* read_file_to_string(const char* filename) {
 
 Value native_render_file(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
+
     char *content = read_file_to_string(args[0].as.string);
     if (!content) return (Value){VAL_NIL};
+
     if (arity == 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
         for (int i = 0; i < data->capacity; i++) {
             Entry *entry = &data->entries[i];
-            if (entry->key != NULL) {
-                char placeholder[128]; sprintf(placeholder, "{{%s}}", entry->key);
-                char *val_str = value_to_string(entry->value);
-                char *ins, *tmp, *result;
-                int len_rep = strlen(placeholder), len_with = strlen(val_str), count = 0;
-                ins = content;
-                while ((tmp = strstr(ins, placeholder))) { count++; ins = tmp + len_rep; }
-                result = malloc(strlen(content) + (len_with - len_rep) * count + 1);
-                tmp = result; char* src = content;
+            if (entry->key == NULL) continue;
+
+            char placeholder[256];
+            snprintf(placeholder, sizeof(placeholder), "{{%s}}", entry->key);
+
+            char *val_str = value_to_string(entry->value);
+            char *tmp = strstr(content, placeholder);
+
+            if (tmp) {
+                int count = 0;
+                char *ins = content;
+                int len_rep = strlen(placeholder);
+                int len_with = strlen(val_str);
+
+                while ((tmp = strstr(ins, placeholder))) {
+                    count++;
+                    ins = tmp + len_rep;
+                }
+
+                char *result = malloc(strlen(content) + (len_with - len_rep) * count + 1);
+                if (!result) { free(val_str); break; }
+
+                char *dest = result;
+                char *src = content;
                 while (count--) {
                     ins = strstr(src, placeholder);
-                    int len_front = ins - src; memcpy(tmp, src, len_front);
-                    tmp += len_front; memcpy(tmp, val_str, len_with);
-                    tmp += len_with; src = ins + len_rep;
+                    int len_front = ins - src;
+                    memcpy(dest, src, len_front);
+                    dest += len_front;
+                    memcpy(dest, val_str, len_with);
+                    dest += len_with;
+                    src = ins + len_rep;
                 }
-                strcpy(tmp, src); free(content); content = result; free(val_str);
+                strcpy(dest, src);
+                
+                free(content); 
+                content = result; 
             }
+            free(val_str); 
         }
     }
     return (Value){VAL_STRING, {.string = content}};
@@ -432,13 +456,27 @@ Value native_web_send_docs(int arity, Value* args) {
 }
 
 Value native_send_html(int arity, Value *args) {
-    if (arity != 2 || args[1].type != VAL_STRING) return (Value){VAL_NIL};
+    if (arity != 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_STRING) {
+        return (Value){VAL_NIL};
+    }
+
     int client_socket = (int)args[0].as.number;
     const char *html_content = args[1].as.string;
+    size_t content_len = strlen(html_content);
+
     char header[512];
-    int header_len = sprintf(header, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %zu\r\nConnection: close\r\n\r\n", strlen(html_content));
+    int header_len = snprintf(header, sizeof(header),
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: %zu\r\n"
+        "Server: SnapEngine/1.0\r\n"
+        "Connection: close\r\n\r\n", 
+        content_len);
+
     send(client_socket, header, header_len, 0);
-    send(client_socket, html_content, strlen(html_content), 0);
+
+    send(client_socket, html_content, content_len, 0);
+
     return (Value){VAL_BOOL, {.boolean = true}};
 }
 Value native_gateway_forward(int arity, Value* args) {
@@ -625,15 +663,15 @@ Value native_node_listen(int arity, Value* args) {
     }
     
     listen(server_fd, 5);
-    printf("\n[NODE] Listener started on port %d...\n", port);
+    printf("\n[NODE] Listener active on port %d...\n", port);
     fflush(stdout);
 
     while (1) {
         int new_socket = accept(server_fd, NULL, NULL);
         if (new_socket < 0) continue;
 
-        char buffer[1024] = {0};
-        int valread = read(new_socket, buffer, 1023);
+        char buffer[8192] = {0};
+        int valread = read(new_socket, buffer, 8191);
         
         if (valread <= 0) {
             close(new_socket);
@@ -641,44 +679,39 @@ Value native_node_listen(int arity, Value* args) {
         }
 
         buffer[valread] = '\0';
-        for(int i = 0; i < valread; i++) {
-            if(buffer[i] == '\r' || buffer[i] == '\n' || buffer[i] == ' ') {
-                buffer[i] = '\0';
-                break;
-            }
-        }
 
-        printf("[NODE] Request: '%s'\n", buffer);
-        fflush(stdout);
-
-        Var* func_var = find_var(global_env, buffer); 
-        
-        if (func_var && func_var->value.type == VAL_FUNCTION) {
-            Env* context_env = func_var->value.as.function->env;
-            if (context_env == NULL) context_env = global_env;
-
-            Value res = call_jackal_function(context_env, func_var->value, 0, NULL);
+        if (strncmp(buffer, "SPAWN:", 6) == 0) {
+            char* code_to_run = buffer + 6;
+            printf("[NODE] Spawning dynamic code execution...\n");
             
-            Value json_str_val = builtin_json_encode(1, &res);
+            execute_source(code_to_run, global_env);
             
-            if (json_str_val.type == VAL_STRING) {
-                char* response_json = json_str_val.as.string;
-                send(new_socket, response_json, strlen(response_json), 0);
-                printf("[NODE] Sent JSON: %s\n", response_json);
-            } else {
-                char* raw_res = value_to_string(res);
-                send(new_socket, raw_res, strlen(raw_res), 0);
-                free(raw_res);
-            }
+            send(new_socket, "{\"status\":\"spawned\"}", 20, 0);
         } else {
-            printf("[NODE] Error: Function '%s' not found\n", buffer);
-            send(new_socket, "null", 4, 0);
+            buffer[strcspn(buffer, "\r\n ")] = 0;
+            
+            Var* func_var = find_var(global_env, buffer); 
+            
+            if (func_var && func_var->value.type == VAL_FUNCTION) {
+                Env* context_env = func_var->value.as.function->env;
+                if (context_env == NULL) context_env = global_env;
+
+                Value res = call_jackal_function(context_env, func_var->value, 0, NULL);
+                Value json_str_val = builtin_json_encode(1, &res);
+                
+                if (json_str_val.type == VAL_STRING) {
+                    send(new_socket, json_str_val.as.string, strlen(json_str_val.as.string), 0);
+                } else {
+                    send(new_socket, "null", 4, 0);
+                }
+            } else {
+                send(new_socket, "null", 4, 0);
+            }
         }
         
         fflush(stdout);
         close(new_socket);
     }
-
     return (Value){VAL_NIL};
 }
 
