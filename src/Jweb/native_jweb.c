@@ -35,6 +35,19 @@ extern Env* global_env;
         }                                                                        \
     } while (0)
 
+char* read_file_to_string(const char* filename) {
+    FILE* f = fopen(filename, "rb");
+    if (f == NULL) return NULL;
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char* string = malloc(fsize + 1);
+    fread(string, fsize, 1, f);
+    fclose(f);
+    string[fsize] = 0;
+    return string;
+}
+
 const char* get_mime_type(const char* filename) {
     const char* dot = strrchr(filename, '.');
     if (!dot) return "application/octet-stream";
@@ -361,18 +374,7 @@ Value native_match_route(int arity, Value *args) {
     return (Value){VAL_BOOL, {.boolean = (*p == '\0' && *pt == '\0')}};
 }
 
-char* read_file_to_string(const char* filename) {
-    FILE* f = fopen(filename, "rb");
-    if (f == NULL) return NULL;
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    char* string = malloc(fsize + 1);
-    fread(string, fsize, 1, f);
-    fclose(f);
-    string[fsize] = 0;
-    return string;
-}
+
 
 char* render_sub_block(const char* template, const char* alias, Value item) {
     char *result = strdup(template);
@@ -406,54 +408,97 @@ char* render_sub_block(const char* template, const char* alias, Value item) {
     return result;
 }
 
-char *evaluate_template_loop(char *content, HashMap *data) {
+char* evaluate_template_includes(char* content) {
+    char *start;
+    while ((start = strstr(content, "@include"))) {
+        char *open_paren = strchr(start, '(');
+        char *close_paren = strchr(start, ')');
+        if (!open_paren || !close_paren || open_paren > close_paren) break;
+
+        char filename[128];
+        char *quote_start = strpbrk(open_paren, "\"'");
+        char *quote_end = quote_start ? strpbrk(quote_start + 1, "\"'") : NULL;
+
+        if (!quote_start || !quote_end || quote_end > close_paren) break;
+
+        int name_len = quote_end - quote_start - 1;
+        strncpy(filename, quote_start + 1, name_len);
+        filename[name_len] = '\0';
+
+        char *include_content = read_file_to_string(filename);
+        if (!include_content) include_content = strdup("");
+
+        int prefix_len = (int)(start - content);
+        int include_len = (int)strlen(include_content);
+        int suffix_len = (int)strlen(close_paren + 1);
+
+        char *new_content = malloc(prefix_len + include_len + suffix_len + 1);
+        if (!new_content) {
+            free(include_content);
+            break;
+        }
+
+        memcpy(new_content, content, prefix_len);
+        memcpy(new_content + prefix_len, include_content, include_len);
+        strcpy(new_content + prefix_len + include_len, close_paren + 1);
+
+        free(include_content);
+        free(content);
+        content = new_content;
+    }
+    return content;
+}
+
+char* evaluate_template_loop(char* content, HashMap* data) {
     char *start;
     while ((start = strstr(content, "@foreach"))) {
         char *end = strstr(start, "@endforeach");
         if (!end) break;
 
         char list_name[64], item_alias[64];
-        if (sscanf(start, "@foreach(%s as %[^)])", list_name, item_alias) != 2) {
-            if (sscanf(start, "@foreach (%s as %[^)])", list_name, item_alias) != 2) break;
-        }
+        char *open_p = strchr(start, '(');
+        char *close_p = strchr(start, ')');
+        if (!open_p || !close_p || open_p > close_p) break;
+
+        char loop_inner[128];
+        int inner_len = close_p - open_p - 1;
+        strncpy(loop_inner, open_p + 1, inner_len);
+        loop_inner[inner_len] = '\0';
+
+        if (sscanf(loop_inner, "%s as %s", list_name, item_alias) != 2) break;
 
         Value list_val;
         if (!map_get(data, list_name, &list_val) || list_val.type != VAL_ARRAY) {
-            int prefix_len = start - content;
-            int suffix_len = strlen(end + 11);
+            int prefix_len = (int)(start - content);
+            int suffix_len = (int)strlen(end + 11);
             char *new_content = malloc(prefix_len + suffix_len + 1);
             memcpy(new_content, content, prefix_len);
             strcpy(new_content + prefix_len, end + 11);
-            free(content); content = new_content;
+            free(content);
+            content = new_content;
             continue;
         }
 
-        char *block_start = strstr(start, ")") + 1;
-        int block_len = end - block_start;
+        char *block_start = close_p + 1;
+        int block_len = (int)(end - block_start);
         char *template_block = strndup(block_start, block_len);
 
         char *repeated_html = strdup("");
-        
-        ValueArray *items = list_val.as.array; 
+        ValueArray *items = list_val.as.array;
 
         for (int i = 0; i < items->count; i++) {
-            Value current_item = items->values[i]; 
-            
-            char *rendered_item = render_sub_block(template_block, item_alias, current_item);
-            
+            char *rendered_item = render_sub_block(template_block, item_alias, items->values[i]);
             char *temp = malloc(strlen(repeated_html) + strlen(rendered_item) + 1);
             strcpy(temp, repeated_html);
             strcat(temp, rendered_item);
-            
             free(repeated_html);
             free(rendered_item);
             repeated_html = temp;
         }
 
-        int prefix_len = start - content;
-        int suffix_len = strlen(end + 11);
+        int prefix_len = (int)(start - content);
+        int suffix_len = (int)strlen(end + 11);
         char *final_res = malloc(prefix_len + strlen(repeated_html) + suffix_len + 1);
-        
         memcpy(final_res, content, prefix_len);
         memcpy(final_res + prefix_len, repeated_html, strlen(repeated_html));
         strcpy(final_res + prefix_len + strlen(repeated_html), end + 11);
@@ -531,6 +576,8 @@ Value native_render_file(int arity, Value *args) {
     char *content = read_file_to_string(args[0].as.string);
     if (!content) return (Value){VAL_NIL};
 
+    content = evaluate_template_includes(content);
+
     if (arity == 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
 
@@ -585,7 +632,6 @@ Value native_render_file(int arity, Value *args) {
     }
     return (Value){VAL_STRING, {.string = content}};
 }
-
 Value native_web_send_docs(int arity, Value* args) {
     if (arity < 1) return (Value){VAL_NIL};
     
