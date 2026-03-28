@@ -372,6 +372,64 @@ char* read_file_to_string(const char* filename) {
     return string;
 }
 
+char* evaluate_template_logic(char* content, HashMap* data) {
+    char *start;
+    while ((start = strstr(content, "@if"))) {
+        char *end = strstr(start, "@endif");
+        if (!end) break;
+
+        char condition[128];
+        if (sscanf(start, "@if(%[^)])", condition) != 1) {
+            if (sscanf(start, "@if (%[^)])", condition) != 1) break;
+        }
+
+        Value val;
+        bool is_true = false;
+        if (map_get(data, condition, &val)) {
+            if (val.type == VAL_BOOL) is_true = val.as.boolean;
+            else if (val.type == VAL_STRING) is_true = strlen(val.as.string) > 0;
+            else if (val.type == VAL_NUMBER) is_true = val.as.number != 0;
+        }
+
+        char *block_start = strstr(start, ")") + 1;
+        char *else_p = strstr(block_start, "@else");
+        if (else_p && else_p > end) else_p = NULL;
+
+        char *selected_text = NULL;
+        int selected_len = 0;
+
+        if (is_true) {
+            char *limit = else_p ? else_p : end;
+            selected_len = limit - block_start;
+            selected_text = malloc(selected_len + 1);
+            memcpy(selected_text, block_start, selected_len);
+            selected_text[selected_len] = '\0';
+        } else if (else_p) {
+            char *else_content_start = else_p + 5;
+            selected_len = end - else_content_start;
+            selected_text = malloc(selected_len + 1);
+            memcpy(selected_text, else_content_start, selected_len);
+            selected_text[selected_len] = '\0';
+        } else {
+            selected_text = strdup("");
+            selected_len = 0;
+        }
+
+        int prefix_len = start - content;
+        int suffix_len = strlen(end + 6);
+        char *new_content = malloc(prefix_len + selected_len + suffix_len + 1);
+
+        memcpy(new_content, content, prefix_len);
+        memcpy(new_content + prefix_len, selected_text, selected_len);
+        strcpy(new_content + prefix_len + selected_len, end + 6);
+
+        free(selected_text);
+        free(content);
+        content = new_content;
+    }
+    return content;
+}
+
 Value native_render_file(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
 
@@ -380,6 +438,9 @@ Value native_render_file(int arity, Value *args) {
 
     if (arity == 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
+
+        content = evaluate_template_logic(content, data);
+
         for (int i = 0; i < data->capacity; i++) {
             Entry *entry = &data->entries[i];
             if (entry->key == NULL) continue;
@@ -402,7 +463,10 @@ Value native_render_file(int arity, Value *args) {
                 }
 
                 char *result = malloc(strlen(content) + (len_with - len_rep) * count + 1);
-                if (!result) { free(val_str); break; }
+                if (!result) { 
+                    free(val_str); 
+                    break; 
+                }
 
                 char *dest = result;
                 char *src = content;
