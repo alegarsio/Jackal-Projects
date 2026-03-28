@@ -14,9 +14,15 @@ static char peek(Lexer *L)
  * @brief Gets the current character and advances the position.
  * @param L Pointer to the Lexer.
  */
-static char get(Lexer *L)
-{
-    return L->src[L->pos++];
+static char get(Lexer *L) {
+    char c = L->src[L->pos++];
+    if (c == '\n') {
+        L->line++;
+        L->column = 1;
+    } else {
+        L->column++;
+    }
+    return c;
 }
 
 /**
@@ -82,12 +88,12 @@ static void skip_ws(Lexer *L)
  * @param L Pointer to the Lexer to be initialized.
  * @param src The source code to be lexed.
  */
-void lexer_init(Lexer *L, const char *src)
-{
+void lexer_init(Lexer *L, const char *src) {
     L->src = src;
     L->pos = 0;
+    L->line = 1;
+    L->column = 1;
 }
-
 /**
  * @brief Matches the current character with the expected character.
  * If they match, advances the position.
@@ -113,7 +119,7 @@ Token lexer_next(Lexer *L)
 {
     skip_ws(L);
     char c = peek(L);
-    Token tk = {TOKEN_INVALID, "", 0.0};
+    Token tk = {TOKEN_INVALID, "", 0.0, L->line, L->column};
 
     if (c == '\0')
     {

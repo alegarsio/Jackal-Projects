@@ -8,5 +8,4 @@ object Node(){
     func listen(port : Number){
         return __node_listen__(port)
     }
-    
 }

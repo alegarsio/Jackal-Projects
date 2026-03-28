@@ -49,6 +49,8 @@
 
 #define HTTP_DEFAULT_PORT 80
 #define BUFFER_SIZE 4096
+char* current_executing_file = NULL;
+Env* global_env = NULL;
 
 Value builtin_vm_memory(int argCount, Value *args)
 {
@@ -921,6 +923,7 @@ void runFile(const char *path, Env *env)
 int global_argc;
 char** global_argv;
 
+
 int main(int argc, char **argv)
 {
     global_argc = argc;
@@ -928,6 +931,7 @@ int main(int argc, char **argv)
 
     net_init();
     Env *env = env_new(NULL);
+    global_env = env;
     register_all_natives(env);
     load_jackal_file("std/io.jackal", env);
     load_jackal_file("std/stream.jackal", env);

@@ -62,7 +62,7 @@ void register_all_natives(Env* env) {
     // SAFE_REGISTER(env, "__io_autostream", builtin_read_line);
     SAFE_REGISTER(env, "__io_read_array", builtin_read_array);
     SAFE_REGISTER(env, "__io_table_stream", builtin_print_table);
-    SAFE_REGISTER(env, "__io_json", builtin_print_json);
+    // SAFE_REGISTER(env, "__io_json", builtin_print_json);
     SAFE_REGISTER(env, "_io_plot", builtin_plot);
 
     // SAFE_REGISTER(env, "__array_distinct", builtin_array_distinct);
@@ -113,9 +113,9 @@ void register_all_natives(Env* env) {
 
     SAFE_REGISTER(env, "__read_csv", native_read_csv);
     SAFE_REGISTER(env, "__read_csv_advance", native_load_csv_smart);
-    SAFE_REGISTER(env, "__json_parse", builtin_json_parse);
-    SAFE_REGISTER(env, "__json_encode", builtin_json_encode);
-    SAFE_REGISTER(env, "__json_string", builtin_json_stringify);
+    // SAFE_REGISTER(env, "__json_parse", builtin_json_parse);
+    // SAFE_REGISTER(env, "__json_encode", builtin_json_encode);
+    // SAFE_REGISTER(env, "__json_string", builtin_json_stringify);
     SAFE_REGISTER(env, "__save_jml", native_save_jml);
     SAFE_REGISTER(env, "__load_jml", native_load_jml);
     SAFE_REGISTER(env, "__jackal_sleep", builtin_jackal_sleep);

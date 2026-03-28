@@ -13,7 +13,7 @@
 **/
 
 func range(a : Int , b : Int) -> Array
-    return a..b
+    return [a..b]
 
 
 object input(){

@@ -6,6 +6,10 @@ object Request(){
         _raw = data
     }
 
+    func getRaw() {
+        return _raw
+    }
+
     func header(key) {
         return _raw["headers"][key]
     }

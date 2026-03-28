@@ -1,9 +1,13 @@
 import std.http.Router.StaticRouter
 import std.http.Abstract.RouterAbstractMethod
 import std.http.response
+
 import std.SnapEngine.middleware.Guard
 import std.SnapEngine.ViewEngine.core
 import std.SnapEngine.http.Request
+import std.SnapEngine.session.core
+import std.SnapEngine.remote.Node 
+import std.SnapEngine.ViewEngine.core 
 
 /**
  * Auth is now deprecated 
@@ -25,8 +29,17 @@ import std.SnapEngine.http.Request
 //     }
 // }
 
-@deprecated
-func render(req, file, data) = req["view"].render(file, data)
+func render(file, data) {
+    let req = Request.getRaw()
+    let view = req["view"]
+    
+    if (view == nil) {
+        println("Error: View Engine tidak terinisialisasi dalam request ini!")
+        return false
+    }
+    
+    return view.render(file, data)
+}
 func redirect(req, url) = __redirect__(req, url) 
 
 class Api : StaticRouter, RouterAbstractMethod {
@@ -116,17 +129,27 @@ class Api : StaticRouter, RouterAbstractMethod {
             while (true) {
                 let req = __accept__()
                 if (req != nil) {
-               
                     if (req["body"] == nil) { req["body"] = {} }
                     if (req["params"] == nil) { req["params"] = {} }
-                    if (req["headers"] == nil) { req["headers"] = {} } // Tambahkan ini
+                    if (req["headers"] == nil) { req["headers"] = {} } 
+
+                    let viewEngine = View(req)
+                    __map_set_manual__(req, "view", viewEngine)
+                    
+                    Request._setRaw(req)
 
                     let p = req["path"]
                     let m = req["method"]
                     let addr = req["address"]
 
-                    if (p == "/docs") { __send_docs__(req); continue }
-                    if (p == "/swagger.json") { __send_json__(req, this.generateSwagger()); continue }
+                    if (p == "/docs") { 
+                        __send_docs__(req)
+                        continue 
+                    }
+                    if (p == "/swagger.json") { 
+                        __send_json__(req, this.generateSwagger())
+                        continue 
+                    }
 
                     let matchedPat = nil
                     for pat in this.pats {
@@ -137,46 +160,40 @@ class Api : StaticRouter, RouterAbstractMethod {
                     }
 
                     if (matchedPat != nil) {
-                      
-                        Request._setRaw(req)
-                        
                         let allowed = true
+                        let m_list = this.middlewares[matchedPat]
                         
-                        let check_paths = ["/", matchedPat] 
-                        
-                        for c_path in check_paths {
-                            let m_list = this.middlewares[c_path]
-                            if (m_list != nil) {
-                                for m_func in m_list {
-                                    let m_res = m_func(req)
-                                    if (m_res != nil) {
-                                        println("[" + addr + "] " + m + " " + p + " -> 401 Unauthorized")
-                                        __send_json__(req, m_res)
-                                        allowed = false
-                                        break 
-                                    }
+                        if (m_list != nil) {
+                            for m_func in m_list {
+                                let m_res = m_func(req)
+                                if (m_res != nil) {
+                                    println("[" + addr + "] " + m + " " + p + " -> 401 Unauthorized")
+                                    __send_json__(req, m_res)
+                                    allowed = false
+                                    break 
                                 }
                             }
-                            if (allowed == false) { break }
                         }
 
                         if (allowed) {
                             let pathData = this.routes[matchedPat]
                             let handler = pathData[m]
+                            
                             if (handler != nil) {
                                 println("[" + addr + "] " + m + " " + p + " -> 200 OK")
                                 let response = handler()
+                                
                                 if (response != nil) {
-                                    __send_json__(req, response)
+                                    __send__(req, response) 
                                 }
                             } else {
                                 println("[" + addr + "] " + m + " " + p + " -> 405 Method Not Allowed")
-                                __send_json__(req, {"error": 405})
+                                __send_json__(req, {"error": 405, "message": "Method Not Allowed"})
                             }
                         }
                     } else {
                         println("[" + addr + "] " + m + " " + p + " -> 404 Not Found")
-                        __send_json__(req, {"error": 404})
+                        __send_json__(req, {"error": 404, "message": "Not Found"})
                     }
                 }
             }

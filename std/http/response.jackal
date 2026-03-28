@@ -1,8 +1,15 @@
-object Response(){
-    func send(code : Int , msg : Map , stas : String) -> Map = 
+
+enum Code{
+    OK = 200,
+    NOT_FOUND = 404,
+    Unauthorized = 401,
+    BAD_REQUEST = 400
+}
+
+object Response() {
+    func send(code , content : Map) -> Map  = 
     {
-        "code" : code,
-        "msg" : msg,
-        "status" : status
+        "status" : code,
+        "content" : content
     }
 }

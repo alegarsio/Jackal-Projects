@@ -2101,7 +2101,6 @@ static Node *parse_use(Parser *P) {
     Node *func_curr = NULL;
 
     while (P->current.kind != TOKEN_RBRACE && P->current.kind != TOKEN_END) {
-        // Jangan panggil next(P) di sini, biarkan parse_stmt atau parse_func_def yang mengaturnya
         Node *f = parse_stmt(P); 
         
         if (f != NULL && f->kind == NODE_FUNC_DEF) {
@@ -2113,7 +2112,7 @@ static Node *parse_use(Parser *P) {
                 func_curr = f;
             }
         } else if (f == NULL) {
-            next(P); // Skip jika token tidak dikenal untuk menghindari infinite loop
+            next(P); 
         }
     }
 
@@ -2310,7 +2309,6 @@ static Node *parse_match_stmt(Parser *P)
             cases_current = case_node;
         }
 
-        // Menambahkan logika untuk mengonsumsi titik koma atau koma opsional
         while (P->current.kind == TOKEN_SEMI || P->current.kind == TOKEN_COMMA)
         {
             next(P);

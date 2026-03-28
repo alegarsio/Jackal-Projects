@@ -410,6 +410,8 @@ typedef struct {
     TokenKind kind;
     char text[1024];
     double number;
+    int line ;
+    int column;
 } Token;
 
 typedef struct {

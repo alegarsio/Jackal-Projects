@@ -25,6 +25,8 @@ class File : BasicFileStream {
             throw "Error"
         return __ioFile_create(this.path)
     }
+    func current() -> String  = 
+        __ioFile_current__() 
     func remove() -> Boolean =
         __ioFile_remove(this.path) 
             or throw "Error"

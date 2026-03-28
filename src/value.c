@@ -857,113 +857,41 @@ Value builtin_print_table(int argCount, Value *args)
     return (Value){VAL_NIL, {0}};
 }
 
-cJSON *jackal_value_to_cjson(Value jackal_val)
-{
-    if (jackal_val.type == VAL_NIL)
-    {
-        return cJSON_CreateNull();
-    }
-    if (jackal_val.type == VAL_NUMBER)
-    {
-        return cJSON_CreateNumber(jackal_val.as.number);
-    }
-    if (jackal_val.type == VAL_STRING)
-    {
-        return cJSON_CreateString(jackal_val.as.string);
-    }
 
-    if (jackal_val.type == VAL_MAP)
-    {
-        cJSON *root = cJSON_CreateObject();
-        HashMap *map = jackal_val.as.map;
 
-        for (int i = 0; i < map->capacity; i++)
-        {
-            Entry *entry = &map->entries[i];
-            if (entry->key != NULL)
-            {
-                cJSON *val = jackal_value_to_cjson(entry->value);
-                cJSON_AddItemToObject(root, entry->key, val);
-            }
-        }
-        return root;
-    }
+// Value builtin_print_json(int argCount, Value *args)
+// {
+//     if (argCount != 1)
+//     {
+//         print_error("print_json() requires exactly one argument.");
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    if (jackal_val.type == VAL_ARRAY)
-    {
-        cJSON *root = cJSON_CreateArray();
-        ValueArray *arr = jackal_val.as.array;
+//     cJSON *json_root = jackal_value_to_cjson(args[0]);
 
-        for (int i = 0; i < arr->count; i++)
-        {
-            cJSON *val = jackal_value_to_cjson(arr->values[i]);
-            cJSON_AddItemToArray(root, val);
-        }
-        return root;
-    }
+//     if (json_root == NULL)
+//     {
+//         print_error("print_json() failed to serialize object.");
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    if (jackal_val.type == VAL_INSTANCE)
-    {
-        cJSON *root = cJSON_CreateObject();
-        Instance *inst = jackal_val.as.instance;
-        Var *v = inst->fields->vars;
+//     char *json_string = cJSON_Print(json_root);
 
-        while (v)
-        {
-            cJSON *val = jackal_value_to_cjson(v->value);
-            cJSON_AddItemToObject(root, v->name, val);
-            v = v->next;
-        }
-        return root;
-    }
+//     if (json_string == NULL)
+//     {
+//         print_error("cJSON_Print failed.");
+//         cJSON_Delete(json_root);
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    if (jackal_val.type == VAL_FUNCTION || jackal_val.type == VAL_NATIVE)
-    {
-        return cJSON_CreateString("<Function>");
-    }
-    if (jackal_val.type == VAL_CLASS)
-    {
-        char buffer[128];
-        snprintf(buffer, sizeof(buffer), "<Class %s>", jackal_val.as.class_obj->name);
-        return cJSON_CreateString(buffer);
-    }
+//     printf("\n%s\n", json_string);
+//     fflush(stdout);
 
-    return cJSON_CreateString("<Unsupported Type>");
-}
+//     cJSON_Delete(json_root);
+//     free(json_string);
 
-Value builtin_print_json(int argCount, Value *args)
-{
-    if (argCount != 1)
-    {
-        print_error("print_json() requires exactly one argument.");
-        return (Value){VAL_NIL, {0}};
-    }
-
-    cJSON *json_root = jackal_value_to_cjson(args[0]);
-
-    if (json_root == NULL)
-    {
-        print_error("print_json() failed to serialize object.");
-        return (Value){VAL_NIL, {0}};
-    }
-
-    char *json_string = cJSON_Print(json_root);
-
-    if (json_string == NULL)
-    {
-        print_error("cJSON_Print failed.");
-        cJSON_Delete(json_root);
-        return (Value){VAL_NIL, {0}};
-    }
-
-    printf("\n%s\n", json_string);
-    fflush(stdout);
-
-    cJSON_Delete(json_root);
-    free(json_string);
-
-    return (Value){VAL_NIL, {0}};
-}
+//     return (Value){VAL_NIL, {0}};
+// }
 
 /**
  * @brief Built-in method MapStream.forEach(map, callback)
@@ -1461,177 +1389,118 @@ Value builtin_map_get(int argCount, Value *args)
 
 //     return (Value){VAL_ARRAY, {.array = resArr}};
 // }
-static Value cjsonToJackal(cJSON *item)
-{
-    Value val;
-    val.as.number = 0;
 
-    if (cJSON_IsNumber(item))
-    {
-        val.type = VAL_NUMBER;
-        val.as.number = item->valuedouble;
-        return val;
-    }
 
-    if (cJSON_IsString(item))
-    {
-        val.type = VAL_STRING;
-        val.as.string = strdup(item->valuestring);
-        return val;
-    }
+// Value builtin_json_parse(int argCount, Value *args)
+// {
+//     if (argCount != 1 || args[0].type != VAL_STRING)
+//     {
+//         print_error("json_parse() requires 1 string argument.");
+//         return (Value){VAL_NIL};
+//     }
 
-    if (cJSON_IsBool(item))
-    {
-        val.type = cJSON_IsTrue(item) ? TOKEN_TRUE : TOKEN_FALSE;
-        return val;
-    }
+//     cJSON *json = cJSON_Parse(args[0].as.string);
+//     if (json == NULL)
+//         return (Value){VAL_NIL};
 
-    if (cJSON_IsNull(item))
-    {
-        val.type = VAL_NIL;
-        return val;
-    }
+//     Value result = cjsonToJackal(json);
+//     cJSON_Delete(json);
 
-    if (cJSON_IsArray(item))
-    {
-        ValueArray *arr = array_new();
-        cJSON *element = NULL;
-        for (element = item->child; element != NULL; element = element->next)
-        {
-            array_append(arr, cjsonToJackal(element));
-        }
-        val.type = VAL_ARRAY;
-        val.as.array = arr;
-        return val;
-    }
+//     return result;
+// }
 
-    if (cJSON_IsObject(item))
-    {
-        HashMap *map = map_new();
-        cJSON *child = NULL;
-        for (child = item->child; child != NULL; child = child->next)
-        {
-            map_set(map, child->string, cjsonToJackal(child));
-        }
-        val.type = VAL_MAP;
-        val.as.map = map;
-        return val;
-    }
+// cJSON *jackalToCjson(Value value)
+// {
+//     if (value.type == VAL_NUMBER)
+//     {
+//         return cJSON_CreateNumber(value.as.number);
+//     }
 
-    val.type = VAL_NIL;
-    return val;
-}
+//     if (value.type == VAL_STRING)
+//     {
+//         return cJSON_CreateString(value.as.string);
+//     }
 
-Value builtin_json_parse(int argCount, Value *args)
-{
-    if (argCount != 1 || args[0].type != VAL_STRING)
-    {
-        print_error("json_parse() requires 1 string argument.");
-        return (Value){VAL_NIL};
-    }
+//     if (value.type == TOKEN_TRUE)
+//     {
+//         return cJSON_CreateBool(true);
+//     }
 
-    cJSON *json = cJSON_Parse(args[0].as.string);
-    if (json == NULL)
-        return (Value){VAL_NIL};
+//     if (value.type == TOKEN_FALSE)
+//     {
+//         return cJSON_CreateBool(false);
+//     }
 
-    Value result = cjsonToJackal(json);
-    cJSON_Delete(json);
+//     if (value.type == VAL_NIL)
+//     {
+//         return cJSON_CreateNull();
+//     }
 
-    return result;
-}
+//     if (value.type == VAL_ARRAY)
+//     {
+//         cJSON *jsonArr = cJSON_CreateArray();
+//         ValueArray *arr = value.as.array;
+//         for (int i = 0; i < arr->count; i++)
+//         {
+//             cJSON_AddItemToArray(jsonArr, jackalToCjson(arr->values[i]));
+//         }
+//         return jsonArr;
+//     }
 
-cJSON *jackalToCjson(Value value)
-{
-    if (value.type == VAL_NUMBER)
-    {
-        return cJSON_CreateNumber(value.as.number);
-    }
+//     if (value.type == VAL_MAP)
+//     {
+//         cJSON *jsonObj = cJSON_CreateObject();
+//         HashMap *map = value.as.map;
+//         for (int i = 0; i < map->capacity; i++)
+//         {
+//             if (map->entries[i].key != NULL)
+//             {
+//                 cJSON_AddItemToObject(jsonObj,
+//                                       map->entries[i].key,
+//                                       jackalToCjson(map->entries[i].value));
+//             }
+//         }
+//         return jsonObj;
+//     }
 
-    if (value.type == VAL_STRING)
-    {
-        return cJSON_CreateString(value.as.string);
-    }
+//     return cJSON_CreateNull();
+// }
 
-    if (value.type == TOKEN_TRUE)
-    {
-        return cJSON_CreateBool(true);
-    }
+// char* value_to_json_string(Value val) {
+//     cJSON* json = jackal_value_to_cjson(val);
+//     char* str = cJSON_PrintUnformatted(json);
+//     cJSON_Delete(json);
+//     return str; 
+// }
 
-    if (value.type == TOKEN_FALSE)
-    {
-        return cJSON_CreateBool(false);
-    }
+// Value builtin_json_stringify(int argCount, Value *args)
+// {
+//     if (argCount < 1)
+//     {
+//         return (Value){VAL_NIL, {0}};
+//     }
 
-    if (value.type == VAL_NIL)
-    {
-        return cJSON_CreateNull();
-    }
+//     cJSON *json = jackalToCjson(args[0]);
+//     char *string = NULL;
 
-    if (value.type == VAL_ARRAY)
-    {
-        cJSON *jsonArr = cJSON_CreateArray();
-        ValueArray *arr = value.as.array;
-        for (int i = 0; i < arr->count; i++)
-        {
-            cJSON_AddItemToArray(jsonArr, jackalToCjson(arr->values[i]));
-        }
-        return jsonArr;
-    }
+//     if (argCount > 1 && args[1].type == TOKEN_TRUE)
+//     {
+//         string = cJSON_Print(json);
+//     }
+//     else
+//     {
+//         string = cJSON_PrintUnformatted(json);
+//     }
 
-    if (value.type == VAL_MAP)
-    {
-        cJSON *jsonObj = cJSON_CreateObject();
-        HashMap *map = value.as.map;
-        for (int i = 0; i < map->capacity; i++)
-        {
-            if (map->entries[i].key != NULL)
-            {
-                cJSON_AddItemToObject(jsonObj,
-                                      map->entries[i].key,
-                                      jackalToCjson(map->entries[i].value));
-            }
-        }
-        return jsonObj;
-    }
+//     Value result;
+//     result.type = VAL_STRING;
+//     result.as.string = strdup(string);
 
-    return cJSON_CreateNull();
-}
+//     cJSON_free(string);
+//     cJSON_Delete(json);
 
-char* value_to_json_string(Value val) {
-    cJSON* json = jackal_value_to_cjson(val);
-    char* str = cJSON_PrintUnformatted(json);
-    cJSON_Delete(json);
-    return str; 
-}
-
-Value builtin_json_stringify(int argCount, Value *args)
-{
-    if (argCount < 1)
-    {
-        return (Value){VAL_NIL, {0}};
-    }
-
-    cJSON *json = jackalToCjson(args[0]);
-    char *string = NULL;
-
-    if (argCount > 1 && args[1].type == TOKEN_TRUE)
-    {
-        string = cJSON_Print(json);
-    }
-    else
-    {
-        string = cJSON_PrintUnformatted(json);
-    }
-
-    Value result;
-    result.type = VAL_STRING;
-    result.as.string = strdup(string);
-
-    cJSON_free(string);
-    cJSON_Delete(json);
-
-    return result;
-}
+//     return result;
+// }
 
 Value builtin_type(int argCount, Value *args)
 {

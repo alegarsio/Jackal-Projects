@@ -5,7 +5,14 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <curl/curl.h>
-#include <cjson/cJSON.h>
+
+#if __has_include(<cjson/cJSON.h>)
+    #include <cjson/cJSON.h>
+    #define HAS_CJSON 1
+#else
+    #define HAS_CJSON 0
+#endif
+
 
 #define JSON_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -134,6 +141,236 @@ Value native_json_encode(int arity, Value *args) {
     cJSON_Delete(json);
     return result;
 }
+
+cJSON *jackal_value_to_cjson(Value jackal_val)
+{
+    if (jackal_val.type == VAL_NIL)
+    {
+        return cJSON_CreateNull();
+    }
+    if (jackal_val.type == VAL_NUMBER)
+    {
+        return cJSON_CreateNumber(jackal_val.as.number);
+    }
+    if (jackal_val.type == VAL_STRING)
+    {
+        return cJSON_CreateString(jackal_val.as.string);
+    }
+
+    if (jackal_val.type == VAL_MAP)
+    {
+        cJSON *root = cJSON_CreateObject();
+        HashMap *map = jackal_val.as.map;
+
+        for (int i = 0; i < map->capacity; i++)
+        {
+            Entry *entry = &map->entries[i];
+            if (entry->key != NULL)
+            {
+                cJSON *val = jackal_value_to_cjson(entry->value);
+                cJSON_AddItemToObject(root, entry->key, val);
+            }
+        }
+        return root;
+    }
+
+    if (jackal_val.type == VAL_ARRAY)
+    {
+        cJSON *root = cJSON_CreateArray();
+        ValueArray *arr = jackal_val.as.array;
+
+        for (int i = 0; i < arr->count; i++)
+        {
+            cJSON *val = jackal_value_to_cjson(arr->values[i]);
+            cJSON_AddItemToArray(root, val);
+        }
+        return root;
+    }
+
+    if (jackal_val.type == VAL_INSTANCE)
+    {
+        cJSON *root = cJSON_CreateObject();
+        Instance *inst = jackal_val.as.instance;
+        Var *v = inst->fields->vars;
+
+        while (v)
+        {
+            cJSON *val = jackal_value_to_cjson(v->value);
+            cJSON_AddItemToObject(root, v->name, val);
+            v = v->next;
+        }
+        return root;
+    }
+
+    if (jackal_val.type == VAL_FUNCTION || jackal_val.type == VAL_NATIVE)
+    {
+        return cJSON_CreateString("<Function>");
+    }
+    if (jackal_val.type == VAL_CLASS)
+    {
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer), "<Class %s>", jackal_val.as.class_obj->name);
+        return cJSON_CreateString(buffer);
+    }
+
+    return cJSON_CreateString("<Unsupported Type>");
+}
+
+
+static Value cjsonToJackal(cJSON *item)
+{
+    Value val;
+    val.as.number = 0;
+
+    if (cJSON_IsNumber(item))
+    {
+        val.type = VAL_NUMBER;
+        val.as.number = item->valuedouble;
+        return val;
+    }
+
+    if (cJSON_IsString(item))
+    {
+        val.type = VAL_STRING;
+        val.as.string = strdup(item->valuestring);
+        return val;
+    }
+
+    if (cJSON_IsBool(item))
+    {
+        val.type = cJSON_IsTrue(item) ? TOKEN_TRUE : TOKEN_FALSE;
+        return val;
+    }
+
+    if (cJSON_IsNull(item))
+    {
+        val.type = VAL_NIL;
+        return val;
+    }
+
+    if (cJSON_IsArray(item))
+    {
+        ValueArray *arr = array_new();
+        cJSON *element = NULL;
+        for (element = item->child; element != NULL; element = element->next)
+        {
+            array_append(arr, cjsonToJackal(element));
+        }
+        val.type = VAL_ARRAY;
+        val.as.array = arr;
+        return val;
+    }
+
+    if (cJSON_IsObject(item))
+    {
+        HashMap *map = map_new();
+        cJSON *child = NULL;
+        for (child = item->child; child != NULL; child = child->next)
+        {
+            map_set(map, child->string, cjsonToJackal(child));
+        }
+        val.type = VAL_MAP;
+        val.as.map = map;
+        return val;
+    }
+
+    val.type = VAL_NIL;
+    return val;
+}
+
+cJSON *jackalToCjson(Value value)
+{
+    if (value.type == VAL_NUMBER)
+    {
+        return cJSON_CreateNumber(value.as.number);
+    }
+
+    if (value.type == VAL_STRING)
+    {
+        return cJSON_CreateString(value.as.string);
+    }
+
+    if (value.type == TOKEN_TRUE)
+    {
+        return cJSON_CreateBool(true);
+    }
+
+    if (value.type == TOKEN_FALSE)
+    {
+        return cJSON_CreateBool(false);
+    }
+
+    if (value.type == VAL_NIL)
+    {
+        return cJSON_CreateNull();
+    }
+
+    if (value.type == VAL_ARRAY)
+    {
+        cJSON *jsonArr = cJSON_CreateArray();
+        ValueArray *arr = value.as.array;
+        for (int i = 0; i < arr->count; i++)
+        {
+            cJSON_AddItemToArray(jsonArr, jackalToCjson(arr->values[i]));
+        }
+        return jsonArr;
+    }
+
+    if (value.type == VAL_MAP)
+    {
+        cJSON *jsonObj = cJSON_CreateObject();
+        HashMap *map = value.as.map;
+        for (int i = 0; i < map->capacity; i++)
+        {
+            if (map->entries[i].key != NULL)
+            {
+                cJSON_AddItemToObject(jsonObj,
+                                      map->entries[i].key,
+                                      jackalToCjson(map->entries[i].value));
+            }
+        }
+        return jsonObj;
+    }
+
+    return cJSON_CreateNull();
+}
+
+char* value_to_json_string(Value val) {
+    cJSON* json = jackal_value_to_cjson(val);
+    char* str = cJSON_PrintUnformatted(json);
+    cJSON_Delete(json);
+    return str; 
+}
+
+Value builtin_json_stringify(int argCount, Value *args)
+{
+    if (argCount < 1)
+    {
+        return (Value){VAL_NIL, {0}};
+    }
+
+    cJSON *json = jackalToCjson(args[0]);
+    char *string = NULL;
+
+    if (argCount > 1 && args[1].type == TOKEN_TRUE)
+    {
+        string = cJSON_Print(json);
+    }
+    else
+    {
+        string = cJSON_PrintUnformatted(json);
+    }
+
+    Value result;
+    result.type = VAL_STRING;
+    result.as.string = strdup(string);
+
+    cJSON_free(string);
+    cJSON_Delete(json);
+
+    return result;
+}
+
 
 void register_json_natives(Env *env)
 {

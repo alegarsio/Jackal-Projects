@@ -2,7 +2,7 @@
 #include "parser.h"
 #include "common.h"
 #include <stdbool.h>
-#include<cjson/cJSON.h>
+#include <cjson/cJSON.h>
 
 typedef struct {
     double* data;      
@@ -17,7 +17,6 @@ typedef struct {
     int n_features;
     double** centroids;
 } KMeansModel;
-
 
 typedef struct {
     double mean;
@@ -51,7 +50,7 @@ typedef struct HashMap {
     Entry* entries;
 } HashMap;
 
-
+#define AS_CSTRING(value) ((value).as.string)
 /**
  * @typedef @struct VALUEARRAY
  * Represents a dynamic array of Values in the Jackal programming language.
@@ -148,6 +147,9 @@ bool map_get(HashMap* map, const char* key, Value* out_val);
  */
 void map_set(HashMap* map, const char* key, Value val);
 
+static Entry *find_entry(Entry *entries, int capacity, const char *key);
+
+bool map_delete(HashMap *map, const char *key);
 /**
  * Jackal_value_to_cjson
  * @brief parse jackal std value to json format
@@ -165,7 +167,7 @@ Value builtin_read_array(int arity, Value* args);
 
 Value builtin_print_table(int argCount, Value* args);
 
-Value builtin_print_json(int argCount, Value *args);
+// Value builtin_print_json(int argCount, Value *args);
 
 Value builtin_map_forEach(int argCount, Value* args);
 

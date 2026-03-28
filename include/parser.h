@@ -104,6 +104,8 @@ typedef struct Node {
     bool is_static;
     bool is_final;
     bool is_macro;
+
+    int line;
     
     
     char* deprecated_message;

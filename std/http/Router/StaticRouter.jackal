@@ -1,3 +1,4 @@
+
 class StaticRouter{
     init() {
         this.routes = {}
@@ -6,7 +7,7 @@ class StaticRouter{
         this.current_prefix = ""
         this.lastPath = ""
         this.hotReload = false
-
+        this.filepath = __ioFile_current__()
     }
 }
 

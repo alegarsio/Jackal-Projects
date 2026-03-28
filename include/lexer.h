@@ -10,6 +10,8 @@
 typedef struct {
     const char* src;
     size_t pos;
+    int line ;
+    int column;
 } Lexer;
 
 /**

@@ -8,7 +8,9 @@
 #include <unistd.h>
 
 
-extern char* current_executing_file;
+
+extern char **global_argv;
+extern int global_argc;
 
 #define FILE_REGISTER(env, name, func)                                           \
     do                                                                           \
@@ -63,10 +65,10 @@ Value native_file_realpath(int arity, Value *args) {
 }
 
 Value native_file_current_script(int arity, Value *args) {
-    if (current_executing_file != NULL) {
-        return (Value){VAL_STRING, {.string = strdup(current_executing_file)}};
+    if (global_argc > 1 && global_argv[1] != NULL) {
+        return (Value){VAL_STRING, {.string = strdup(global_argv[1])}};
     }
-    return (Value){VAL_NIL};
+    return (Value){VAL_NIL}; 
 }
 
 Value native_file_exists(int arity, Value *args)
@@ -174,4 +176,5 @@ void register_file_natives(Env *env)
     FILE_REGISTER(env,"__ioFile_rename",native_file_rename);
     FILE_REGISTER(env,"__ioFile_getcwd__",native_file_getcwd);
     FILE_REGISTER(env,"__ioFile_path__",native_file_realpath);
+    FILE_REGISTER(env,"__ioFile_current__",native_file_current_script);
 }

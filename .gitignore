@@ -1,12 +1,11 @@
-# Build artifacts
 obj/
 jackal
 
-# System files
+
 .DS_Store
 Thumbs.db
 
-# Editor directories
+
 .vscode/
 .idea/
 *.swp
@@ -32,7 +31,10 @@ include/compiler/
 src/vm/
 src/compiler/
 
+service1.jackal
+service2.jackal
 
+.env
 *.py
 *.cpp
 *.db
