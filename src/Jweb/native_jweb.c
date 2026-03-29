@@ -373,7 +373,45 @@ Value native_match_route(int arity, Value *args) {
     }
     return (Value){VAL_BOOL, {.boolean = (*p == '\0' && *pt == '\0')}};
 }
+char* clean_section_tags(char* content) {
+    char *tags[] = {"@section", "@endsection", NULL};
+    for (int i = 0; tags[i] != NULL; i++) {
+        char *pos;
+        while ((pos = strstr(content, tags[i]))) {
+            char *line_end = strchr(pos, '\n');
+            if (!line_end) line_end = pos + strlen(pos);
+            
+            int prefix_len = pos - content;
+            int suffix_len = strlen(line_end);
+            char *new_content = malloc(prefix_len + suffix_len + 1);
+            
+            memcpy(new_content, content, prefix_len);
+            strcpy(new_content + prefix_len, line_end);
+            
+            free(content);
+            content = new_content;
+        }
+    }
+    return content;
+}
 
+char* evaluate_template_sections(char* content, const char* target_section) {
+    char section_tag[128];
+    snprintf(section_tag, sizeof(section_tag), "@section(\"%s\")", target_section);
+
+    char *start = strstr(content, section_tag);
+    if (!start) return content; 
+
+    char *block_start = strstr(start, ")") + 1;
+    char *end = strstr(block_start, "@endsection");
+    if (!end) return content;
+
+    int len = end - block_start;
+    char *section_content = strndup(block_start, len);
+    
+    free(content);
+    return section_content;
+}
 
 
 char* render_sub_block(const char* template, const char* alias, Value item) {
@@ -578,7 +616,11 @@ Value native_render_file(int arity, Value *args) {
 
     content = evaluate_template_includes(content);
 
-    if (arity == 2 && args[1].type == VAL_MAP) {
+    if (arity == 3 && args[2].type == VAL_STRING) {
+        content = evaluate_template_sections(content, args[2].as.string);
+    }
+
+    if (arity >= 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
 
         content = evaluate_template_loop(content, data);
@@ -630,6 +672,9 @@ Value native_render_file(int arity, Value *args) {
             free(val_str); 
         }
     }
+
+    content = clean_section_tags(content);
+
     return (Value){VAL_STRING, {.string = content}};
 }
 Value native_web_send_docs(int arity, Value* args) {
