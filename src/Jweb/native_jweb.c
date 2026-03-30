@@ -373,6 +373,32 @@ Value native_match_route(int arity, Value *args) {
     }
     return (Value){VAL_BOOL, {.boolean = (*p == '\0' && *pt == '\0')}};
 }
+
+char* apply_macro_data(char* blueprint, Value actual_data) {
+    if (actual_data.type != VAL_MAP) return strdup(blueprint);
+    
+    char *result = strdup(blueprint);
+    HashMap *map = actual_data.as.map;
+
+    for (int i = 0; i < map->capacity; i++) {
+        Entry *entry = &map->entries[i];
+        if (entry->key == NULL) continue;
+
+        char placeholder[128];
+        snprintf(placeholder, sizeof(placeholder), "{{item.%s}}", entry->key);
+
+        char *val_str = value_to_string(entry->value);
+        char *pos = strstr(result, placeholder);
+
+        if (pos) {
+            char *new_res = str_replace(result, placeholder, val_str);
+            free(result);
+            result = new_res;
+        }
+        free(val_str);
+    }
+    return result;
+}
 char* clean_section_tags(char* content) {
     char *tags[] = {"@section", "@endsection", NULL};
     for (int i = 0; tags[i] != NULL; i++) {
@@ -489,8 +515,8 @@ char* evaluate_template_includes(char* content) {
 
 char* evaluate_template_loop(char* content, HashMap* data) {
     char *start;
-    while ((start = strstr(content, "@foreach"))) {
-        char *end = strstr(start, "@endforeach");
+    while ((start = strstr(content, "@for"))) {
+        char *end = strstr(start, "@endfor");
         if (!end) break;
 
         char list_name[64], item_alias[64];
