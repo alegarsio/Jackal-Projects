@@ -394,29 +394,6 @@ char* clean_section_tags(char* content) {
     }
     return content;
 }
-char* apply_macro_data(char* blueprint, Value actual_data) {
-    if (actual_data.type != VAL_MAP) return strdup(blueprint);
-    
-    char *result = strdup(blueprint);
-    HashMap *map = actual_data.as.map;
-
-    for (int i = 0; i < map->capacity; i++) {
-        Entry *entry = &map->entries[i];
-        if (entry->key == NULL) continue;
-
-        char placeholder[128];
-        snprintf(placeholder, sizeof(placeholder), "{{item.%s}}", entry->key);
-
-        char *val_str = value_to_string(entry->value);
-        if (strstr(result, placeholder)) {
-            char *new_res = str_replace(result, placeholder, val_str);
-            free(result);
-            result = new_res;
-        }
-        free(val_str);
-    }
-    return result;
-}
 
 char* evaluate_template_sections(char* content, const char* target_section) {
     char section_tag[128];
@@ -531,10 +508,9 @@ char* evaluate_template_loop(char* content, HashMap* data) {
         Value list_val;
         if (!map_get(data, list_name, &list_val) || list_val.type != VAL_ARRAY) {
             int prefix_len = (int)(start - content);
-            int suffix_len = (int)strlen(end + 11);
-            char *new_content = malloc(prefix_len + suffix_len + 1);
+            char *new_content = malloc(prefix_len + strlen(end + 7) + 1);
             memcpy(new_content, content, prefix_len);
-            strcpy(new_content + prefix_len, end + 11);
+            strcpy(new_content + prefix_len, end + 7);
             free(content);
             content = new_content;
             continue;
@@ -548,30 +524,44 @@ char* evaluate_template_loop(char* content, HashMap* data) {
         ValueArray *items = list_val.as.array;
 
         for (int i = 0; i < items->count; i++) {
+            // render_sub_block menghasilkan malloc baru
             char *rendered_item = render_sub_block(template_block, item_alias, items->values[i]);
-            char *temp = malloc(strlen(repeated_html) + strlen(rendered_item) + 1);
-            strcpy(temp, repeated_html);
-            strcat(temp, rendered_item);
-            free(repeated_html);
-            free(rendered_item);
-            repeated_html = temp;
+            
+            size_t old_len = strlen(repeated_html);
+            size_t add_len = strlen(rendered_item);
+            char *temp = malloc(old_len + add_len + 1);
+            
+            if (temp) {
+                memcpy(temp, repeated_html, old_len);
+                memcpy(temp + old_len, rendered_item, add_len);
+                temp[old_len + add_len] = '\0';
+                
+                free(repeated_html);
+                repeated_html = temp;
+            }
+            
+            free(rendered_item); 
         }
 
         int prefix_len = (int)(start - content);
-        int suffix_len = (int)strlen(end + 11);
-        char *final_res = malloc(prefix_len + strlen(repeated_html) + suffix_len + 1);
-        memcpy(final_res, content, prefix_len);
-        memcpy(final_res + prefix_len, repeated_html, strlen(repeated_html));
-        strcpy(final_res + prefix_len + strlen(repeated_html), end + 11);
+        int repeat_len = (int)strlen(repeated_html);
+        int suffix_len = (int)strlen(end + 7);
+        
+        char *final_res = malloc(prefix_len + repeat_len + suffix_len + 1);
+        if (final_res) {
+            memcpy(final_res, content, prefix_len);
+            memcpy(final_res + prefix_len, repeated_html, repeat_len);
+            strcpy(final_res + prefix_len + repeat_len, end + 7);
+            
+            free(content);
+            content = final_res;
+        }
 
         free(repeated_html);
         free(template_block);
-        free(content);
-        content = final_res;
     }
     return content;
 }
-
 
 char* evaluate_template_logic(char* content, HashMap* data) {
     char *start;
