@@ -394,6 +394,29 @@ char* clean_section_tags(char* content) {
     }
     return content;
 }
+char* apply_macro_data(char* blueprint, Value actual_data) {
+    if (actual_data.type != VAL_MAP) return strdup(blueprint);
+    
+    char *result = strdup(blueprint);
+    HashMap *map = actual_data.as.map;
+
+    for (int i = 0; i < map->capacity; i++) {
+        Entry *entry = &map->entries[i];
+        if (entry->key == NULL) continue;
+
+        char placeholder[128];
+        snprintf(placeholder, sizeof(placeholder), "{{item.%s}}", entry->key);
+
+        char *val_str = value_to_string(entry->value);
+        if (strstr(result, placeholder)) {
+            char *new_res = str_replace(result, placeholder, val_str);
+            free(result);
+            result = new_res;
+        }
+        free(val_str);
+    }
+    return result;
+}
 
 char* evaluate_template_sections(char* content, const char* target_section) {
     char section_tag[128];
