@@ -63,38 +63,6 @@ const char* get_mime_type(const char* filename) {
     return "text/plain";
 }
 
-char* str_replace_internal(const char* str, const char* old_sub, const char* new_sub) {
-    if (!str || !old_sub || !new_sub || strlen(old_sub) == 0) return strdup(str);
-
-    char *result;
-    int i, count = 0;
-    size_t new_len = strlen(new_sub);
-    size_t old_len = strlen(old_sub);
-
-    for (i = 0; str[i] != '\0'; i++) {
-        if (strstr(&str[i], old_sub) == &str[i]) {
-            count++;
-            i += (int)old_len - 1;
-        }
-    }
-
-    result = (char *)malloc(i + count * (new_len - old_len) + 1);
-    if (result == NULL) return NULL;
-
-    int res_idx = 0;
-    while (*str) {
-        if (strstr(str, old_sub) == str) {
-            strcpy(&result[res_idx], new_sub);
-            res_idx += (int)new_len;
-            str += old_len;
-        } else {
-            result[res_idx++] = *str++;
-        }
-    }
-    result[res_idx] = '\0';
-    return result;
-}
-
 
 
 static void parse_query_params(HashMap* map, char* query_string) {
@@ -428,23 +396,31 @@ char* clean_section_tags(char* content) {
 }
 
 char* evaluate_template_sections(char* content, const char* target_section) {
+    if (!content) return NULL;
+    
     char section_tag[128];
     snprintf(section_tag, sizeof(section_tag), "@section(\"%s\")", target_section);
 
     char *start = strstr(content, section_tag);
     if (!start) return content; 
 
-    char *block_start = strstr(start, ")") + 1;
+    char *close_paren = strchr(start, ')');
+    if (!close_paren) return content;
+    
+    char *block_start = close_paren + 1;
     char *end = strstr(block_start, "@endsection");
     if (!end) return content;
 
-    int len = end - block_start;
-    char *section_content = strndup(block_start, len);
+    int len = (int)(end - block_start);
+    char *section_content = malloc(len + 1);
+    if (!section_content) return content;
+
+    memcpy(section_content, block_start, len);
+    section_content[len] = '\0';
     
-    free(content);
+    free(content); 
     return section_content;
 }
-
 
 char* render_sub_block(const char* template, const char* alias, Value item) {
     char *result = strdup(template);
@@ -459,9 +435,17 @@ char* render_sub_block(const char* template, const char* alias, Value item) {
         snprintf(placeholder, sizeof(placeholder), "{{%s.%s}}", alias, entry->key);
 
         char *val_str = value_to_string(entry->value);
-        
-        if (strstr(result, placeholder)) {
-            char *new_res = str_replace_internal(result, placeholder, val_str);
+        char *pos;
+        while ((pos = strstr(result, placeholder))) {
+            int prefix_len = pos - result;
+            int replace_len = strlen(placeholder);
+            int val_len = strlen(val_str);
+            
+            char *new_res = malloc(strlen(result) - replace_len + val_len + 1);
+            memcpy(new_res, result, prefix_len);
+            memcpy(new_res + prefix_len, val_str, val_len);
+            strcpy(new_res + prefix_len + val_len, pos + replace_len);
+            
             free(result);
             result = new_res;
         }
@@ -532,9 +516,10 @@ char* evaluate_template_loop(char* content, HashMap* data) {
         Value list_val;
         if (!map_get(data, list_name, &list_val) || list_val.type != VAL_ARRAY) {
             int prefix_len = (int)(start - content);
-            char *new_content = malloc(prefix_len + strlen(end + 7) + 1);
+            int suffix_len = (int)strlen(end + 11);
+            char *new_content = malloc(prefix_len + suffix_len + 1);
             memcpy(new_content, content, prefix_len);
-            strcpy(new_content + prefix_len, end + 7);
+            strcpy(new_content + prefix_len, end + 11);
             free(content);
             content = new_content;
             continue;
@@ -548,41 +533,72 @@ char* evaluate_template_loop(char* content, HashMap* data) {
         ValueArray *items = list_val.as.array;
 
         for (int i = 0; i < items->count; i++) {
-            // render_sub_block menghasilkan malloc baru
             char *rendered_item = render_sub_block(template_block, item_alias, items->values[i]);
-            
-            size_t old_len = strlen(repeated_html);
-            size_t add_len = strlen(rendered_item);
-            char *temp = malloc(old_len + add_len + 1);
-            
-            if (temp) {
-                memcpy(temp, repeated_html, old_len);
-                memcpy(temp + old_len, rendered_item, add_len);
-                temp[old_len + add_len] = '\0';
-                
-                free(repeated_html);
-                repeated_html = temp;
-            }
-            
-            free(rendered_item); 
+            char *temp = malloc(strlen(repeated_html) + strlen(rendered_item) + 1);
+            strcpy(temp, repeated_html);
+            strcat(temp, rendered_item);
+            free(repeated_html);
+            free(rendered_item);
+            repeated_html = temp;
         }
 
         int prefix_len = (int)(start - content);
-        int repeat_len = (int)strlen(repeated_html);
-        int suffix_len = (int)strlen(end + 7);
-        
-        char *final_res = malloc(prefix_len + repeat_len + suffix_len + 1);
-        if (final_res) {
-            memcpy(final_res, content, prefix_len);
-            memcpy(final_res + prefix_len, repeated_html, repeat_len);
-            strcpy(final_res + prefix_len + repeat_len, end + 7);
-            
-            free(content);
-            content = final_res;
-        }
+        int suffix_len = (int)strlen(end + 11);
+        char *final_res = malloc(prefix_len + strlen(repeated_html) + suffix_len + 1);
+        memcpy(final_res, content, prefix_len);
+        memcpy(final_res + prefix_len, repeated_html, strlen(repeated_html));
+        strcpy(final_res + prefix_len + strlen(repeated_html), end + 11);
 
         free(repeated_html);
         free(template_block);
+        free(content);
+        content = final_res;
+    }
+    return content;
+}
+char* evaluate_template_while(char* content, HashMap* data) {
+    char *start;
+    while ((start = strstr(content, "@while"))) {
+        char *end = strstr(start, "@endwhile");
+        if (!end) break;
+
+        char condition[128];
+        if (sscanf(start, "@while(%[^)])", condition) != 1) break;
+
+        char *block_start = strstr(start, ")") + 1;
+        int block_len = (int)(end - block_start);
+        char *template_block = strndup(block_start, block_len);
+
+        char *repeated_html = strdup("");
+        
+        while (1) {
+            Value val;
+            if (!map_get(data, condition, &val) || !is_value_truthy(val)) break;
+
+            char *rendered = strdup(template_block);
+            char *temp = malloc(strlen(repeated_html) + strlen(rendered) + 1);
+            strcpy(temp, repeated_html);
+            strcat(temp, rendered);
+            
+            free(repeated_html);
+            free(rendered);
+            repeated_html = temp;
+
+            break; 
+        }
+
+        int prefix_len = (int)(start - content);
+        int suffix_len = (int)strlen(end + 9);
+        char *final_res = malloc(prefix_len + strlen(repeated_html) + suffix_len + 1);
+        
+        memcpy(final_res, content, prefix_len);
+        memcpy(final_res + prefix_len, repeated_html, strlen(repeated_html));
+        strcpy(final_res + prefix_len + strlen(repeated_html), end + 9);
+
+        free(repeated_html);
+        free(template_block);
+        free(content);
+        content = final_res;
     }
     return content;
 }
@@ -647,35 +663,68 @@ char* evaluate_template_logic(char* content, HashMap* data) {
 
 Value native_render_file(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
+
     char *content = read_file_to_string(args[0].as.string);
     if (!content) return (Value){VAL_NIL};
 
     content = evaluate_template_includes(content);
-    if (arity == 3 && args[2].type == VAL_STRING) {
-        content = evaluate_template_sections(content, args[2].as.string);
-    }
 
     if (arity >= 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
+
+        content = evaluate_template_while(content, data);
         content = evaluate_template_loop(content, data);
         content = evaluate_template_logic(content, data);
 
         for (int i = 0; i < data->capacity; i++) {
             Entry *entry = &data->entries[i];
             if (entry->key == NULL) continue;
+
             char placeholder[256];
             snprintf(placeholder, sizeof(placeholder), "{{%s}}", entry->key);
+
             char *val_str = value_to_string(entry->value);
-            if (strstr(content, placeholder)) {
-                char *new_content = str_replace_internal(content, placeholder, val_str);
-                free(content);
-                content = new_content;
+            char *tmp = strstr(content, placeholder);
+
+            if (tmp) {
+                int count = 0;
+                char *ins = content;
+                int len_rep = (int)strlen(placeholder);
+                int len_with = (int)strlen(val_str);
+
+                while ((tmp = strstr(ins, placeholder))) {
+                    count++;
+                    ins = tmp + len_rep;
+                }
+
+                char *result = malloc(strlen(content) + (len_with - len_rep) * count + 1);
+                if (!result) { 
+                    free(val_str); 
+                    break; 
+                }
+
+                char *dest = result;
+                char *src = content;
+                while (count--) {
+                    ins = strstr(src, placeholder);
+                    int len_front = (int)(ins - src);
+                    memcpy(dest, src, len_front);
+                    dest += len_front;
+                    memcpy(dest, val_str, len_with);
+                    dest += len_with;
+                    src = ins + len_rep;
+                }
+                strcpy(dest, src);
+                
+                free(content); 
+                content = result; 
             }
-            free(val_str);
+            free(val_str); 
         }
     }
 
     content = clean_section_tags(content);
+
     return (Value){VAL_STRING, {.string = content}};
 }
 Value native_web_send_docs(int arity, Value* args) {
