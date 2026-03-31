@@ -424,32 +424,53 @@ char* evaluate_template_sections(char* content, const char* target_section) {
 
 char* render_sub_block(const char* template, const char* alias, Value item) {
     char *result = strdup(template);
-    if (item.type != VAL_MAP) return result;
+    
+    char raw_placeholder[128];
+    snprintf(raw_placeholder, sizeof(raw_placeholder), "{{%s}}", alias);
+    
+    char *item_val_str = value_to_string(item);
+    char *raw_pos;
+    while ((raw_pos = strstr(result, raw_placeholder))) {
+        int prefix_len = raw_pos - result;
+        int replace_len = strlen(raw_placeholder);
+        int val_len = strlen(item_val_str);
+        
+        char *new_res = malloc(strlen(result) - replace_len + val_len + 1);
+        memcpy(new_res, result, prefix_len);
+        memcpy(new_res + prefix_len, item_val_str, val_len);
+        strcpy(new_res + prefix_len + val_len, raw_pos + replace_len);
+        
+        free(result);
+        result = new_res;
+    }
+    free(item_val_str);
 
-    HashMap *item_map = item.as.map;
-    for (int i = 0; i < item_map->capacity; i++) {
-        Entry *entry = &item_map->entries[i];
-        if (entry->key == NULL) continue;
+    if (item.type == VAL_MAP) {
+        HashMap *item_map = item.as.map;
+        for (int i = 0; i < item_map->capacity; i++) {
+            Entry *entry = &item_map->entries[i];
+            if (entry->key == NULL) continue;
 
-        char placeholder[128];
-        snprintf(placeholder, sizeof(placeholder), "{{%s.%s}}", alias, entry->key);
+            char placeholder[128];
+            snprintf(placeholder, sizeof(placeholder), "{{%s.%s}}", alias, entry->key);
 
-        char *val_str = value_to_string(entry->value);
-        char *pos;
-        while ((pos = strstr(result, placeholder))) {
-            int prefix_len = pos - result;
-            int replace_len = strlen(placeholder);
-            int val_len = strlen(val_str);
-            
-            char *new_res = malloc(strlen(result) - replace_len + val_len + 1);
-            memcpy(new_res, result, prefix_len);
-            memcpy(new_res + prefix_len, val_str, val_len);
-            strcpy(new_res + prefix_len + val_len, pos + replace_len);
-            
-            free(result);
-            result = new_res;
+            char *val_str = value_to_string(entry->value);
+            char *pos;
+            while ((pos = strstr(result, placeholder))) {
+                int prefix_len = pos - result;
+                int replace_len = strlen(placeholder);
+                int val_len = strlen(val_str);
+                
+                char *new_res = malloc(strlen(result) - replace_len + val_len + 1);
+                memcpy(new_res, result, prefix_len);
+                memcpy(new_res + prefix_len, val_str, val_len);
+                strcpy(new_res + prefix_len + val_len, pos + replace_len);
+                
+                free(result);
+                result = new_res;
+            }
+            free(val_str);
         }
-        free(val_str);
     }
     return result;
 }
@@ -516,10 +537,10 @@ char* evaluate_template_loop(char* content, HashMap* data) {
         Value list_val;
         if (!map_get(data, list_name, &list_val) || list_val.type != VAL_ARRAY) {
             int prefix_len = (int)(start - content);
-            int suffix_len = (int)strlen(end + 11);
+            int suffix_len = (int)strlen(end + 7);
             char *new_content = malloc(prefix_len + suffix_len + 1);
             memcpy(new_content, content, prefix_len);
-            strcpy(new_content + prefix_len, end + 11);
+            strcpy(new_content + prefix_len, end + 7);
             free(content);
             content = new_content;
             continue;
@@ -543,11 +564,11 @@ char* evaluate_template_loop(char* content, HashMap* data) {
         }
 
         int prefix_len = (int)(start - content);
-        int suffix_len = (int)strlen(end + 11);
+        int suffix_len = (int)strlen(end + 7);
         char *final_res = malloc(prefix_len + strlen(repeated_html) + suffix_len + 1);
         memcpy(final_res, content, prefix_len);
         memcpy(final_res + prefix_len, repeated_html, strlen(repeated_html));
-        strcpy(final_res + prefix_len + strlen(repeated_html), end + 11);
+        strcpy(final_res + prefix_len + strlen(repeated_html), end + 7);
 
         free(repeated_html);
         free(template_block);
@@ -556,6 +577,7 @@ char* evaluate_template_loop(char* content, HashMap* data) {
     }
     return content;
 }
+
 char* evaluate_template_while(char* content, HashMap* data) {
     char *start;
     while ((start = strstr(content, "@while"))) {
@@ -601,6 +623,69 @@ char* evaluate_template_while(char* content, HashMap* data) {
         content = final_res;
     }
     return content;
+}
+
+char* evaluate_template_routes(char* content) {
+    if (!content) return NULL;
+
+    char *start;
+    while ((start = strstr(content, "{{route("))) {
+        char *end = strstr(start, ")}}");
+        if (!end) break;
+
+        char route_name[64] = {0};
+        if (sscanf(start, "{{route('%[^']')}}", route_name) != 1) {
+            if (sscanf(start, "{{route(\"%[^\"]\")}}", route_name) != 1) break;
+        }
+
+        char *url = "#";
+        if (strcmp(route_name, "dashboard") == 0) url = "/";
+        else if (strcmp(route_name, "profile") == 0) url = "/api/profile";
+        else if (strcmp(route_name, "logout") == 0) url = "/auth/logout";
+
+        int prefix_len = (int)(start - content);
+        int url_len = (int)strlen(url);
+        int suffix_len = (int)strlen(end + 3);
+
+        char *new_content = malloc(prefix_len + url_len + suffix_len + 1);
+        if (!new_content) break;
+
+        memcpy(new_content, content, prefix_len);
+        memcpy(new_content + prefix_len, url, url_len);
+        strcpy(new_content + prefix_len + url_len, end + 3);
+
+        free(content);
+        content = new_content;
+    }
+    return content;
+}
+Value native_web_send_docs(int arity, Value* args) {
+    if (arity < 1) return (Value){VAL_NIL};
+    
+    int client_socket;
+    if (args[0].type == VAL_MAP) {
+        Value socket_val;
+        if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
+        client_socket = (int)socket_val.as.number;
+    } else {
+        client_socket = (int)args[0].as.number;
+    }
+
+    const char* html = 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Connection: close\r\n\r\n"
+        "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8' />"
+        "<title>API Docs</title>"
+        "<link rel='stylesheet' href='https://unpkg.com/swagger-ui-dist@5/swagger-ui.css' />"
+        "</head><body><div id='swagger-ui'></div>"
+        "<script src='https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js'></script>"
+        "<script>window.onload=()=>{window.ui=SwaggerUIBundle({url:'/swagger.json',dom_id:'#swagger-ui'});};</script>"
+        "</body></html>";
+
+    send(client_socket, html, strlen(html), 0);
+    close(client_socket);
+    return (Value){VAL_BOOL, {.boolean = true}};
 }
 
 char* evaluate_template_logic(char* content, HashMap* data) {
@@ -668,6 +753,7 @@ Value native_render_file(int arity, Value *args) {
     if (!content) return (Value){VAL_NIL};
 
     content = evaluate_template_includes(content);
+    content = evaluate_template_routes(content);
 
     if (arity >= 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
@@ -727,34 +813,7 @@ Value native_render_file(int arity, Value *args) {
 
     return (Value){VAL_STRING, {.string = content}};
 }
-Value native_web_send_docs(int arity, Value* args) {
-    if (arity < 1) return (Value){VAL_NIL};
-    
-    int client_socket;
-    if (args[0].type == VAL_MAP) {
-        Value socket_val;
-        if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
-        client_socket = (int)socket_val.as.number;
-    } else {
-        client_socket = (int)args[0].as.number;
-    }
 
-    const char* html = 
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Connection: close\r\n\r\n"
-        "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8' />"
-        "<title>API Docs</title>"
-        "<link rel='stylesheet' href='https://unpkg.com/swagger-ui-dist@5/swagger-ui.css' />"
-        "</head><body><div id='swagger-ui'></div>"
-        "<script src='https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js'></script>"
-        "<script>window.onload=()=>{window.ui=SwaggerUIBundle({url:'/swagger.json',dom_id:'#swagger-ui'});};</script>"
-        "</body></html>";
-
-    send(client_socket, html, strlen(html), 0);
-    close(client_socket);
-    return (Value){VAL_BOOL, {.boolean = true}};
-}
 
 Value native_send_html(int arity, Value *args) {
     if (arity != 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_STRING) {
