@@ -681,6 +681,75 @@ char* evaluate_template_routes(char* content) {
     }
     return content;
 }
+
+char* evaluate_template_components(char* content, HashMap* data) {
+    char *start;
+    while ((start = strstr(content, "@component"))) {
+        char *end = strstr(start, "@endcomponent");
+        if (!end) break;
+
+        char comp_path[128];
+        if (sscanf(start, "@component(\"%[^\"]\")", comp_path) != 1) break;
+
+        char *comp_content = read_file_to_string(comp_path);
+        if (!comp_content) {
+            memset(start, ' ', (end + 13) - start);
+            continue;
+        }
+
+        char *block_start = strchr(start, ')') + 1;
+        int block_len = end - block_start;
+        char *slot_content = strndup(block_start, block_len);
+
+        for (int i = 0; i < data->capacity; i++) {
+            Entry *entry = &data->entries[i];
+            if (entry->key == NULL) continue;
+            char placeholder[256];
+            snprintf(placeholder, sizeof(placeholder), "{{%s}}", entry->key);
+            char *val_str = value_to_string(entry->value);
+            char *pos;
+            while ((pos = strstr(comp_content, placeholder))) {
+                int p_len = strlen(placeholder);
+                int v_len = strlen(val_str);
+                char *tmp = malloc(strlen(comp_content) - p_len + v_len + 1);
+                int pref = pos - comp_content;
+                memcpy(tmp, comp_content, pref);
+                memcpy(tmp + pref, val_str, v_len);
+                strcpy(tmp + pref + v_len, pos + p_len);
+                free(comp_content);
+                comp_content = tmp;
+            }
+            free(val_str);
+        }
+
+        char *slot_pos = strstr(comp_content, "{{slot}}");
+        if (slot_pos) {
+            int s_len = 8;
+            int v_len = strlen(slot_content);
+            char *tmp = malloc(strlen(comp_content) - s_len + v_len + 1);
+            int pref = slot_pos - comp_content;
+            memcpy(tmp, comp_content, pref);
+            memcpy(tmp + pref, slot_content, v_len);
+            strcpy(tmp + pref + v_len, slot_pos + s_len);
+            free(comp_content);
+            comp_content = tmp;
+        }
+
+        int prefix_len = start - content;
+        int suffix_len = strlen(end + 13);
+        char *new_content = malloc(prefix_len + strlen(comp_content) + suffix_len + 1);
+        memcpy(new_content, content, prefix_len);
+        strcpy(new_content + prefix_len, comp_content);
+        strcpy(new_content + prefix_len + strlen(comp_content), end + 13);
+
+        free(comp_content);
+        free(slot_content);
+        free(content);
+        content = new_content;
+    }
+    return content;
+}
+
 Value native_web_send_docs(int arity, Value* args) {
     if (arity < 1) return (Value){VAL_NIL};
     
@@ -768,6 +837,7 @@ char* evaluate_template_logic(char* content, HashMap* data) {
     return content;
 }
 
+
 Value native_render_file(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
 
@@ -779,12 +849,14 @@ Value native_render_file(int arity, Value *args) {
     
     if (extends_pos == child_content) {
         char layout_file[128];
-        sscanf(extends_pos, "@extends(\"%[^\"]\")", layout_file);
-        
-        char *layout_content = read_file_to_string(layout_file);
-        if (layout_content) {
-            final_content = evaluate_template_yields(layout_content, child_content);
-            free(child_content);
+        if (sscanf(extends_pos, "@extends(\"%[^\"]\")", layout_file) == 1) {
+            char *layout_content = read_file_to_string(layout_file);
+            if (layout_content) {
+                final_content = evaluate_template_yields(layout_content, child_content);
+                free(child_content);
+            } else {
+                final_content = child_content;
+            }
         } else {
             final_content = child_content;
         }
@@ -797,6 +869,8 @@ Value native_render_file(int arity, Value *args) {
 
     if (arity >= 2 && args[1].type == VAL_MAP) {
         HashMap *data = args[1].as.map;
+
+        final_content = evaluate_template_components(final_content, data);
         final_content = evaluate_template_while(final_content, data);
         final_content = evaluate_template_loop(final_content, data);
         final_content = evaluate_template_logic(final_content, data);
@@ -804,29 +878,38 @@ Value native_render_file(int arity, Value *args) {
         for (int i = 0; i < data->capacity; i++) {
             Entry *entry = &data->entries[i];
             if (entry->key == NULL) continue;
+
             char placeholder[256];
             snprintf(placeholder, sizeof(placeholder), "{{%s}}", entry->key);
             char *val_str = value_to_string(entry->value);
-            char *tmp;
-            while ((tmp = strstr(final_content, placeholder))) {
-                int len_rep = strlen(placeholder);
-                int len_with = strlen(val_str);
-                char *result = malloc(strlen(final_content) + (len_with - len_rep) + 1);
-                int prefix_len = tmp - final_content;
-                memcpy(result, final_content, prefix_len);
-                memcpy(result + prefix_len, val_str, len_with);
-                strcpy(result + prefix_len + len_with, tmp + len_rep);
+            char *pos;
+            
+            while ((pos = strstr(final_content, placeholder))) {
+                int prefix_len = pos - final_content;
+                int replace_len = strlen(placeholder);
+                int val_len = strlen(val_str);
+                
+                char *new_res = malloc(strlen(final_content) - replace_len + val_len + 1);
+                memcpy(new_res, final_content, prefix_len);
+                memcpy(new_res + prefix_len, val_str, val_len);
+                strcpy(new_res + prefix_len + val_len, pos + replace_len);
+                
                 free(final_content);
-                final_content = result;
+                final_content = new_res;
             }
             free(val_str);
         }
     }
 
     final_content = clean_section_tags(final_content);
-    return (Value){VAL_STRING, {.string = final_content}};
-}
 
+    Value res;
+    res.type = VAL_STRING;
+    res.as.string = final_content;
+    res.gc_info = NULL;
+    return res;
+
+}
 
 Value native_send_html(int arity, Value *args) {
     if (arity != 2 || args[0].type != VAL_NUMBER || args[1].type != VAL_STRING) {
