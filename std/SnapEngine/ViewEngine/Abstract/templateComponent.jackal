@@ -2,6 +2,6 @@ class TemplateComponent{
     init(req) {
         this.req = req
         this.socket = req["socket_fd"]
-        this.basePath = "views/" 
+        this.basePath = "" 
     }
 }
