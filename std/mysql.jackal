@@ -33,13 +33,12 @@ class Table : Entity , TableEntityAbstractMethod {
         return result
     }
 
-    func join(targetTable, foreignKey, localKey) {
-        this.joinClause = this.joinClause + " INNER JOIN " + targetTable + 
-                          " ON " + this.tableName + "." + localKey + 
-                          " = " + targetTable + "." + foreignKey
+    func join(targetTable, foreignKey, onTable, localKey) {
+        this.joinClause = this.joinClause + " JOIN " + targetTable + 
+                        " ON " + targetTable + "." + foreignKey + 
+                        " = " + onTable + "." + localKey
         return this
     }
-    
 
 
 
@@ -63,11 +62,12 @@ class Table : Entity , TableEntityAbstractMethod {
     func collect() {
         let sql = "SELECT " + this.selectedColumns + 
                   " FROM " + this.tableName + 
+                  this.joinClause + 
                   this.whereClause + 
                   this.orderClause +
                   this.limitClause
         
-        let result = __mysql_query__(this.handle, sql)
+        let result = __mysql_query__(this.handle, sql) 
         this.resetState() 
         return result
     }
@@ -106,7 +106,7 @@ class Mysql{
         return this
 	}
 	func query(sql : String){
-		if (this.conn == nil){
+		if (this.conn == nil){ 
 			println("Error : Database connection not estabilished")
 			return nil
 		}
