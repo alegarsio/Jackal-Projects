@@ -33,6 +33,16 @@ class Table : Entity , TableEntityAbstractMethod {
         return result
     }
 
+    func join(targetTable, foreignKey, localKey) {
+        this.joinClause = this.joinClause + " INNER JOIN " + targetTable + 
+                          " ON " + this.tableName + "." + localKey + 
+                          " = " + targetTable + "." + foreignKey
+        return this
+    }
+    
+
+
+
     func delete(){
         let result = __mysql_update__(this.handle, this.tableName, this.whereClause)
         
