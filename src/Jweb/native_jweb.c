@@ -17,7 +17,21 @@
 
 int global_server_fd = -1;
 long last_mtime = 0;
+static HashMap* jweb_cache = NULL;
 
+void init_jweb_cache() {
+    if (jweb_cache == NULL) {
+        jweb_cache = map_new();
+    }
+}
+
+Value native_clear_jweb_cache(int arity, Value* args) {
+    if (jweb_cache != NULL) {
+        map_free(jweb_cache);
+        jweb_cache = map_new();
+    }
+    return (Value){VAL_BOOL, {.boolean = 1}};
+}
 typedef struct {
     int client_socket;
     Value data;
@@ -185,21 +199,37 @@ Value native_web_listen(int arity, Value* args) {
     int port = (int)args[0].as.number;
     struct sockaddr_in address;
     int opt = 1;
+
     global_server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (global_server_fd == -1) return (Value){VAL_BOOL, {.boolean = false}};
+
     setsockopt(global_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+#ifdef SO_REUSEPORT
+    setsockopt(global_server_fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+#endif
+
+    int flags = fcntl(global_server_fd, F_GETFL, 0);
+    fcntl(global_server_fd, F_SETFL, flags | O_NONBLOCK);
+
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
+
     if (bind(global_server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         close(global_server_fd);
         return (Value){VAL_BOOL, {.boolean = false}};
     }
-    listen(global_server_fd, 10);
+
+    if (listen(global_server_fd, 4096) < 0) {
+        close(global_server_fd);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
+
     return (Value){VAL_BOOL, {.boolean = true}};
 }
 Value native_web_poll(int arity, Value* args) {
     if (global_server_fd == -1) return (Value){VAL_NIL};
+    init_jweb_cache();
 
     struct sockaddr_in client_addr;
     socklen_t addrlen = sizeof(client_addr);
@@ -216,10 +246,22 @@ Value native_web_poll(int arity, Value* args) {
 
     char method[16] = {0};
     char full_path[1024] = {0};
-    
     if (sscanf(buffer, "%15s %1023s", method, full_path) < 2) {
         close(client_socket);
         return (Value){VAL_NIL};
+    }
+
+    char cache_key[1100];
+    snprintf(cache_key, sizeof(cache_key), "%s:%s", method, full_path);
+
+    Value cached_response;
+    if (map_get(jweb_cache, cache_key, &cached_response)) {
+        if (cached_response.type == VAL_STRING) {
+  
+            send(client_socket, cached_response.as.string, strlen(cached_response.as.string), 0);
+            close(client_socket);
+            return (Value){VAL_NIL}; 
+        }
     }
 
     HashMap* headers_map = map_new();
@@ -281,18 +323,30 @@ Value native_web_poll(int arity, Value* args) {
 
 Value native_web_send_response(int arity, Value* args) {
     if (arity < 2) return (Value){VAL_NIL};
+    init_jweb_cache();
 
     Value socket_val;
+    HashMap* req_map = NULL;
     if (args[0].type == VAL_MAP) {
-        if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
+        req_map = args[0].as.map;
+        if (!map_get(req_map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
     } else {
         socket_val = args[0];
     }
     int client_socket = (int)socket_val.as.number;
 
+    if (req_map != NULL && args[1].type == VAL_STRING) {
+        Value v_method, v_path;
+        if (map_get(req_map, "method", &v_method) && map_get(req_map, "path", &v_path)) {
+            char cache_key[2048];
+            snprintf(cache_key, sizeof(cache_key), "%s:%s", v_method.as.string, v_path.as.string);
+            map_set(jweb_cache, cache_key, copy_value(args[1]));
+        }
+    }
+
     AsyncResponseData* async_data = malloc(sizeof(AsyncResponseData));
     async_data->client_socket = client_socket;
-    async_data->data = args[1];
+    async_data->data = copy_value(args[1]);
 
     pthread_t thread;
     pthread_create(&thread, NULL, async_send_thread, async_data);
@@ -837,6 +891,48 @@ char* evaluate_template_logic(char* content, HashMap* data) {
     return content;
 }
 
+char* evaluate_template_stacks(char* layout_content, const char* child_content) {
+    char *stack_ptr;
+    while ((stack_ptr = strstr(layout_content, "@stack"))) {
+        char *open_p = strchr(stack_ptr, '(');
+        char *close_p = strchr(stack_ptr, ')');
+        if (!open_p || !close_p) break;
+
+        char stack_name[64];
+        sscanf(open_p, "(\"%[^\"]\")", stack_name);
+
+        char push_tag[128];
+        snprintf(push_tag, sizeof(push_tag), "@push(\"%s\")", stack_name);
+        
+        char *push_start = strstr(child_content, push_tag);
+        char *accumulated_push = strdup("");
+
+        if (push_start) {
+            char *block_start = strchr(push_start, ')') + 1;
+            char *push_end = strstr(block_start, "@endpush");
+            if (push_end) {
+                int len = push_end - block_start;
+                free(accumulated_push);
+                accumulated_push = strndup(block_start, len);
+            }
+        }
+
+        int prefix_len = stack_ptr - layout_content;
+        int push_len = strlen(accumulated_push);
+        int suffix_len = strlen(close_p + 1);
+
+        char *new_res = malloc(prefix_len + push_len + suffix_len + 1);
+        memcpy(new_res, layout_content, prefix_len);
+        memcpy(new_res + prefix_len, accumulated_push, push_len);
+        strcpy(new_res + prefix_len + push_len, close_p + 1);
+
+        free(accumulated_push);
+        free(layout_content);
+        layout_content = new_res;
+    }
+    return layout_content;
+}
+
 
 Value native_render_file(int arity, Value *args) {
     if (arity < 1 || args[0].type != VAL_STRING) return (Value){VAL_NIL};
@@ -853,6 +949,7 @@ Value native_render_file(int arity, Value *args) {
             char *layout_content = read_file_to_string(layout_file);
             if (layout_content) {
                 final_content = evaluate_template_yields(layout_content, child_content);
+                final_content = evaluate_template_stacks(final_content, child_content);
                 free(child_content);
             } else {
                 final_content = child_content;
@@ -908,7 +1005,6 @@ Value native_render_file(int arity, Value *args) {
     res.as.string = final_content;
     res.gc_info = NULL;
     return res;
-
 }
 
 Value native_send_html(int arity, Value *args) {
