@@ -17,28 +17,17 @@
 
 int global_server_fd = -1;
 long last_mtime = 0;
-static HashMap* jweb_cache = NULL;
 
-void init_jweb_cache() {
-    if (jweb_cache == NULL) {
-        jweb_cache = map_new();
-    }
-}
-
-Value native_clear_jweb_cache(int arity, Value* args) {
-    if (jweb_cache != NULL) {
-        map_free(jweb_cache);
-        jweb_cache = map_new();
-    }
-    return (Value){VAL_BOOL, {.boolean = 1}};
-}
 typedef struct {
     int client_socket;
     Value data;
     Value req_copy;
 } AsyncResponseData;
 
-
+typedef struct {
+    int client_socket;
+    struct sockaddr_in client_addr;
+} HttpThreadArgs;
 
 extern Env* global_env;
 
@@ -79,8 +68,6 @@ const char* get_mime_type(const char* filename) {
     return "text/plain";
 }
 
-
-
 static void parse_query_params(HashMap* map, char* query_string) {
     if (!query_string || strlen(query_string) == 0) return;
     char* saveptr1;
@@ -96,6 +83,85 @@ static void parse_query_params(HashMap* map, char* query_string) {
         pair = strtok_r(NULL, "&", &saveptr1);
     }
 }
+
+void* http_connection_handler(void* arg) {
+    HttpThreadArgs* args = (HttpThreadArgs*)arg;
+    int client_socket = args->client_socket;
+    
+    char buffer[8192];
+    memset(buffer, 0, sizeof(buffer));
+    
+    ssize_t bytes_read = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+    if (bytes_read <= 0) {
+        close(client_socket);
+        free(args);
+        return NULL;
+    }
+
+    char method[16], full_path[1024];
+    if (sscanf(buffer, "%15s %1023s", method, full_path) < 2) {
+        close(client_socket);
+        free(args);
+        return NULL;
+    }
+
+    HashMap* query_map = map_new();
+    char *query_part = strchr(full_path, '?');
+    if (query_part) {
+        *query_part = '\0';
+        parse_query_params(query_map, query_part + 1);
+    }
+
+    HashMap* headers_map = map_new();
+    char* line = strchr(buffer, '\n');
+    if (line) {
+        line++;
+        while (line && *line != '\r' && *line != '\n') {
+            char* end_line = strchr(line, '\n');
+            if (!end_line) break;
+            char* colon = strchr(line, ':');
+            if (colon && colon < end_line) {
+                int key_len = colon - line;
+                char* key = malloc(key_len + 1);
+                strncpy(key, line, key_len);
+                key[key_len] = '\0';
+                char* val_start = colon + 1;
+                while (*val_start == ' ') val_start++;
+                int val_len = end_line - val_start;
+                if (val_len > 0 && *(end_line - 1) == '\r') val_len--;
+                char* val = malloc(val_len + 1);
+                strncpy(val, val_start, val_len);
+                val[val_len] = '\0';
+                map_set(headers_map, key, (Value){VAL_STRING, {.string = val}});
+            }
+            line = end_line + 1;
+        }
+    }
+
+    HashMap* req_map = map_new();
+    map_set(req_map, "method", (Value){VAL_STRING, {.string = strdup(method)}});
+    map_set(req_map, "path", (Value){VAL_STRING, {.string = strdup(full_path)}});
+    map_set(req_map, "query", (Value){VAL_MAP, {.map = query_map}});
+    map_set(req_map, "headers", (Value){VAL_MAP, {.map = headers_map}});
+    map_set(req_map, "socket_fd", (Value){VAL_NUMBER, {.number = (double)client_socket}});
+    map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(inet_ntoa(args->client_addr.sin_addr))}});
+    map_set(req_map, "params", (Value){VAL_MAP, {.map = map_new()}});
+
+    char* body_start = strstr(buffer, "\r\n\r\n");
+    if (body_start) {
+        body_start += 4;
+        Value json_arg = (Value){VAL_STRING, {.string = body_start}};
+        map_set(req_map, "body", native_json_parse(1, &json_arg));
+    } else {
+        map_set(req_map, "body", (Value){VAL_NIL});
+    }
+
+    free(args);
+    return (void*)req_map; 
+}
+
+
+
 Value deserialize_to_jackal(char* buffer, int length) {
     if (length <= 0) return (Value){VAL_NIL};
 
@@ -197,20 +263,18 @@ void* async_send_thread(void* arg) {
 Value native_web_listen(int arity, Value* args) {
     if (arity < 1 || args[0].type != VAL_NUMBER) return (Value){VAL_NIL};
     int port = (int)args[0].as.number;
-    struct sockaddr_in address;
-    int opt = 1;
 
     global_server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (global_server_fd == -1) return (Value){VAL_BOOL, {.boolean = false}};
 
-    setsockopt(global_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-#ifdef SO_REUSEPORT
-    setsockopt(global_server_fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
-#endif
+    int opt = 1;
+    if (setsockopt(global_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        close(global_server_fd);
+        return (Value){VAL_BOOL, {.boolean = false}};
+    }
 
-    int flags = fcntl(global_server_fd, F_GETFL, 0);
-    fcntl(global_server_fd, F_SETFL, flags | O_NONBLOCK);
-
+    struct sockaddr_in address;
+    memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
@@ -220,7 +284,7 @@ Value native_web_listen(int arity, Value* args) {
         return (Value){VAL_BOOL, {.boolean = false}};
     }
 
-    if (listen(global_server_fd, 4096) < 0) {
+    if (listen(global_server_fd, SOMAXCONN) < 0) {
         close(global_server_fd);
         return (Value){VAL_BOOL, {.boolean = false}};
     }
@@ -229,124 +293,44 @@ Value native_web_listen(int arity, Value* args) {
 }
 Value native_web_poll(int arity, Value* args) {
     if (global_server_fd == -1) return (Value){VAL_NIL};
-    init_jweb_cache();
 
     struct sockaddr_in client_addr;
     socklen_t addrlen = sizeof(client_addr);
     int client_socket = accept(global_server_fd, (struct sockaddr *)&client_addr, &addrlen);
+    
     if (client_socket < 0) return (Value){VAL_NIL};
 
-    char buffer[8192] = {0};
-    ssize_t bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
+    struct timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+    setsockopt(client_socket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof(tv));
 
-    if (bytes_read <= 0) {
-        close(client_socket);
-        return (Value){VAL_NIL};
-    }
+    HttpThreadArgs* thread_args = malloc(sizeof(HttpThreadArgs));
+    thread_args->client_socket = client_socket;
+    thread_args->client_addr = client_addr;
 
-    char method[16] = {0};
-    char full_path[1024] = {0};
-    if (sscanf(buffer, "%15s %1023s", method, full_path) < 2) {
-        close(client_socket);
-        return (Value){VAL_NIL};
-    }
-
-    char cache_key[1100];
-    snprintf(cache_key, sizeof(cache_key), "%s:%s", method, full_path);
-
-    Value cached_response;
-    if (map_get(jweb_cache, cache_key, &cached_response)) {
-        if (cached_response.type == VAL_STRING) {
-  
-            send(client_socket, cached_response.as.string, strlen(cached_response.as.string), 0);
-            close(client_socket);
-            return (Value){VAL_NIL}; 
-        }
-    }
-
-    HashMap* headers_map = map_new();
-    char* line = strchr(buffer, '\n');
-    if (line) {
-        line++; 
-        while (line && *line != '\r' && *line != '\n') {
-            char* end_line = strchr(line, '\n');
-            if (!end_line) break;
-            char* colon = strchr(line, ':');
-            if (colon && colon < end_line) {
-                int key_len = colon - line;
-                char* key = malloc(key_len + 1);
-                strncpy(key, line, key_len);
-                key[key_len] = '\0';
-                char* val_start = colon + 1;
-                while (*val_start == ' ') val_start++; 
-                int val_len = end_line - val_start;
-                if (val_len > 0 && *(end_line-1) == '\r') val_len--; 
-                char* val = malloc(val_len + 1);
-                strncpy(val, val_start, val_len);
-                val[val_len] = '\0';
-                map_set(headers_map, key, (Value){VAL_STRING, {.string = val}});
-            }
-            line = end_line + 1;
-        }
-    }
+    HashMap* req_map = (HashMap*)http_connection_handler(thread_args);
     
-    HashMap* query_map = map_new();
-    char *query_part = strchr(full_path, '?');
-    if (query_part) {
-        *query_part = '\0';
-        char* query_copy = strdup(query_part + 1);
-        parse_query_params(query_map, query_copy);
-        free(query_copy);
-    }
-
-    HashMap* req_map = map_new();
-    map_set(req_map, "method", (Value){VAL_STRING, {.string = strdup(method)}});
-    map_set(req_map, "path", (Value){VAL_STRING, {.string = strdup(full_path)}});
-    map_set(req_map, "query", (Value){VAL_MAP, {.map = query_map}});
-    map_set(req_map, "headers", (Value){VAL_MAP, {.map = headers_map}}); 
-    map_set(req_map, "socket_fd", (Value){VAL_NUMBER, {.number = (double)client_socket}});
-    map_set(req_map, "address", (Value){VAL_STRING, {.string = strdup(inet_ntoa(client_addr.sin_addr))}});
-    map_set(req_map, "params", (Value){VAL_MAP, {.map = map_new()}});
-
-    char *body_start = strstr(buffer, "\r\n\r\n");
-    if (body_start) {
-        body_start += 4;
-        Value json_arg = (Value){VAL_STRING, {.string = body_start}};
-        Value body_map = native_json_parse(1, &json_arg); 
-        map_set(req_map, "body", body_map);
-    } else {
-        map_set(req_map, "body", (Value){VAL_NIL});
-    }
-
+    if (req_map == NULL) return (Value){VAL_NIL};
+    
     return (Value){VAL_MAP, {.map = req_map}};
 }
 
 Value native_web_send_response(int arity, Value* args) {
     if (arity < 2) return (Value){VAL_NIL};
-    init_jweb_cache();
 
     Value socket_val;
-    HashMap* req_map = NULL;
     if (args[0].type == VAL_MAP) {
-        req_map = args[0].as.map;
-        if (!map_get(req_map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
+        if (!map_get(args[0].as.map, "socket_fd", &socket_val)) return (Value){VAL_NIL};
     } else {
         socket_val = args[0];
     }
     int client_socket = (int)socket_val.as.number;
 
-    if (req_map != NULL && args[1].type == VAL_STRING) {
-        Value v_method, v_path;
-        if (map_get(req_map, "method", &v_method) && map_get(req_map, "path", &v_path)) {
-            char cache_key[2048];
-            snprintf(cache_key, sizeof(cache_key), "%s:%s", v_method.as.string, v_path.as.string);
-            map_set(jweb_cache, cache_key, copy_value(args[1]));
-        }
-    }
-
     AsyncResponseData* async_data = malloc(sizeof(AsyncResponseData));
     async_data->client_socket = client_socket;
-    async_data->data = copy_value(args[1]);
+    async_data->data = args[1];
 
     pthread_t thread;
     pthread_create(&thread, NULL, async_send_thread, async_data);
