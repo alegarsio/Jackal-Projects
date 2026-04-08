@@ -2,7 +2,7 @@
 #include "value.h"
 #include "env.h"
 #include "common.h"
-
+#include<errno.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
