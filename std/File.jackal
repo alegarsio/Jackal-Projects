@@ -30,5 +30,10 @@ class File : BasicFileStream {
     func remove() -> Boolean =
         __ioFile_remove(this.path) 
             or throw "Error"
-       
+}
+
+object Path(){
+    func join(originPath : String , fileName : String) -> String {
+        return (originPath + "/" + fileName + "/")
+    }
 }
