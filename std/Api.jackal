@@ -9,11 +9,7 @@ import std.SnapEngine.session.core
 import std.SnapEngine.remote.Node 
 import std.SnapEngine.ViewEngine.core 
 
-/**
- * Auth is now deprecated 
- * Use Request object on 
- * std.SnapEngine.http.Request 
-**/
+ 
 
 // class Auth : Guard {
 //     func auth(req) {
@@ -29,17 +25,19 @@ import std.SnapEngine.ViewEngine.core
 //     }
 // }
 
-func render(file, data) {
-    let req = Request.getRaw()
-    let view = req["view"]
-    
-    if (view == nil) {
-        println("Error: View Engine tidak terinisialisasi dalam request ini!")
-        return false
-    }
-    
-    return view.render(file, data)
+object Template(){
+    func render(file, data) {
+        let req = Request.getRaw()
+        let view = req["view"]
+        
+        if (view == nil) {
+            return false
+        }
+        
+        return view.render(file, data)
+    } 
 }
+
 func redirect(req, url) = __redirect__(req, url) 
 
 class Api : StaticRouter, RouterAbstractMethod {
@@ -124,8 +122,8 @@ class Api : StaticRouter, RouterAbstractMethod {
 
     func run(port) {
         if (__listen__(port)) {
-            println("Jackal Server: http://localhost:" + port.toString())
-            
+            println("Serve on : http://localhost:" + port.toString())
+            println("this is development server do not use this server for production")
             while (true) {
                 let req = __accept__()
                 if (req != nil) {
